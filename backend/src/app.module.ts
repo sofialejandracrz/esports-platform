@@ -6,6 +6,9 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AppController } from './app.controller';
 import { AuthModule } from './modules/auth/auth.module';
+import { CatalogoEstadoAmistadModule } from './modules/catalogo-estado-amistad/catalogo-estado-amistad.module';
+import { CatalogoEstadoInscripcionModule } from './modules/catalogo-estado-inscripcion/catalogo-estado-inscripcion.module';
+import { CatalogoEstadoTorneoModule } from './modules/catalogo-estado-torneo/catalogo-estado-torneo.module';
 import { CatalogoGeneroModule } from './modules/catalogo-genero/catalogo-genero.module';
 
 @Module({
@@ -29,6 +32,9 @@ import { CatalogoGeneroModule } from './modules/catalogo-genero/catalogo-genero.
       inject: [ConfigService],
     }),
     AuthModule,
+    CatalogoEstadoAmistadModule,
+    CatalogoEstadoInscripcionModule,
+    CatalogoEstadoTorneoModule,
     CatalogoGeneroModule,
   ],
   controllers: [AppController],

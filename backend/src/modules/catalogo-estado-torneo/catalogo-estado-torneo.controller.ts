@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { CatalogoEstadoTorneoService } from './catalogo-estado-torneo.service';
 import { CreateCatalogoEstadoTorneoDto } from './dto/create-catalogo-estado-torneo.dto';
 import { UpdateCatalogoEstadoTorneoDto } from './dto/update-catalogo-estado-torneo.dto';
@@ -8,6 +8,7 @@ export class CatalogoEstadoTorneoController {
   constructor(private readonly catalogoEstadoTorneoService: CatalogoEstadoTorneoService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createCatalogoEstadoTorneoDto: CreateCatalogoEstadoTorneoDto) {
     return this.catalogoEstadoTorneoService.create(createCatalogoEstadoTorneoDto);
   }
@@ -19,16 +20,17 @@ export class CatalogoEstadoTorneoController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.catalogoEstadoTorneoService.findOne(+id);
+    return this.catalogoEstadoTorneoService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCatalogoEstadoTorneoDto: UpdateCatalogoEstadoTorneoDto) {
-    return this.catalogoEstadoTorneoService.update(+id, updateCatalogoEstadoTorneoDto);
+    return this.catalogoEstadoTorneoService.update(id, updateCatalogoEstadoTorneoDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.catalogoEstadoTorneoService.remove(+id);
+    return this.catalogoEstadoTorneoService.remove(id);
   }
 }
