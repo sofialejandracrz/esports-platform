@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { CatalogoRegionService } from './catalogo-region.service';
 import { CreateCatalogoRegionDto } from './dto/create-catalogo-region.dto';
 import { UpdateCatalogoRegionDto } from './dto/update-catalogo-region.dto';
@@ -8,6 +8,7 @@ export class CatalogoRegionController {
   constructor(private readonly catalogoRegionService: CatalogoRegionService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createCatalogoRegionDto: CreateCatalogoRegionDto) {
     return this.catalogoRegionService.create(createCatalogoRegionDto);
   }
@@ -19,16 +20,17 @@ export class CatalogoRegionController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.catalogoRegionService.findOne(+id);
+    return this.catalogoRegionService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCatalogoRegionDto: UpdateCatalogoRegionDto) {
-    return this.catalogoRegionService.update(+id, updateCatalogoRegionDto);
+    return this.catalogoRegionService.update(id, updateCatalogoRegionDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.catalogoRegionService.remove(+id);
+    return this.catalogoRegionService.remove(id);
   }
 }

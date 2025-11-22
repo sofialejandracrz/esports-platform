@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { EquipoMiembroService } from './equipo-miembro.service';
 import { CreateEquipoMiembroDto } from './dto/create-equipo-miembro.dto';
 import { UpdateEquipoMiembroDto } from './dto/update-equipo-miembro.dto';
@@ -8,6 +8,7 @@ export class EquipoMiembroController {
   constructor(private readonly equipoMiembroService: EquipoMiembroService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createEquipoMiembroDto: CreateEquipoMiembroDto) {
     return this.equipoMiembroService.create(createEquipoMiembroDto);
   }
@@ -19,16 +20,17 @@ export class EquipoMiembroController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.equipoMiembroService.findOne(+id);
+    return this.equipoMiembroService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateEquipoMiembroDto: UpdateEquipoMiembroDto) {
-    return this.equipoMiembroService.update(+id, updateEquipoMiembroDto);
+    return this.equipoMiembroService.update(id, updateEquipoMiembroDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.equipoMiembroService.remove(+id);
+    return this.equipoMiembroService.remove(id);
   }
 }

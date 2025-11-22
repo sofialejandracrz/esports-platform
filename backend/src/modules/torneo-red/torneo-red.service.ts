@@ -1,26 +1,75 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateTorneoRedDto } from './dto/create-torneo-red.dto';
 import { UpdateTorneoRedDto } from './dto/update-torneo-red.dto';
+import { TorneoRed } from './entities/torneo-red.entity';
+import { Torneo } from '../torneo/entities/torneo.entity';
 
 @Injectable()
 export class TorneoRedService {
-  create(createTorneoRedDto: CreateTorneoRedDto) {
-    return 'This action adds a new torneoRed';
+  constructor(
+    @InjectRepository(TorneoRed)
+    private readonly torneoRedRepository: Repository<TorneoRed>,
+    @InjectRepository(Torneo)
+    private readonly torneoRepository: Repository<Torneo>,
+  ) {}
+
+  async create(createTorneoRedDto: CreateTorneoRedDto): Promise<TorneoRed> {
+    const { torneoId, ...rest } = createTorneoRedDto;
+
+    const torneo = await this.torneoRepository.findOne({ where: { id: torneoId } });
+    if (!torneo) {
+      throw new NotFoundException(`Torneo con ID ${torneoId} no encontrado`);
+    }
+
+    const torneoRed = this.torneoRedRepository.create({
+      ...rest,
+      torneo,
+    });
+
+    return await this.torneoRedRepository.save(torneoRed);
   }
 
-  findAll() {
-    return `This action returns all torneoRed`;
+  async findAll(): Promise<TorneoRed[]> {
+    return await this.torneoRedRepository.find({
+      relations: ['torneo'],
+      order: { plataforma: 'ASC' },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} torneoRed`;
+  async findOne(id: string): Promise<TorneoRed> {
+    const torneoRed = await this.torneoRedRepository.findOne({
+      where: { id },
+      relations: ['torneo'],
+    });
+
+    if (!torneoRed) {
+      throw new NotFoundException(`Red social de torneo con ID ${id} no encontrada`);
+    }
+
+    return torneoRed;
   }
 
-  update(id: number, updateTorneoRedDto: UpdateTorneoRedDto) {
-    return `This action updates a #${id} torneoRed`;
+  async update(id: string, updateTorneoRedDto: UpdateTorneoRedDto): Promise<TorneoRed> {
+    const torneoRed = await this.findOne(id);
+
+    const { torneoId, ...rest } = updateTorneoRedDto;
+
+    if (torneoId) {
+      const torneo = await this.torneoRepository.findOne({ where: { id: torneoId } });
+      if (!torneo) {
+        throw new NotFoundException(`Torneo con ID ${torneoId} no encontrado`);
+      }
+      torneoRed.torneo = torneo;
+    }
+
+    Object.assign(torneoRed, rest);
+    return await this.torneoRedRepository.save(torneoRed);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} torneoRed`;
+  async remove(id: string): Promise<void> {
+    const torneoRed = await this.findOne(id);
+    await this.torneoRedRepository.remove(torneoRed);
   }
 }

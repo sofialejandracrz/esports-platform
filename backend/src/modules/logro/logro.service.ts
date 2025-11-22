@@ -1,26 +1,49 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateLogroDto } from './dto/create-logro.dto';
 import { UpdateLogroDto } from './dto/update-logro.dto';
+import { Logro } from './entities/logro.entity';
 
 @Injectable()
 export class LogroService {
-  create(createLogroDto: CreateLogroDto) {
-    return 'This action adds a new logro';
+  constructor(
+    @InjectRepository(Logro)
+    private readonly logroRepository: Repository<Logro>,
+  ) {}
+
+  async create(createLogroDto: CreateLogroDto): Promise<Logro> {
+    const logro = this.logroRepository.create(createLogroDto);
+    return await this.logroRepository.save(logro);
   }
 
-  findAll() {
-    return `This action returns all logro`;
+  async findAll(): Promise<Logro[]> {
+    return await this.logroRepository.find({
+      order: { nombre: 'ASC' },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} logro`;
+  async findOne(id: string): Promise<Logro> {
+    const logro = await this.logroRepository.findOne({
+      where: { id },
+    });
+
+    if (!logro) {
+      throw new NotFoundException(`Logro con ID ${id} no encontrado`);
+    }
+
+    return logro;
   }
 
-  update(id: number, updateLogroDto: UpdateLogroDto) {
-    return `This action updates a #${id} logro`;
+  async update(id: string, updateLogroDto: UpdateLogroDto): Promise<Logro> {
+    const logro = await this.findOne(id);
+
+    Object.assign(logro, updateLogroDto);
+    return await this.logroRepository.save(logro);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} logro`;
+  async remove(id: string): Promise<void> {
+    const logro = await this.findOne(id);
+    await this.logroRepository.remove(logro);
   }
 }

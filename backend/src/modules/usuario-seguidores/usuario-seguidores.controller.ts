@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { UsuarioSeguidoresService } from './usuario-seguidores.service';
 import { CreateUsuarioSeguidoreDto } from './dto/create-usuario-seguidore.dto';
 import { UpdateUsuarioSeguidoreDto } from './dto/update-usuario-seguidore.dto';
@@ -8,6 +8,7 @@ export class UsuarioSeguidoresController {
   constructor(private readonly usuarioSeguidoresService: UsuarioSeguidoresService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createUsuarioSeguidoreDto: CreateUsuarioSeguidoreDto) {
     return this.usuarioSeguidoresService.create(createUsuarioSeguidoreDto);
   }
@@ -19,16 +20,17 @@ export class UsuarioSeguidoresController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usuarioSeguidoresService.findOne(+id);
+    return this.usuarioSeguidoresService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUsuarioSeguidoreDto: UpdateUsuarioSeguidoreDto) {
-    return this.usuarioSeguidoresService.update(+id, updateUsuarioSeguidoreDto);
+    return this.usuarioSeguidoresService.update(id, updateUsuarioSeguidoreDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.usuarioSeguidoresService.remove(+id);
+    return this.usuarioSeguidoresService.remove(id);
   }
 }

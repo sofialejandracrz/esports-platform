@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { CatalogoTransaccionTipoService } from './catalogo-transaccion-tipo.service';
 import { CreateCatalogoTransaccionTipoDto } from './dto/create-catalogo-transaccion-tipo.dto';
 import { UpdateCatalogoTransaccionTipoDto } from './dto/update-catalogo-transaccion-tipo.dto';
@@ -8,6 +8,7 @@ export class CatalogoTransaccionTipoController {
   constructor(private readonly catalogoTransaccionTipoService: CatalogoTransaccionTipoService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createCatalogoTransaccionTipoDto: CreateCatalogoTransaccionTipoDto) {
     return this.catalogoTransaccionTipoService.create(createCatalogoTransaccionTipoDto);
   }
@@ -19,16 +20,17 @@ export class CatalogoTransaccionTipoController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.catalogoTransaccionTipoService.findOne(+id);
+    return this.catalogoTransaccionTipoService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCatalogoTransaccionTipoDto: UpdateCatalogoTransaccionTipoDto) {
-    return this.catalogoTransaccionTipoService.update(+id, updateCatalogoTransaccionTipoDto);
+    return this.catalogoTransaccionTipoService.update(id, updateCatalogoTransaccionTipoDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.catalogoTransaccionTipoService.remove(+id);
+    return this.catalogoTransaccionTipoService.remove(id);
   }
 }

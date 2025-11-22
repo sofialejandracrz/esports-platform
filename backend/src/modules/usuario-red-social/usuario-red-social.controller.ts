@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { UsuarioRedSocialService } from './usuario-red-social.service';
 import { CreateUsuarioRedSocialDto } from './dto/create-usuario-red-social.dto';
 import { UpdateUsuarioRedSocialDto } from './dto/update-usuario-red-social.dto';
@@ -8,6 +8,7 @@ export class UsuarioRedSocialController {
   constructor(private readonly usuarioRedSocialService: UsuarioRedSocialService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createUsuarioRedSocialDto: CreateUsuarioRedSocialDto) {
     return this.usuarioRedSocialService.create(createUsuarioRedSocialDto);
   }
@@ -19,16 +20,17 @@ export class UsuarioRedSocialController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usuarioRedSocialService.findOne(+id);
+    return this.usuarioRedSocialService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUsuarioRedSocialDto: UpdateUsuarioRedSocialDto) {
-    return this.usuarioRedSocialService.update(+id, updateUsuarioRedSocialDto);
+    return this.usuarioRedSocialService.update(id, updateUsuarioRedSocialDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.usuarioRedSocialService.remove(+id);
+    return this.usuarioRedSocialService.remove(id);
   }
 }

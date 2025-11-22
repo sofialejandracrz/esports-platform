@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { PersonaService } from './persona.service';
 import { CreatePersonaDto } from './dto/create-persona.dto';
 import { UpdatePersonaDto } from './dto/update-persona.dto';
@@ -8,6 +8,7 @@ export class PersonaController {
   constructor(private readonly personaService: PersonaService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createPersonaDto: CreatePersonaDto) {
     return this.personaService.create(createPersonaDto);
   }
@@ -19,16 +20,17 @@ export class PersonaController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.personaService.findOne(+id);
+    return this.personaService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePersonaDto: UpdatePersonaDto) {
-    return this.personaService.update(+id, updatePersonaDto);
+    return this.personaService.update(id, updatePersonaDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.personaService.remove(+id);
+    return this.personaService.remove(id);
   }
 }
