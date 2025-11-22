@@ -40,6 +40,7 @@ import { UsuarioMembresiaModule } from './modules/usuario-membresia/usuario-memb
 import { UsuarioSeguidoresModule } from './modules/usuario-seguidores/usuario-seguidores.module';
 import { UsuarioRedSocialModule } from './modules/usuario-red-social/usuario-red-social.module';
 import { UsuarioTrofeoModule } from './modules/usuario-trofeo/usuario-trofeo.module';
+import { SeederModule } from './database/seeds/seeder.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { UsuarioTrofeoModule } from './modules/usuario-trofeo/usuario-trofeo.mod
     UsuarioSeguidoresModule,
     UsuarioRedSocialModule,
     UsuarioTrofeoModule,
+    SeederModule,
   ],
   controllers: [AppController],
   providers: [

@@ -30,6 +30,18 @@ nickname: string;
 rol: CatalogoRol;
 
 
+@Column({ name: 'password', select: false })
+password: string;
+
+
+@Column({ name: 'estado', type: 'varchar', length: 50, default: 'activo' })
+estado: string; // 'activo', 'suspendido', 'baneado'
+
+
+@Column({ name: 'ultima_conexion', type: 'timestamp', nullable: true })
+ultimaConexion?: Date;
+
+
 @Column({ name: 'xp', type: 'int', default: 0 })
 xp: number;
 

@@ -8,10 +8,12 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { Usuario } from '../usuario/entities/usuario.entity';
 import { Persona } from '../persona/entities/persona.entity';
+import { CatalogoRol } from '../catalogo-rol/entities/catalogo-rol.entity';
+import { CatalogoGenero } from '../catalogo-genero/entities/catalogo-genero.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Usuario, Persona]),
+    TypeOrmModule.forFeature([Usuario, Persona, CatalogoRol, CatalogoGenero]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
