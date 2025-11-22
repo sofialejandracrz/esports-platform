@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { CatalogoOrigenTransaccionService } from './catalogo-origen-transaccion.service';
 import { CreateCatalogoOrigenTransaccionDto } from './dto/create-catalogo-origen-transaccion.dto';
 import { UpdateCatalogoOrigenTransaccionDto } from './dto/update-catalogo-origen-transaccion.dto';
@@ -19,16 +19,17 @@ export class CatalogoOrigenTransaccionController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.catalogoOrigenTransaccionService.findOne(+id);
+    return this.catalogoOrigenTransaccionService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCatalogoOrigenTransaccionDto: UpdateCatalogoOrigenTransaccionDto) {
-    return this.catalogoOrigenTransaccionService.update(+id, updateCatalogoOrigenTransaccionDto);
+    return this.catalogoOrigenTransaccionService.update(id, updateCatalogoOrigenTransaccionDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.catalogoOrigenTransaccionService.remove(+id);
+    return this.catalogoOrigenTransaccionService.remove(id);
   }
 }

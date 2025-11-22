@@ -1,26 +1,82 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateTiendaItemDto } from './dto/create-tienda-item.dto';
 import { UpdateTiendaItemDto } from './dto/update-tienda-item.dto';
+import { TiendaItem } from './entities/tienda-item.entity';
+import { CatalogoTipoItem } from '../catalogo-tipo-item/entities/catalogo-tipo-item.entity';
 
 @Injectable()
 export class TiendaItemService {
-  create(createTiendaItemDto: CreateTiendaItemDto) {
-    return 'This action adds a new tiendaItem';
+  constructor(
+    @InjectRepository(TiendaItem)
+    private readonly tiendaItemRepository: Repository<TiendaItem>,
+    @InjectRepository(CatalogoTipoItem)
+    private readonly tipoItemRepository: Repository<CatalogoTipoItem>,
+  ) {}
+
+  async create(createTiendaItemDto: CreateTiendaItemDto): Promise<TiendaItem> {
+    const { tipoId, ...itemData } = createTiendaItemDto;
+
+    const tipo = await this.tipoItemRepository.findOne({
+      where: { id: tipoId },
+    });
+
+    if (!tipo) {
+      throw new BadRequestException(`Tipo de item con ID ${tipoId} no encontrado`);
+    }
+
+    const tiendaItem = this.tiendaItemRepository.create({
+      ...itemData,
+      tipo,
+    });
+
+    return await this.tiendaItemRepository.save(tiendaItem);
   }
 
-  findAll() {
-    return `This action returns all tiendaItem`;
+  async findAll(): Promise<TiendaItem[]> {
+    return await this.tiendaItemRepository.find({
+      relations: ['tipo'],
+      order: { precio: 'ASC' },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} tiendaItem`;
+  async findOne(id: string): Promise<TiendaItem> {
+    const tiendaItem = await this.tiendaItemRepository.findOne({
+      where: { id },
+      relations: ['tipo'],
+    });
+    
+    if (!tiendaItem) {
+      throw new NotFoundException(`Item de tienda con ID ${id} no encontrado`);
+    }
+    
+    return tiendaItem;
   }
 
-  update(id: number, updateTiendaItemDto: UpdateTiendaItemDto) {
-    return `This action updates a #${id} tiendaItem`;
+  async update(id: string, updateTiendaItemDto: UpdateTiendaItemDto): Promise<TiendaItem> {
+    const tiendaItem = await this.findOne(id);
+    
+    const { tipoId, ...itemData } = updateTiendaItemDto;
+
+    if (tipoId) {
+      const tipo = await this.tipoItemRepository.findOne({
+        where: { id: tipoId },
+      });
+
+      if (!tipo) {
+        throw new BadRequestException(`Tipo de item con ID ${tipoId} no encontrado`);
+      }
+
+      tiendaItem.tipo = tipo;
+    }
+
+    Object.assign(tiendaItem, itemData);
+    return await this.tiendaItemRepository.save(tiendaItem);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} tiendaItem`;
+  async remove(id: string): Promise<void> {
+    const tiendaItem = await this.findOne(id);
+    await this.tiendaItemRepository.remove(tiendaItem);
   }
 }

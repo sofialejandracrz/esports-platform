@@ -1,26 +1,82 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateTorneoPremioDto } from './dto/create-torneo-premio.dto';
 import { UpdateTorneoPremioDto } from './dto/update-torneo-premio.dto';
+import { TorneoPremio } from './entities/torneo-premio.entity';
+import { Torneo } from '../torneo/entities/torneo.entity';
 
 @Injectable()
 export class TorneoPremioService {
-  create(createTorneoPremioDto: CreateTorneoPremioDto) {
-    return 'This action adds a new torneoPremio';
+  constructor(
+    @InjectRepository(TorneoPremio)
+    private readonly torneoPremioRepository: Repository<TorneoPremio>,
+    @InjectRepository(Torneo)
+    private readonly torneoRepository: Repository<Torneo>,
+  ) {}
+
+  async create(createTorneoPremioDto: CreateTorneoPremioDto): Promise<TorneoPremio> {
+    const { torneoId, ...premioData } = createTorneoPremioDto;
+
+    const torneo = await this.torneoRepository.findOne({
+      where: { id: torneoId },
+    });
+
+    if (!torneo) {
+      throw new BadRequestException(`Torneo con ID ${torneoId} no encontrado`);
+    }
+
+    const torneoPremio = this.torneoPremioRepository.create({
+      ...premioData,
+      torneo,
+    });
+
+    return await this.torneoPremioRepository.save(torneoPremio);
   }
 
-  findAll() {
-    return `This action returns all torneoPremio`;
+  async findAll(): Promise<TorneoPremio[]> {
+    return await this.torneoPremioRepository.find({
+      relations: ['torneo'],
+      order: { fondoTotal: 'DESC' },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} torneoPremio`;
+  async findOne(id: string): Promise<TorneoPremio> {
+    const torneoPremio = await this.torneoPremioRepository.findOne({
+      where: { id },
+      relations: ['torneo'],
+    });
+
+    if (!torneoPremio) {
+      throw new NotFoundException(`Premio de torneo con ID ${id} no encontrado`);
+    }
+
+    return torneoPremio;
   }
 
-  update(id: number, updateTorneoPremioDto: UpdateTorneoPremioDto) {
-    return `This action updates a #${id} torneoPremio`;
+  async update(id: string, updateTorneoPremioDto: UpdateTorneoPremioDto): Promise<TorneoPremio> {
+    const torneoPremio = await this.findOne(id);
+
+    const { torneoId, ...premioData } = updateTorneoPremioDto;
+
+    if (torneoId) {
+      const torneo = await this.torneoRepository.findOne({
+        where: { id: torneoId },
+      });
+
+      if (!torneo) {
+        throw new BadRequestException(`Torneo con ID ${torneoId} no encontrado`);
+      }
+
+      torneoPremio.torneo = torneo;
+    }
+
+    Object.assign(torneoPremio, premioData);
+    return await this.torneoPremioRepository.save(torneoPremio);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} torneoPremio`;
+  async remove(id: string): Promise<void> {
+    const torneoPremio = await this.findOne(id);
+    await this.torneoPremioRepository.remove(torneoPremio);
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { UsuarioLogroService } from './usuario-logro.service';
 import { CreateUsuarioLogroDto } from './dto/create-usuario-logro.dto';
 import { UpdateUsuarioLogroDto } from './dto/update-usuario-logro.dto';
@@ -19,16 +19,17 @@ export class UsuarioLogroController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usuarioLogroService.findOne(+id);
+    return this.usuarioLogroService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUsuarioLogroDto: UpdateUsuarioLogroDto) {
-    return this.usuarioLogroService.update(+id, updateUsuarioLogroDto);
+    return this.usuarioLogroService.update(id, updateUsuarioLogroDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.usuarioLogroService.remove(+id);
+    return this.usuarioLogroService.remove(id);
   }
 }

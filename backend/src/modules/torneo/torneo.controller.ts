@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { TorneoService } from './torneo.service';
 import { CreateTorneoDto } from './dto/create-torneo.dto';
 import { UpdateTorneoDto } from './dto/update-torneo.dto';
@@ -19,16 +19,17 @@ export class TorneoController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.torneoService.findOne(+id);
+    return this.torneoService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateTorneoDto: UpdateTorneoDto) {
-    return this.torneoService.update(+id, updateTorneoDto);
+    return this.torneoService.update(id, updateTorneoDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.torneoService.remove(+id);
+    return this.torneoService.remove(id);
   }
 }

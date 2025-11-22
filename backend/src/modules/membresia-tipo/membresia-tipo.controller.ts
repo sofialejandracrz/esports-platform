@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { MembresiaTipoService } from './membresia-tipo.service';
 import { CreateMembresiaTipoDto } from './dto/create-membresia-tipo.dto';
 import { UpdateMembresiaTipoDto } from './dto/update-membresia-tipo.dto';
@@ -19,16 +19,17 @@ export class MembresiaTipoController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.membresiaTipoService.findOne(+id);
+    return this.membresiaTipoService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateMembresiaTipoDto: UpdateMembresiaTipoDto) {
-    return this.membresiaTipoService.update(+id, updateMembresiaTipoDto);
+    return this.membresiaTipoService.update(id, updateMembresiaTipoDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.membresiaTipoService.remove(+id);
+    return this.membresiaTipoService.remove(id);
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { TiendaItemService } from './tienda-item.service';
 import { CreateTiendaItemDto } from './dto/create-tienda-item.dto';
 import { UpdateTiendaItemDto } from './dto/update-tienda-item.dto';
@@ -19,16 +19,17 @@ export class TiendaItemController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.tiendaItemService.findOne(+id);
+    return this.tiendaItemService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateTiendaItemDto: UpdateTiendaItemDto) {
-    return this.tiendaItemService.update(+id, updateTiendaItemDto);
+    return this.tiendaItemService.update(id, updateTiendaItemDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.tiendaItemService.remove(+id);
+    return this.tiendaItemService.remove(id);
   }
 }

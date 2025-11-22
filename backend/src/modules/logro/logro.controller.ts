@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { LogroService } from './logro.service';
 import { CreateLogroDto } from './dto/create-logro.dto';
 import { UpdateLogroDto } from './dto/update-logro.dto';
@@ -19,16 +19,17 @@ export class LogroController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.logroService.findOne(+id);
+    return this.logroService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateLogroDto: UpdateLogroDto) {
-    return this.logroService.update(+id, updateLogroDto);
+    return this.logroService.update(id, updateLogroDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.logroService.remove(+id);
+    return this.logroService.remove(id);
   }
 }

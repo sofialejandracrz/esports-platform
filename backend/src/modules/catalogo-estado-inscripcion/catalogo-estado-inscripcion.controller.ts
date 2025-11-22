@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { CatalogoEstadoInscripcionService } from './catalogo-estado-inscripcion.service';
 import { CreateCatalogoEstadoInscripcionDto } from './dto/create-catalogo-estado-inscripcion.dto';
 import { UpdateCatalogoEstadoInscripcionDto } from './dto/update-catalogo-estado-inscripcion.dto';
@@ -19,16 +19,17 @@ export class CatalogoEstadoInscripcionController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.catalogoEstadoInscripcionService.findOne(+id);
+    return this.catalogoEstadoInscripcionService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCatalogoEstadoInscripcionDto: UpdateCatalogoEstadoInscripcionDto) {
-    return this.catalogoEstadoInscripcionService.update(+id, updateCatalogoEstadoInscripcionDto);
+    return this.catalogoEstadoInscripcionService.update(id, updateCatalogoEstadoInscripcionDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.catalogoEstadoInscripcionService.remove(+id);
+    return this.catalogoEstadoInscripcionService.remove(id);
   }
 }

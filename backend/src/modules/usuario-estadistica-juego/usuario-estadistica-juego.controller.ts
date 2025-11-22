@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { UsuarioEstadisticaJuegoService } from './usuario-estadistica-juego.service';
 import { CreateUsuarioEstadisticaJuegoDto } from './dto/create-usuario-estadistica-juego.dto';
 import { UpdateUsuarioEstadisticaJuegoDto } from './dto/update-usuario-estadistica-juego.dto';
@@ -19,16 +19,17 @@ export class UsuarioEstadisticaJuegoController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usuarioEstadisticaJuegoService.findOne(+id);
+    return this.usuarioEstadisticaJuegoService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUsuarioEstadisticaJuegoDto: UpdateUsuarioEstadisticaJuegoDto) {
-    return this.usuarioEstadisticaJuegoService.update(+id, updateUsuarioEstadisticaJuegoDto);
+    return this.usuarioEstadisticaJuegoService.update(id, updateUsuarioEstadisticaJuegoDto);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
-    return this.usuarioEstadisticaJuegoService.remove(+id);
+    return this.usuarioEstadisticaJuegoService.remove(id);
   }
 }
