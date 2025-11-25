@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "Configurando pg_hba.conf para usar scram-sha-256 authentication..."
-
-# Reemplazar el archivo pg_hba.conf
 cat > "$PGDATA/pg_hba.conf" <<EOF
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
 local   all             all                                     scram-sha-256
