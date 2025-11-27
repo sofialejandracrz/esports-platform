@@ -11,6 +11,8 @@ import {
   IconShield,
   IconAlertTriangle,
   IconCheck,
+  IconLoader2,
+  IconAlertCircle,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,9 +27,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/usuario/site-header";
 import { Badge } from "@/components/ui/badge";
+import { useConfiguracion } from "@/hooks/use-configuracion";
+import { cambiarPassword } from "@/lib/api/configuracion";
 
 interface AccountData {
   email: string;
+  email_verificado: boolean;
 }
 
 interface PasswordData {
@@ -36,13 +41,12 @@ interface PasswordData {
   confirmPassword: string;
 }
 
-// Datos mock del usuario actual
-const mockAccountData: AccountData = {
-  email: "jugador1@example.com",
-};
-
 export default function CuentaPage() {
-  const [accountData, setAccountData] = useState<AccountData>(mockAccountData);
+  const { configuracion, isLoading, error, refreshSection } = useConfiguracion();
+  const [accountData, setAccountData] = useState<AccountData>({
+    email: "",
+    email_verificado: false,
+  });
   const [passwordData, setPasswordData] = useState<PasswordData>({
     currentPassword: "",
     newPassword: "",
@@ -54,12 +58,18 @@ export default function CuentaPage() {
   const [hasPasswordChanges, setHasPasswordChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Cargar datos iniciales desde la configuración
   useEffect(() => {
-    // Simular obtención de datos del usuario desde API
-    // En producción, esto vendría de un endpoint con el JWT
-    setAccountData(mockAccountData);
-  }, []);
+    if (configuracion?.cuenta) {
+      setAccountData({
+        email: configuracion.cuenta.correo || "",
+        email_verificado: true, // Por ahora asumimos verificado si existe
+      });
+    }
+  }, [configuracion?.cuenta]);
 
   useEffect(() => {
     // Calcular fuerza de la contraseña
@@ -81,63 +91,62 @@ export default function CuentaPage() {
       [field]: value,
     }));
     setHasPasswordChanges(true);
+    setSaveError(null);
+    setSuccessMessage(null);
   };
 
   const handleSavePassword = async () => {
+    setSaveError(null);
+    setSuccessMessage(null);
+
     // Validaciones
     if (!passwordData.currentPassword) {
-      alert("Debes ingresar tu contraseña actual");
+      setSaveError("Debes ingresar tu contraseña actual");
       return;
     }
 
     if (!passwordData.newPassword) {
-      alert("Debes ingresar una nueva contraseña");
+      setSaveError("Debes ingresar una nueva contraseña");
       return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      alert("La contraseña debe tener al menos 8 caracteres");
+      setSaveError("La contraseña debe tener al menos 8 caracteres");
       return;
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("Las contraseñas no coinciden");
+      setSaveError("Las contraseñas no coinciden");
       return;
     }
 
     if (passwordData.currentPassword === passwordData.newPassword) {
-      alert("La nueva contraseña debe ser diferente a la actual");
+      setSaveError("La nueva contraseña debe ser diferente a la actual");
       return;
     }
 
     setIsSaving(true);
 
-    // Simular llamada a API
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      await cambiarPassword({
+        password_actual: passwordData.currentPassword,
+        password_nuevo: passwordData.newPassword,
+        password_confirmacion: passwordData.confirmPassword,
+      });
 
-    console.log("Contraseña actualizada");
-    setIsSaving(false);
-    setHasPasswordChanges(false);
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-
-    alert("Contraseña actualizada exitosamente");
-
-    // En producción: hacer PUT/PATCH a la API con JWT
-    // const response = await fetch('/api/usuario/cambiar-password', {
-    //   method: 'PATCH',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify({
-    //     currentPassword: passwordData.currentPassword,
-    //     newPassword: passwordData.newPassword
-    //   })
-    // });
+      setSuccessMessage("Contraseña actualizada exitosamente");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setHasPasswordChanges(false);
+    } catch (err: any) {
+      console.error("Error al cambiar contraseña:", err);
+      setSaveError(err.message || "Error al cambiar la contraseña");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancelPassword = () => {
@@ -147,6 +156,8 @@ export default function CuentaPage() {
       confirmPassword: "",
     });
     setHasPasswordChanges(false);
+    setSaveError(null);
+    setSuccessMessage(null);
   };
 
   const getPasswordStrengthText = () => {
@@ -175,6 +186,35 @@ export default function CuentaPage() {
     passwordData.confirmPassword &&
     passwordData.newPassword !== passwordData.confirmPassword;
 
+  // Estado de carga
+  if (isLoading) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconLoader2 className="size-8 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Cargando configuración...</p>
+        </div>
+      </>
+    );
+  }
+
+  // Estado de error general
+  if (error) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconAlertCircle className="size-8 text-destructive" />
+          <p className="mt-4 text-destructive">{error}</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <SiteHeader />
@@ -192,6 +232,30 @@ export default function CuentaPage() {
                 </p>
               </div>
             </div>
+
+            {/* Mensaje de éxito */}
+            {successMessage && (
+              <div className="px-4 lg:px-6">
+                <Card className="border-green-500/50 bg-green-500/5">
+                  <CardContent className="flex items-center gap-3 py-4">
+                    <IconCheck className="size-5 text-green-500" />
+                    <p className="text-sm text-green-500">{successMessage}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Mensaje de error */}
+            {saveError && (
+              <div className="px-4 lg:px-6">
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="flex items-center gap-3 py-4">
+                    <IconAlertCircle className="size-5 text-destructive" />
+                    <p className="text-sm text-destructive">{saveError}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Información del correo electrónico */}
             <div className="px-4 lg:px-6">
@@ -228,19 +292,30 @@ export default function CuentaPage() {
                     </div>
 
                     <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-4">
-                      <div className="rounded-full bg-green-500/10 p-2">
-                        <IconCheck className="size-4 text-green-500" />
+                      <div className={`rounded-full p-2 ${accountData.email_verificado ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}>
+                        {accountData.email_verificado ? (
+                          <IconCheck className="size-4 text-green-500" />
+                        ) : (
+                          <IconAlertTriangle className="size-4 text-yellow-500" />
+                        )}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium">
-                          Correo verificado
+                          {accountData.email_verificado ? 'Correo verificado' : 'Correo no verificado'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Tu correo electrónico ha sido verificado exitosamente
+                          {accountData.email_verificado 
+                            ? 'Tu correo electrónico ha sido verificado exitosamente'
+                            : 'Tu correo electrónico aún no ha sido verificado'}
                         </p>
                       </div>
-                      <Badge variant="outline" className="border-green-500/50 text-green-500">
-                        Verificado
+                      <Badge 
+                        variant="outline" 
+                        className={accountData.email_verificado 
+                          ? "border-green-500/50 text-green-500" 
+                          : "border-yellow-500/50 text-yellow-500"}
+                      >
+                        {accountData.email_verificado ? 'Verificado' : 'Pendiente'}
                       </Badge>
                     </div>
                   </div>
@@ -536,7 +611,11 @@ export default function CuentaPage() {
                         disabled={isSaving || !passwordsMatch}
                         className="flex-1 sm:flex-none"
                       >
-                        <IconDeviceFloppy className="size-4" />
+                        {isSaving ? (
+                          <IconLoader2 className="size-4 animate-spin" />
+                        ) : (
+                          <IconDeviceFloppy className="size-4" />
+                        )}
                         {isSaving ? "Guardando..." : "Cambiar contraseña"}
                       </Button>
                     </div>

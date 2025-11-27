@@ -15,6 +15,8 @@ import {
   IconTrash,
   IconPlus,
   IconExternalLink,
+  IconLoader2,
+  IconAlertCircle,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -36,11 +38,14 @@ import {
 } from "@/components/ui/select";
 import { SiteHeader } from "@/components/usuario/site-header";
 import { Badge } from "@/components/ui/badge";
+import { useConfiguracion } from "@/hooks/use-configuracion";
+import { upsertRedSocial, eliminarRedSocial } from "@/lib/api/configuracion";
 
 interface SocialLink {
   id: string;
   plataforma: string;
   enlace: string;
+  isNew?: boolean;
 }
 
 // Plataformas de redes sociales disponibles
@@ -96,48 +101,59 @@ const socialPlatforms = [
   },
 ];
 
-// Datos mock del usuario actual
-const mockSocialLinks: SocialLink[] = [
-  {
-    id: "1",
-    plataforma: "twitch",
-    enlace: "https://twitch.tv/jugador1",
-  },
-  {
-    id: "2",
-    plataforma: "discord",
-    enlace: "https://discord.gg/gaming-community",
-  },
-  {
-    id: "3",
-    plataforma: "youtube",
-    enlace: "https://youtube.com/@jugador1",
-  },
-];
-
 export default function SocialConfigPage() {
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(mockSocialLinks);
+  const { configuracion, isLoading, error, refreshSection } = useConfiguracion();
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [originalLinks, setOriginalLinks] = useState<SocialLink[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Cargar datos iniciales desde la configuración
   useEffect(() => {
-    // Simular obtención de datos del usuario desde API
-    // En producción, esto vendría de un endpoint con el JWT
-    setSocialLinks(mockSocialLinks);
-  }, []);
+    if (configuracion?.social?.redes_sociales) {
+      const links: SocialLink[] = configuracion.social.redes_sociales.map((red: any) => ({
+        id: red.id?.toString() || `existing-${Date.now()}-${Math.random()}`,
+        plataforma: red.plataforma?.toLowerCase() || "",
+        enlace: red.enlace || "", // El backend devuelve 'enlace', no 'url'
+        isNew: false,
+      }));
+      setSocialLinks(links);
+      setOriginalLinks(links);
+    }
+  }, [configuracion?.social]);
 
   const handleAddLink = () => {
     const newLink: SocialLink = {
       id: `new-${Date.now()}`,
       plataforma: "",
       enlace: "",
+      isNew: true,
     };
     setSocialLinks([...socialLinks, newLink]);
     setHasChanges(true);
   };
 
-  const handleRemoveLink = (id: string) => {
-    setSocialLinks(socialLinks.filter((link) => link.id !== id));
+  const handleRemoveLink = async (id: string) => {
+    const link = socialLinks.find((l) => l.id === id);
+    
+    // Si es un enlace existente (no nuevo), eliminarlo del backend
+    if (link && !link.isNew && link.id && !link.id.startsWith("new-")) {
+      try {
+        setIsSaving(true);
+        setSaveError(null);
+        await eliminarRedSocial(link.id);
+        await refreshSection("social");
+      } catch (err) {
+        setSaveError("Error al eliminar la red social");
+        console.error(err);
+        setIsSaving(false);
+        return;
+      }
+      setIsSaving(false);
+    }
+    
+    setSocialLinks(socialLinks.filter((l) => l.id !== id));
     setHasChanges(true);
   };
 
@@ -152,46 +168,49 @@ export default function SocialConfigPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveError(null);
 
-    // Filtrar enlaces vacíos o incompletos
-    const validLinks = socialLinks.filter(
-      (link) => link.plataforma && link.enlace.trim()
-    );
+    try {
+      // Solo guardar los enlaces nuevos y válidos
+      const newLinks = socialLinks.filter(
+        (link) => link.isNew && link.plataforma && link.enlace.trim()
+      );
 
-    // Simular llamada a API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Crear cada nuevo enlace en el backend
+      for (const link of newLinks) {
+        await upsertRedSocial({
+          plataforma: link.plataforma,
+          enlace: link.enlace,
+        });
+      }
 
-    console.log("Enlaces guardados:", validLinks);
-    setSocialLinks(validLinks);
-    setIsSaving(false);
-    setHasChanges(false);
-
-    // En producción: hacer PUT/PATCH a la API con JWT
-    // const response = await fetch('/api/usuario/social', {
-    //   method: 'PATCH',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify(validLinks)
-    // });
+      // Refrescar datos desde el backend
+      await refreshSection("social");
+      setHasChanges(false);
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      setSaveError("Error al guardar los cambios");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    setSocialLinks(mockSocialLinks);
+    setSocialLinks(originalLinks);
     setHasChanges(false);
+    setSaveError(null);
   };
 
   const getPlatformInfo = (platformValue: string) => {
-    return socialPlatforms.find((p) => p.value === platformValue);
+    return socialPlatforms.find((p) => p.value === platformValue.toLowerCase());
   };
 
   const getUsedPlatforms = () => {
-    return socialLinks.map((link) => link.plataforma).filter(Boolean);
+    return socialLinks.map((link) => link.plataforma.toLowerCase()).filter(Boolean);
   };
 
   const validateUrl = (url: string): boolean => {
-    if (!url) return true; // Permitir vacío durante edición
+    if (!url) return true;
     try {
       new URL(url);
       return url.startsWith("http://") || url.startsWith("https://");
@@ -199,6 +218,35 @@ export default function SocialConfigPage() {
       return false;
     }
   };
+
+  // Estado de carga
+  if (isLoading) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconLoader2 className="size-8 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Cargando configuración...</p>
+        </div>
+      </>
+    );
+  }
+
+  // Estado de error
+  if (error) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconAlertCircle className="size-8 text-destructive" />
+          <p className="mt-4 text-destructive">{error}</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -217,6 +265,18 @@ export default function SocialConfigPage() {
                 </p>
               </div>
             </div>
+
+            {/* Error de guardado */}
+            {saveError && (
+              <div className="px-4 lg:px-6">
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="flex items-center gap-3 py-4">
+                    <IconAlertCircle className="size-5 text-destructive" />
+                    <p className="text-sm text-destructive">{saveError}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Lista de enlaces sociales */}
             <div className="px-4 lg:px-6">
@@ -277,15 +337,21 @@ export default function SocialConfigPage() {
                               <div className="flex items-center gap-2">
                                 {PlatformIcon && (
                                   <PlatformIcon
-                                    className={`size-5 ${platformInfo.color}`}
+                                    className={`size-5 ${platformInfo?.color}`}
                                   />
                                 )}
                                 <Badge variant="outline">#{index + 1}</Badge>
+                                {link.isNew && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Nuevo
+                                  </Badge>
+                                )}
                               </div>
                               <Button
                                 variant="ghost"
                                 size="icon-sm"
                                 onClick={() => handleRemoveLink(link.id)}
+                                disabled={isSaving}
                                 className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <IconTrash className="size-4" />
@@ -303,6 +369,7 @@ export default function SocialConfigPage() {
                                   onValueChange={(value) =>
                                     handleUpdateLink(link.id, "plataforma", value)
                                   }
+                                  disabled={!link.isNew}
                                 >
                                   <SelectTrigger
                                     id={`platform-${link.id}`}
@@ -376,6 +443,7 @@ export default function SocialConfigPage() {
                                     }
                                     aria-invalid={!isUrlValid && !!link.enlace}
                                     className="pr-10"
+                                    disabled={!link.isNew}
                                   />
                                   {link.enlace && isUrlValid && (
                                     <a
@@ -420,7 +488,7 @@ export default function SocialConfigPage() {
             </div>
 
             {/* Botones de acción */}
-            {hasChanges && (
+            {hasChanges && socialLinks.some((l) => l.isNew) && (
               <div className="sticky bottom-4 px-4 lg:px-6">
                 <Card className="border-primary/50 bg-card/95 backdrop-blur-sm">
                   <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -442,7 +510,11 @@ export default function SocialConfigPage() {
                         disabled={isSaving}
                         className="flex-1 sm:flex-none"
                       >
-                        <IconDeviceFloppy className="size-4" />
+                        {isSaving ? (
+                          <IconLoader2 className="size-4 animate-spin" />
+                        ) : (
+                          <IconDeviceFloppy className="size-4" />
+                        )}
                         {isSaving ? "Guardando..." : "Guardar cambios"}
                       </Button>
                     </div>

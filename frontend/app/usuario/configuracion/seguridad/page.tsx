@@ -12,6 +12,8 @@ import {
   IconCurrencyDollar,
   IconAlertTriangle,
   IconInfoCircle,
+  IconLoader2,
+  IconAlertCircle,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SiteHeader } from "@/components/usuario/site-header";
-import { Badge } from "@/components/ui/badge";
+import { useConfiguracion } from "@/hooks/use-configuracion";
+import { actualizarSeguridad } from "@/lib/api/configuracion";
 
 interface SecurityData {
   paypalEmail: string;
@@ -46,20 +49,6 @@ interface SecurityData {
   country: string;
   currency: string;
 }
-
-// Datos mock del usuario actual
-const mockSecurityData: SecurityData = {
-  paypalEmail: "",
-  firstName: "Carlos",
-  lastName: "Méndez",
-  phone: "",
-  address: "",
-  city: "",
-  state: "",
-  zipCode: "",
-  country: "México",
-  currency: "USD",
-};
 
 // Lista de países
 const countries = [
@@ -98,15 +87,43 @@ const currencies = [
 ];
 
 export default function SeguridadPage() {
-  const [securityData, setSecurityData] = useState<SecurityData>(mockSecurityData);
+  const { configuracion, isLoading, error, refreshSection } = useConfiguracion();
+  const [securityData, setSecurityData] = useState<SecurityData>({
+    paypalEmail: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "México",
+    currency: "USD",
+  });
+  const [originalData, setOriginalData] = useState<SecurityData | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Cargar datos iniciales desde la configuración
   useEffect(() => {
-    // Simular obtención de datos del usuario desde API
-    // En producción, esto vendría de un endpoint con el JWT
-    setSecurityData(mockSecurityData);
-  }, []);
+    if (configuracion?.seguridad) {
+      const data: SecurityData = {
+        paypalEmail: configuracion.seguridad.correo_paypal || "",
+        firstName: configuracion.seguridad.p_nombre || "",
+        lastName: configuracion.seguridad.p_apellido || "",
+        phone: configuracion.seguridad.telefono || "",
+        address: configuracion.seguridad.direccion || "",
+        city: configuracion.seguridad.ciudad || "",
+        state: configuracion.seguridad.estado || "",
+        zipCode: configuracion.seguridad.codigo_postal || "",
+        country: configuracion.seguridad.pais || "México",
+        currency: configuracion.seguridad.divisa || "USD",
+      };
+      setSecurityData(data);
+      setOriginalData(data);
+    }
+  }, [configuracion?.seguridad]);
 
   const handleInputChange = (field: keyof SecurityData, value: string) => {
     setSecurityData((prev) => ({
@@ -114,55 +131,97 @@ export default function SeguridadPage() {
       [field]: value,
     }));
     setHasChanges(true);
+    setSaveError(null);
   };
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveError(null);
 
-    // Simular llamada a API
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      await actualizarSeguridad({
+        correo_paypal: securityData.paypalEmail || undefined,
+        p_nombre: securityData.firstName || undefined,
+        s_nombre: undefined,
+        p_apellido: securityData.lastName || undefined,
+        s_apellido: undefined,
+        telefono: securityData.phone || undefined,
+        direccion: securityData.address || undefined,
+        ciudad: securityData.city || undefined,
+        estado: securityData.state || undefined,
+        codigo_postal: securityData.zipCode || undefined,
+        pais: securityData.country || undefined,
+        divisa: securityData.currency || undefined,
+      });
 
-    console.log("Datos de seguridad guardados:", securityData);
-    setIsSaving(false);
-    setHasChanges(false);
-
-    // En producción: hacer PUT/PATCH a la API con JWT
-    // const response = await fetch('/api/usuario/seguridad', {
-    //   method: 'PATCH',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify(securityData)
-    // });
+      await refreshSection("seguridad");
+      setOriginalData(securityData);
+      setHasChanges(false);
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      setSaveError("Error al guardar los cambios");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    setSecurityData(mockSecurityData);
+    if (originalData) {
+      setSecurityData(originalData);
+    }
     setHasChanges(false);
+    setSaveError(null);
   };
 
   const isPaypalValid = (email: string): boolean => {
-    if (!email) return true; // Permitir vacío
+    if (!email) return true;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
   const isPhoneValid = (phone: string): boolean => {
-    if (!phone) return true; // Permitir vacío
-    // Permitir números, espacios, guiones, paréntesis y el signo +
+    if (!phone) return true;
     const phoneRegex = /^[\d\s\-\+\(\)]+$/;
     return phoneRegex.test(phone) && phone.replace(/\D/g, "").length >= 10;
   };
 
   const isZipCodeValid = (zipCode: string): boolean => {
-    if (!zipCode) return true; // Permitir vacío
+    if (!zipCode) return true;
     return zipCode.length >= 4 && zipCode.length <= 10;
   };
 
   const paypalValid = isPaypalValid(securityData.paypalEmail);
   const phoneValid = isPhoneValid(securityData.phone);
   const zipCodeValid = isZipCodeValid(securityData.zipCode);
+
+  // Estado de carga
+  if (isLoading) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconLoader2 className="size-8 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Cargando configuración...</p>
+        </div>
+      </>
+    );
+  }
+
+  // Estado de error
+  if (error) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconAlertCircle className="size-8 text-destructive" />
+          <p className="mt-4 text-destructive">{error}</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -181,6 +240,18 @@ export default function SeguridadPage() {
                 </p>
               </div>
             </div>
+
+            {/* Error de guardado */}
+            {saveError && (
+              <div className="px-4 lg:px-6">
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="flex items-center gap-3 py-4">
+                    <IconAlertCircle className="size-5 text-destructive" />
+                    <p className="text-sm text-destructive">{saveError}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Información de PayPal */}
             <div className="px-4 lg:px-6">
@@ -558,7 +629,11 @@ export default function SeguridadPage() {
                         }
                         className="flex-1 sm:flex-none"
                       >
-                        <IconDeviceFloppy className="size-4" />
+                        {isSaving ? (
+                          <IconLoader2 className="size-4 animate-spin" />
+                        ) : (
+                          <IconDeviceFloppy className="size-4" />
+                        )}
                         {isSaving ? "Guardando..." : "Guardar cambios"}
                       </Button>
                     </div>

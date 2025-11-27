@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { IconUser, IconCalendar, IconMapPin, IconDeviceFloppy, IconX } from "@tabler/icons-react";
+import { IconUser, IconMapPin, IconDeviceFloppy, IconX, IconLoader2, IconCheck, IconAlertCircle } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,31 +23,7 @@ import {
 import { SiteHeader } from "@/components/usuario/site-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-
-interface PersonalData {
-  nickname: string;
-  fullName: string;
-  avatar: string;
-  bio: string;
-  gender: string;
-  dateOfBirth: string;
-  timezone: string;
-  country: string;
-  city: string;
-}
-
-// Datos mock del usuario actual
-const mockUserData: PersonalData = {
-  nickname: "jugador1",
-  fullName: "Carlos Méndez",
-  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=jugador1",
-  bio: "Jugador profesional de ajedrez y estrategia. Competidor en torneos internacionales.",
-  gender: "male",
-  dateOfBirth: "1995-06-15",
-  timezone: "America/Mexico_City",
-  country: "México",
-  city: "Ciudad de México",
-};
+import { useConfigPersonal } from "@/hooks/use-configuracion";
 
 // Lista de zonas horarias comunes
 const timezones = [
@@ -69,17 +45,35 @@ const timezones = [
 ];
 
 export default function PersonalConfigPage() {
-  const [formData, setFormData] = useState<PersonalData>(mockUserData);
+  const { data, loading, saving, error, cargar, guardar } = useConfigPersonal();
+  
+  // Estado local del formulario
+  const [formData, setFormData] = useState({
+    biografia: "",
+    genero_id: "",
+    timezone: "",
+  });
   const [hasChanges, setHasChanges] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Cargar datos al montar
   useEffect(() => {
-    // Simular obtención de datos del usuario desde API
-    // En producción, esto vendría de un endpoint con el JWT
-    setFormData(mockUserData);
-  }, []);
+    cargar();
+  }, [cargar]);
 
-  const handleInputChange = (field: keyof PersonalData, value: string) => {
+  // Sincronizar datos cargados con el formulario
+  useEffect(() => {
+    if (data) {
+      setFormData({
+        biografia: data.biografia || "",
+        genero_id: data.genero?.id || "",
+        timezone: data.timezone || "",
+      });
+      setHasChanges(false);
+    }
+  }, [data]);
+
+  const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -88,30 +82,47 @@ export default function PersonalConfigPage() {
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    
-    // Simular llamada a API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    console.log("Datos guardados:", formData);
-    setIsSaving(false);
-    setHasChanges(false);
-    
-    // En producción: hacer PUT/PATCH a la API con JWT
-    // const response = await fetch('/api/usuario/personal', {
-    //   method: 'PATCH',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify(formData)
-    // });
+    setSuccessMessage(null);
+    const success = await guardar({
+      biografia: formData.biografia || undefined,
+      genero_id: formData.genero_id || undefined,
+      timezone: formData.timezone || undefined,
+    });
+
+    if (success) {
+      setSuccessMessage("Tu configuración personal ha sido actualizada.");
+      setHasChanges(false);
+    }
   };
 
   const handleCancel = () => {
-    setFormData(mockUserData);
+    if (data) {
+      setFormData({
+        biografia: data.biografia || "",
+        genero_id: data.genero?.id || "",
+        timezone: data.timezone || "",
+      });
+    }
     setHasChanges(false);
   };
+
+  // Estado de carga inicial
+  if (loading && !data) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <IconLoader2 className="size-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Cargando configuración...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Avatar URL
+  const avatarUrl = data?.avatar?.url || data?.foto_perfil || `https://api.dicebear.com/7.x/bottts/svg?seed=${data?.nickname || 'default'}`;
 
   return (
     <>
@@ -131,6 +142,30 @@ export default function PersonalConfigPage() {
               </div>
             </div>
 
+            {/* Mensaje de éxito */}
+            {successMessage && (
+              <div className="px-4 lg:px-6">
+                <Card className="border-green-500/50 bg-green-500/5">
+                  <CardContent className="flex items-center gap-3 py-4">
+                    <IconCheck className="size-5 text-green-500" />
+                    <p className="text-sm text-green-500">{successMessage}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Mensaje de error */}
+            {error && (
+              <div className="px-4 lg:px-6">
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="flex items-center gap-3 py-4">
+                    <IconAlertCircle className="size-5 text-destructive" />
+                    <p className="text-sm text-destructive">{error}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             {/* Avatar y nickname */}
             <div className="px-4 lg:px-6">
               <Card>
@@ -148,9 +183,9 @@ export default function PersonalConfigPage() {
                     {/* Avatar */}
                     <div className="flex flex-col items-center gap-4">
                       <Avatar className="size-24 border-4 border-primary/20 md:size-32">
-                        <AvatarImage src={formData.avatar} alt={formData.nickname} />
+                        <AvatarImage src={avatarUrl} alt={data?.nickname || ''} />
                         <AvatarFallback className="text-2xl">
-                          {formData.nickname.slice(0, 2).toUpperCase()}
+                          {data?.nickname?.slice(0, 2).toUpperCase() || 'US'}
                         </AvatarFallback>
                       </Avatar>
                       <Button variant="outline" size="sm" disabled>
@@ -169,7 +204,7 @@ export default function PersonalConfigPage() {
                         </Label>
                         <Input
                           id="nickname"
-                          value={formData.nickname}
+                          value={data?.nickname || ''}
                           disabled
                           className="font-medium"
                         />
@@ -177,16 +212,6 @@ export default function PersonalConfigPage() {
                           Tu nickname es único y no se puede cambiar. Para cambiar tu
                           nickname, adquiere el servicio en la tienda.
                         </p>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="fullName">Nombre completo</Label>
-                        <Input
-                          id="fullName"
-                          value={formData.fullName}
-                          onChange={(e) => handleInputChange("fullName", e.target.value)}
-                          placeholder="Tu nombre completo"
-                        />
                       </div>
                     </div>
                   </div>
@@ -208,14 +233,14 @@ export default function PersonalConfigPage() {
                     <Label htmlFor="bio">Biografía</Label>
                     <textarea
                       id="bio"
-                      value={formData.bio}
-                      onChange={(e) => handleInputChange("bio", e.target.value)}
+                      value={formData.biografia}
+                      onChange={(e) => handleInputChange("biografia", e.target.value)}
                       placeholder="Cuéntanos sobre ti, tus logros, tu estilo de juego..."
                       className="border-input dark:bg-input/30 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-[120px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
-                      maxLength={500}
+                      maxLength={300}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {formData.bio.length} / 500 caracteres
+                      {formData.biografia.length} / 300 caracteres
                     </p>
                   </div>
                 </CardContent>
@@ -227,11 +252,11 @@ export default function PersonalConfigPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <IconCalendar className="size-5" />
+                    <IconMapPin className="size-5" />
                     Información Personal
                   </CardTitle>
                   <CardDescription>
-                    Detalles personales y demográficos
+                    Detalles personales y preferencias
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -240,78 +265,24 @@ export default function PersonalConfigPage() {
                     <div className="flex flex-col gap-2">
                       <Label htmlFor="gender">Género</Label>
                       <Select
-                        value={formData.gender}
-                        onValueChange={(value) => handleInputChange("gender", value)}
+                        value={formData.genero_id}
+                        onValueChange={(value) => handleInputChange("genero_id", value)}
                       >
                         <SelectTrigger id="gender" className="w-full">
                           <SelectValue placeholder="Selecciona tu género" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="male">Masculino</SelectItem>
-                          <SelectItem value="female">Femenino</SelectItem>
-                          <SelectItem value="other">Otro</SelectItem>
-                          <SelectItem value="prefer-not-to-say">
-                            Prefiero no decirlo
-                          </SelectItem>
+                          {data?.generos_disponibles?.map((genero) => (
+                            <SelectItem key={genero.id} value={genero.id}>
+                              {genero.valor}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {/* Fecha de nacimiento */}
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="dateOfBirth">Fecha de nacimiento</Label>
-                      <Input
-                        id="dateOfBirth"
-                        type="date"
-                        value={formData.dateOfBirth}
-                        onChange={(e) =>
-                          handleInputChange("dateOfBirth", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Ubicación y zona horaria */}
-            <div className="px-4 lg:px-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconMapPin className="size-5" />
-                    Ubicación y Zona Horaria
-                  </CardTitle>
-                  <CardDescription>
-                    Configura tu ubicación para una mejor experiencia en torneos
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {/* País */}
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="country">País</Label>
-                      <Input
-                        id="country"
-                        value={formData.country}
-                        onChange={(e) => handleInputChange("country", e.target.value)}
-                        placeholder="Tu país"
-                      />
-                    </div>
-
-                    {/* Ciudad */}
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="city">Ciudad</Label>
-                      <Input
-                        id="city"
-                        value={formData.city}
-                        onChange={(e) => handleInputChange("city", e.target.value)}
-                        placeholder="Tu ciudad"
-                      />
-                    </div>
-
                     {/* Zona horaria */}
-                    <div className="flex flex-col gap-2 md:col-span-2">
+                    <div className="flex flex-col gap-2">
                       <Label htmlFor="timezone">Zona horaria</Label>
                       <Select
                         value={formData.timezone}
@@ -349,7 +320,7 @@ export default function PersonalConfigPage() {
                       <Button
                         variant="outline"
                         onClick={handleCancel}
-                        disabled={isSaving}
+                        disabled={saving}
                         className="flex-1 sm:flex-none"
                       >
                         <IconX className="size-4" />
@@ -357,11 +328,15 @@ export default function PersonalConfigPage() {
                       </Button>
                       <Button
                         onClick={handleSave}
-                        disabled={isSaving}
+                        disabled={saving}
                         className="flex-1 sm:flex-none"
                       >
-                        <IconDeviceFloppy className="size-4" />
-                        {isSaving ? "Guardando..." : "Guardar cambios"}
+                        {saving ? (
+                          <IconLoader2 className="size-4 animate-spin" />
+                        ) : (
+                          <IconDeviceFloppy className="size-4" />
+                        )}
+                        {saving ? "Guardando..." : "Guardar cambios"}
                       </Button>
                     </div>
                   </CardContent>

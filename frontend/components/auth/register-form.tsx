@@ -33,10 +33,10 @@ import { IconLoader2, IconTrophy, IconEye, IconEyeOff } from "@tabler/icons-reac
 
 // Lista de géneros para el select
 const GENEROS = [
-  { value: "masculino", label: "Masculino" },
-  { value: "femenino", label: "Femenino" },
-  { value: "otro", label: "Otro" },
-  { value: "prefiero_no_decir", label: "Prefiero no decir" },
+  { value: "Masculino", label: "Masculino" },
+  { value: "Femenino", label: "Femenino" },
+  { value: "Otro", label: "Otro" },
+  { value: "Prefiero no decir", label: "Prefiero no decir" },
 ];
 
 // Lista de zonas horarias comunes
@@ -150,13 +150,16 @@ export function RegisterForm({
     if (!validateForm()) return;
 
     try {
+      // Convertir fecha a formato ISO 8601 (requerido por el backend)
+      const fechaISO = new Date(formData.fechaNacimiento).toISOString();
+      
       await register({
         nombre: formData.nombre.trim(),
         apellido: formData.apellido.trim(),
         correo: formData.correo.trim().toLowerCase(),
         nickname: formData.nickname.trim(),
         password: formData.password,
-        fechaNacimiento: formData.fechaNacimiento,
+        fechaNacimiento: fechaISO,
         genero: formData.genero || undefined,
         timezone: formData.timezone,
       });
@@ -170,10 +173,10 @@ export function RegisterForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
+      <Card className="border-border/50 bg-card/90 backdrop-blur-md shadow-xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-chart-1 to-chart-2">
-            <IconTrophy className="size-7 text-white" />
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
+            <IconTrophy className="size-8 text-white" />
           </div>
           <CardTitle className="text-xl">Crear cuenta</CardTitle>
           <CardDescription>

@@ -1,6 +1,8 @@
+import { CatalogoEstadoTorneo } from "src/modules/catalogo-estado-torneo/entities/catalogo-estado-torneo.entity";
 import { CatalogoPlataforma } from "src/modules/catalogo-plataforma/entities/catalogo-plataforma.entity";
 import { CatalogoRegion } from "src/modules/catalogo-region/entities/catalogo-region.entity";
 import { CatalogoTipoEntrada } from "src/modules/catalogo-tipo-entrada/entities/catalogo-tipo-entrada.entity";
+import { CatalogoTipoTorneo } from "src/modules/catalogo-tipo-torneo/entities/catalogo-tipo-torneo.entity";
 import { Juego } from "src/modules/juego/entities/juego.entity";
 import { ModoJuego } from "src/modules/modo-juego/entities/modo-juego.entity";
 import { TorneoInscripcion } from "src/modules/torneo-inscripcion/entities/torneo-inscripcion.entity";
@@ -8,7 +10,7 @@ import { TorneoPremio } from "src/modules/torneo-premio/entities/torneo-premio.e
 import { TorneoRed } from "src/modules/torneo-red/entities/torneo-red.entity";
 import { TorneoResultado } from "src/modules/torneo-resultado/entities/torneo-resultado.entity";
 import { Usuario } from "src/modules/usuario/entities/usuario.entity";
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity({ name: 'torneo' })
 export class Torneo {
@@ -61,6 +63,16 @@ fechaInicioTorneo?: Date;
 region: CatalogoRegion;
 
 
+@ManyToOne(() => CatalogoEstadoTorneo)
+@JoinColumn({ name: 'estado_id' })
+estado: CatalogoEstadoTorneo;
+
+
+@ManyToOne(() => CatalogoTipoTorneo)
+@JoinColumn({ name: 'tipo_torneo_id' })
+tipoTorneoRelacion: CatalogoTipoTorneo;
+
+
 @Column({ name: 'tipo_torneo', nullable: true })
 tipoTorneo?: string;
 
@@ -102,6 +114,30 @@ tipoEntrada: CatalogoTipoEntrada;
 capacidad?: number;
 
 
+@Column({ name: 'banner_url', nullable: true })
+bannerUrl?: string;
+
+
+@Column({ name: 'miniatura_url', nullable: true })
+miniaturaUrl?: string;
+
+
+@Column({ name: 'contacto_anfitrion', nullable: true })
+contactoAnfitrion?: string;
+
+
+@Column({ name: 'discord_servidor', nullable: true })
+discordServidor?: string;
+
+
+@CreateDateColumn({ name: 'creado_en' })
+creadoEn: Date;
+
+
+@UpdateDateColumn({ name: 'actualizado_en' })
+actualizadoEn: Date;
+
+
 @OneToMany(() => TorneoInscripcion, (ti) => ti.torneo)
 inscripciones: TorneoInscripcion[];
 
@@ -110,8 +146,8 @@ inscripciones: TorneoInscripcion[];
 redes: TorneoRed[];
 
 
-@OneToMany(() => TorneoPremio, (tp) => tp.torneo)
-premios: TorneoPremio[];
+@OneToOne(() => TorneoPremio, (tp) => tp.torneo)
+premio: TorneoPremio;
 
 
 @OneToMany(() => TorneoResultado, (tr) => tr.torneo)

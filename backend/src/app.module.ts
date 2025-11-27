@@ -17,6 +17,7 @@ import { CatalogoRegionModule } from './modules/catalogo-region/catalogo-region.
 import { CatalogoRolModule } from './modules/catalogo-rol/catalogo-rol.module';
 import { CatalogoTipoEntradaModule } from './modules/catalogo-tipo-entrada/catalogo-tipo-entrada.module';
 import { CatalogoTipoItemModule } from './modules/catalogo-tipo-item/catalogo-tipo-item.module';
+import { CatalogoTipoTorneoModule } from './modules/catalogo-tipo-torneo/catalogo-tipo-torneo.module';
 import { CatalogoTransaccionTipoModule } from './modules/catalogo-transaccion-tipo/catalogo-transaccion-tipo.module';
 import { EquipoModule } from './modules/equipo/equipo.module';
 import { EquipoMiembroModule } from './modules/equipo-miembro/equipo-miembro.module';
@@ -75,6 +76,7 @@ import { SeederModule } from './database/seeds/seeder.module';
     CatalogoRolModule,
     CatalogoTipoEntradaModule,
     CatalogoTipoItemModule,
+    CatalogoTipoTorneoModule,
     CatalogoTransaccionTipoModule,
     EquipoModule,
     EquipoMiembroModule,

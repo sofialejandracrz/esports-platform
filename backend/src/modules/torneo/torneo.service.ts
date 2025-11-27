@@ -86,7 +86,7 @@ export class TorneoService {
   async findOne(id: string): Promise<Torneo> {
     const torneo = await this.torneoRepository.findOne({
       where: { id },
-      relations: ['anfitrion', 'juego', 'plataforma', 'modoJuego', 'region', 'tipoEntrada', 'inscripciones', 'redes', 'premios', 'resultados'],
+      relations: ['anfitrion', 'juego', 'plataforma', 'modoJuego', 'region', 'tipoEntrada', 'inscripciones', 'redes', 'premio', 'resultados', 'estado', 'tipoTorneoRelacion'],
     });
 
     if (!torneo) {

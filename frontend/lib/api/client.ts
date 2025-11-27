@@ -45,10 +45,26 @@ export async function apiFetch<T>(
     throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
   }
 
-  const data = await response.json();
+  // Manejar respuestas sin contenido (204 No Content)
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    if (!response.ok) {
+      throw new Error('Error en la solicitud');
+    }
+    return undefined as T;
+  }
+
+  // Intentar parsear JSON, manejar respuestas vacías
+  let data: T;
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const text = await response.text();
+    data = text ? JSON.parse(text) : undefined;
+  } else {
+    data = undefined as T;
+  }
 
   if (!response.ok) {
-    throw new Error(data.message || 'Error en la solicitud');
+    throw new Error((data as any)?.message || 'Error en la solicitud');
   }
 
   return data as T;

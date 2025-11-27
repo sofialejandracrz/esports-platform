@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   IconCash,
   IconClock,
@@ -12,6 +12,8 @@ import {
   IconCircleCheck,
   IconCircleX,
   IconLoader,
+  IconLoader2,
+  IconAlertCircle,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +26,7 @@ import {
 } from "@/components/ui/card";
 import { SiteHeader } from "@/components/usuario/site-header";
 import { Badge } from "@/components/ui/badge";
+import { useConfiguracion } from "@/hooks/use-configuracion";
 
 interface WithdrawalHistory {
   id: string;
@@ -34,23 +37,42 @@ interface WithdrawalHistory {
   paypalEmail: string;
 }
 
-// Datos mock del usuario actual
-const mockUserBalance = {
-  available: "0.00",
-  pending: "0.00",
-  total: "0.00",
-  currency: "USD",
-  minimumWithdrawal: "10.00",
-};
-
-// Historial mock de retiros
-const mockWithdrawalHistory: WithdrawalHistory[] = [
-  // Se mostrarán cuando haya retiros reales
-];
-
 export default function RetiroPage() {
-  const [userBalance] = useState(mockUserBalance);
-  const [withdrawalHistory] = useState(mockWithdrawalHistory);
+  const { configuracion, isLoading, error } = useConfiguracion();
+  const [userBalance, setUserBalance] = useState({
+    available: "0.00",
+    pending: "0.00",
+    total: "0.00",
+    currency: "USD",
+    minimumWithdrawal: "10.00",
+  });
+  const [withdrawalHistory, setWithdrawalHistory] = useState<WithdrawalHistory[]>([]);
+
+  // Cargar datos desde la configuración
+  useEffect(() => {
+    if (configuracion?.retiro) {
+      setUserBalance({
+        available: configuracion.retiro.saldo_disponible || "0.00",
+        pending: "0.00", // No existe en el tipo, valor por defecto
+        total: configuracion.retiro.saldo_disponible || "0.00", // Usamos saldo_disponible como total
+        currency: "USD", // Valor por defecto
+        minimumWithdrawal: "10.00", // Valor por defecto
+      });
+
+      // Si hay historial de retiros, convertirlo
+      if (configuracion.retiro.historial_retiros && Array.isArray(configuracion.retiro.historial_retiros)) {
+        const history: WithdrawalHistory[] = configuracion.retiro.historial_retiros.map((retiro: any) => ({
+          id: retiro.id?.toString() || `${Date.now()}`,
+          amount: retiro.monto?.toString() || "0.00",
+          currency: retiro.divisa || "USD",
+          status: retiro.estado || "pending",
+          date: retiro.fecha || new Date().toISOString(),
+          paypalEmail: retiro.paypal_email || configuracion.retiro.correo_paypal || "",
+        }));
+        setWithdrawalHistory(history);
+      }
+    }
+  }, [configuracion?.retiro]);
 
   const canWithdraw = parseFloat(userBalance.available) >= parseFloat(userBalance.minimumWithdrawal);
 
@@ -79,6 +101,35 @@ export default function RetiroPage() {
         );
     }
   };
+
+  // Estado de carga
+  if (isLoading) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconLoader2 className="size-8 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Cargando configuración...</p>
+        </div>
+      </>
+    );
+  }
+
+  // Estado de error
+  if (error) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconAlertCircle className="size-8 text-destructive" />
+          <p className="mt-4 text-destructive">{error}</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

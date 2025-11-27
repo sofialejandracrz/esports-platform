@@ -13,10 +13,13 @@ import { CatalogoTipoEntrada } from '../../modules/catalogo-tipo-entrada/entitie
 import { CatalogoTipoItem } from '../../modules/catalogo-tipo-item/entities/catalogo-tipo-item.entity';
 import { CatalogoTransaccionTipo } from '../../modules/catalogo-transaccion-tipo/entities/catalogo-transaccion-tipo.entity';
 import { CatalogoAvatar } from '../../modules/catalogo-avatar/entities/catalogo-avatar.entity';
+import { CatalogoTipoTorneo } from '../../modules/catalogo-tipo-torneo/entities/catalogo-tipo-torneo.entity';
 import { MembresiaTipo } from '../../modules/membresia-tipo/entities/membresia-tipo.entity';
 import { TiendaItem } from '../../modules/tienda-item/entities/tienda-item.entity';
 import { Persona } from '../../modules/persona/entities/persona.entity';
 import { Usuario } from '../../modules/usuario/entities/usuario.entity';
+import { Juego } from '../../modules/juego/entities/juego.entity';
+import { ModoJuego } from '../../modules/modo-juego/entities/modo-juego.entity';
 import { SeederService } from './seeder.service';
 
 @Module({
@@ -51,10 +54,13 @@ import { SeederService } from './seeder.service';
       CatalogoTipoItem,
       CatalogoTransaccionTipo,
       CatalogoAvatar,
+      CatalogoTipoTorneo,
       MembresiaTipo,
       TiendaItem,
       Persona,
       Usuario,
+      Juego,
+      ModoJuego,
     ]),
   ],
   providers: [SeederService],

@@ -11,6 +11,8 @@ import {
   IconTrophy,
   IconClock,
   IconCoins,
+  IconLoader2,
+  IconAlertCircle,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,26 +26,35 @@ import {
 import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/usuario/site-header";
 import { Badge } from "@/components/ui/badge";
+import { useConfiguracion } from "@/hooks/use-configuracion";
+import { actualizarPreferencias } from "@/lib/api/configuracion";
 
 interface PreferencesData {
   desafiosHabilitados: boolean;
 }
 
-// Datos mock del usuario actual
-const mockPreferencesData: PreferencesData = {
-  desafiosHabilitados: true,
-};
-
 export default function PreferenciasPage() {
-  const [preferences, setPreferences] = useState<PreferencesData>(mockPreferencesData);
+  const { configuracion, isLoading, error, refreshSection } = useConfiguracion();
+  const [preferences, setPreferences] = useState<PreferencesData>({
+    desafiosHabilitados: true,
+  });
+  const [originalPreferences, setOriginalPreferences] = useState<PreferencesData>({
+    desafiosHabilitados: true,
+  });
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Cargar datos iniciales desde la configuración
   useEffect(() => {
-    // Simular obtención de datos del usuario desde API
-    // En producción, esto vendría de un endpoint con el JWT
-    setPreferences(mockPreferencesData);
-  }, []);
+    if (configuracion?.preferencias) {
+      const prefs: PreferencesData = {
+        desafiosHabilitados: configuracion.preferencias.desafios_habilitados ?? true,
+      };
+      setPreferences(prefs);
+      setOriginalPreferences(prefs);
+    }
+  }, [configuracion?.preferencias]);
 
   const handleToggleDesafios = () => {
     setPreferences((prev) => ({
@@ -55,29 +66,58 @@ export default function PreferenciasPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveError(null);
 
-    // Simular llamada a API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      await actualizarPreferencias({
+        desafios_habilitados: preferences.desafiosHabilitados,
+      });
 
-    console.log("Preferencias guardadas:", preferences);
-    setIsSaving(false);
-    setHasChanges(false);
-
-    // En producción: hacer PUT/PATCH a la API con JWT
-    // const response = await fetch('/api/usuario/preferencias', {
-    //   method: 'PATCH',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify(preferences)
-    // });
+      await refreshSection("preferencias");
+      setOriginalPreferences(preferences);
+      setHasChanges(false);
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      setSaveError("Error al guardar los cambios");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    setPreferences(mockPreferencesData);
+    setPreferences(originalPreferences);
     setHasChanges(false);
+    setSaveError(null);
   };
+
+  // Estado de carga
+  if (isLoading) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconLoader2 className="size-8 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Cargando configuración...</p>
+        </div>
+      </>
+    );
+  }
+
+  // Estado de error
+  if (error) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconAlertCircle className="size-8 text-destructive" />
+          <p className="mt-4 text-destructive">{error}</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -96,6 +136,18 @@ export default function PreferenciasPage() {
                 </p>
               </div>
             </div>
+
+            {/* Error de guardado */}
+            {saveError && (
+              <div className="px-4 lg:px-6">
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="flex items-center gap-3 py-4">
+                    <IconAlertCircle className="size-5 text-destructive" />
+                    <p className="text-sm text-destructive">{saveError}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Configuración de desafíos */}
             <div className="px-4 lg:px-6">
@@ -144,6 +196,7 @@ export default function PreferenciasPage() {
                         variant="ghost"
                         size="icon"
                         onClick={handleToggleDesafios}
+                        disabled={isSaving}
                         className="mt-1 size-12 shrink-0"
                       >
                         {preferences.desafiosHabilitados ? (
@@ -327,7 +380,11 @@ export default function PreferenciasPage() {
                         disabled={isSaving}
                         className="flex-1 sm:flex-none"
                       >
-                        <IconDeviceFloppy className="size-4" />
+                        {isSaving ? (
+                          <IconLoader2 className="size-4 animate-spin" />
+                        ) : (
+                          <IconDeviceFloppy className="size-4" />
+                        )}
                         {isSaving ? "Guardando..." : "Guardar cambios"}
                       </Button>
                     </div>

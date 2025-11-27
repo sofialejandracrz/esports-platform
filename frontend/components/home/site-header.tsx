@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Input } from "@/components/ui/input"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { IconSearch, IconBell, IconLogin } from "@tabler/icons-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
@@ -36,6 +37,9 @@ export function SiteHeader() {
             <IconSearch className="size-5" />
             <span className="sr-only">Buscar</span>
           </Button>
+          
+          {/* Theme Toggle */}
+          <ThemeToggle />
           
           {isLoading ? (
             <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />

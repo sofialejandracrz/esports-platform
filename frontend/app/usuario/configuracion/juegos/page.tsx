@@ -7,11 +7,9 @@ import {
   IconPlus,
   IconTrash,
   IconDeviceGamepad2,
-  IconBrandXbox,
-  IconPlaystationX,
-  IconBrandSteam,
-  IconDeviceDesktop,
   IconInfoCircle,
+  IconLoader2,
+  IconAlertCircle,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,150 +31,105 @@ import {
 } from "@/components/ui/select";
 import { SiteHeader } from "@/components/usuario/site-header";
 import { Badge } from "@/components/ui/badge";
+import { useConfiguracion } from "@/hooks/use-configuracion";
+import { upsertCuentaJuego, eliminarCuentaJuego } from "@/lib/api/configuracion";
 
 interface GameAccount {
   id: string;
-  plataforma: string;
+  plataforma_id: string;
+  plataforma: string; // nombre de la plataforma
   identificador: string;
+  isNew?: boolean;
 }
 
-// Plataformas de juego disponibles según context.txt
-const gamePlatforms = [
-  {
-    value: "PlayStation",
-    label: "PlayStation Network",
-    icon: IconPlaystationX,
-    color: "text-blue-500",
-    placeholder: "Tu PSN ID",
-    description: "ID de PlayStation Network",
-  },
-  {
-    value: "Xbox",
-    label: "Xbox Live",
-    icon: IconBrandXbox,
-    color: "text-green-500",
-    placeholder: "Tu Gamertag",
-    description: "Gamertag de Xbox Live",
-  },
-  {
-    value: "PC",
-    label: "Steam",
-    icon: IconBrandSteam,
-    color: "text-slate-400",
-    placeholder: "Tu Steam ID",
-    description: "Steam ID o nombre de usuario",
-  },
-  {
-    value: "Epic",
-    label: "Epic Games",
-    icon: IconDeviceDesktop,
-    color: "text-gray-400",
-    placeholder: "Tu Epic ID",
-    description: "Epic Games Display Name",
-  },
-  {
-    value: "Activision",
-    label: "Activision ID",
-    icon: IconDeviceGamepad2,
-    color: "text-orange-500",
-    placeholder: "Tu Activision ID",
-    description: "Activision ID (Call of Duty)",
-  },
-  {
-    value: "Riot",
-    label: "Riot ID",
-    icon: IconDeviceGamepad2,
-    color: "text-red-500",
-    placeholder: "Nombre#TAG",
-    description: "Riot ID (League of Legends, Valorant)",
-  },
-  {
-    value: "EA",
-    label: "EA ID",
-    icon: IconDeviceGamepad2,
-    color: "text-blue-400",
-    placeholder: "Tu EA ID",
-    description: "EA ID (FIFA, Apex Legends)",
-  },
-  {
-    value: "Ubisoft",
-    label: "Ubisoft Connect",
-    icon: IconDeviceGamepad2,
-    color: "text-indigo-500",
-    placeholder: "Tu Ubisoft ID",
-    description: "Ubisoft Connect Username",
-  },
-  {
-    value: "Rogue",
-    label: "Rogue Company ID",
-    icon: IconDeviceGamepad2,
-    color: "text-purple-500",
-    placeholder: "Tu Rogue ID",
-    description: "Rogue Company Player ID",
-  },
-  {
-    value: "Movil",
-    label: "Móvil (General)",
-    icon: IconDeviceGamepad2,
-    color: "text-pink-500",
-    placeholder: "Tu ID de juego móvil",
-    description: "ID de plataforma móvil",
-  },
-];
-
-// Datos mock del usuario actual
-const mockGameAccounts: GameAccount[] = [
-  {
-    id: "1",
-    plataforma: "PlayStation",
-    identificador: "jugador1_psn",
-  },
-  {
-    id: "2",
-    plataforma: "Xbox",
-    identificador: "Jugador1",
-  },
-  {
-    id: "3",
-    plataforma: "Steam",
-    identificador: "jugador1_steam",
-  },
-];
+interface PlataformaDisponible {
+  id: string;
+  valor: string;
+}
 
 export default function GameConfigPage() {
-  const [gameAccounts, setGameAccounts] = useState<GameAccount[]>(mockGameAccounts);
+  const { configuracion, isLoading, error, refreshSection } = useConfiguracion();
+  const [gameAccounts, setGameAccounts] = useState<GameAccount[]>([]);
+  const [originalAccounts, setOriginalAccounts] = useState<GameAccount[]>([]);
+  const [plataformas, setPlataformas] = useState<PlataformaDisponible[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Cargar datos iniciales desde la configuración
   useEffect(() => {
-    // Simular obtención de datos del usuario desde API
-    // En producción, esto vendría de un endpoint con el JWT
-    setGameAccounts(mockGameAccounts);
-  }, []);
+    if (configuracion?.juegos) {
+      // Cargar plataformas disponibles del catálogo
+      if (configuracion.juegos.plataformas_disponibles) {
+        setPlataformas(configuracion.juegos.plataformas_disponibles);
+      }
+      
+      // Cargar cuentas existentes
+      if (configuracion.juegos.cuentas_juego) {
+        const accounts: GameAccount[] = configuracion.juegos.cuentas_juego.map((cuenta: any) => ({
+          id: cuenta.id?.toString() || `existing-${Date.now()}-${Math.random()}`,
+          plataforma_id: cuenta.plataforma_id || "",
+          plataforma: cuenta.plataforma || "",
+          identificador: cuenta.identificador || "",
+          isNew: false,
+        }));
+        setGameAccounts(accounts);
+        setOriginalAccounts(accounts);
+      }
+    }
+  }, [configuracion?.juegos]);
 
   const handleAddAccount = () => {
     const newAccount: GameAccount = {
       id: `new-${Date.now()}`,
+      plataforma_id: "",
       plataforma: "",
       identificador: "",
+      isNew: true,
     };
     setGameAccounts([...gameAccounts, newAccount]);
     setHasChanges(true);
   };
 
-  const handleRemoveAccount = (id: string) => {
-    setGameAccounts(gameAccounts.filter((account) => account.id !== id));
+  const handleRemoveAccount = async (id: string) => {
+    const account = gameAccounts.find((a) => a.id === id);
+    
+    // Si es una cuenta existente (no nueva), eliminarla del backend
+    if (account && !account.isNew && account.id && !account.id.startsWith("new-")) {
+      try {
+        setIsSaving(true);
+        setSaveError(null);
+        await eliminarCuentaJuego(account.id);
+        await refreshSection("juegos");
+      } catch (err) {
+        setSaveError("Error al eliminar la cuenta de juego");
+        console.error(err);
+        setIsSaving(false);
+        return;
+      }
+      setIsSaving(false);
+    }
+    
+    setGameAccounts(gameAccounts.filter((a) => a.id !== id));
     setHasChanges(true);
   };
 
-  const handleUpdateAccount = (
-    id: string,
-    field: "plataforma" | "identificador",
-    value: string
-  ) => {
+  const handleUpdatePlataforma = (id: string, plataformaId: string) => {
+    const plataforma = plataformas.find(p => p.id === plataformaId);
     setGameAccounts(
       gameAccounts.map((account) =>
-        account.id === id ? { ...account, [field]: value } : account
+        account.id === id 
+          ? { ...account, plataforma_id: plataformaId, plataforma: plataforma?.valor || "" } 
+          : account
+      )
+    );
+    setHasChanges(true);
+  };
+
+  const handleUpdateIdentificador = (id: string, value: string) => {
+    setGameAccounts(
+      gameAccounts.map((account) =>
+        account.id === id ? { ...account, identificador: value } : account
       )
     );
     setHasChanges(true);
@@ -184,52 +137,80 @@ export default function GameConfigPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveError(null);
 
-    // Filtrar cuentas vacías o incompletas
-    const validAccounts = gameAccounts.filter(
-      (account) => account.plataforma && account.identificador.trim()
-    );
+    try {
+      // Solo guardar las cuentas nuevas y válidas
+      const newAccounts = gameAccounts.filter(
+        (account) => account.isNew && account.plataforma_id && account.identificador.trim()
+      );
 
-    // Simular llamada a API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Crear cada nueva cuenta en el backend
+      for (const account of newAccounts) {
+        await upsertCuentaJuego({
+          plataforma_id: account.plataforma_id,
+          identificador: account.identificador,
+        });
+      }
 
-    console.log("Cuentas guardadas:", validAccounts);
-    setGameAccounts(validAccounts);
-    setIsSaving(false);
-    setHasChanges(false);
-
-    // En producción: hacer PUT/PATCH a la API con JWT
-    // const response = await fetch('/api/usuario/cuentas-juego', {
-    //   method: 'PATCH',
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`,
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify(validAccounts)
-    // });
+      // Refrescar datos desde el backend
+      await refreshSection("juegos");
+      setHasChanges(false);
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      setSaveError("Error al guardar los cambios");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    setGameAccounts(mockGameAccounts);
+    setGameAccounts(originalAccounts);
     setHasChanges(false);
+    setSaveError(null);
   };
 
-  const getPlatformInfo = (platformValue: string) => {
-    return gamePlatforms.find((p) => p.value === platformValue);
+  // Obtener plataformas ya usadas para evitar duplicados
+  const getUsedPlatformIds = () => {
+    return gameAccounts.map((account) => account.plataforma_id).filter(Boolean);
   };
 
-  const getUsedPlatforms = () => {
-    return gameAccounts.map((account) => account.plataforma).filter(Boolean);
-  };
-
-  const getAvailablePlatforms = (currentPlatform: string) => {
-    const usedPlatforms = getUsedPlatforms();
-    return gamePlatforms.filter(
-      (platform) =>
-        !usedPlatforms.includes(platform.value) ||
-        platform.value === currentPlatform
+  // Obtener plataformas disponibles para un selector específico
+  const getAvailablePlatforms = (currentPlataformaId: string) => {
+    const usedIds = getUsedPlatformIds();
+    return plataformas.filter(
+      (p) => !usedIds.includes(p.id) || p.id === currentPlataformaId
     );
   };
+
+  // Estado de carga
+  if (isLoading) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconLoader2 className="size-8 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Cargando configuración...</p>
+        </div>
+      </>
+    );
+  }
+
+  // Estado de error
+  if (error) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col items-center justify-center min-h-[400px]">
+          <IconAlertCircle className="size-8 text-destructive" />
+          <p className="mt-4 text-destructive">{error}</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+            Reintentar
+          </Button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -250,6 +231,18 @@ export default function GameConfigPage() {
               </div>
             </div>
 
+            {/* Error de guardado */}
+            {saveError && (
+              <div className="px-4 lg:px-6">
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="flex items-center gap-3 py-4">
+                    <IconAlertCircle className="size-5 text-destructive" />
+                    <p className="text-sm text-destructive">{saveError}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             {/* Lista de cuentas de juego */}
             <div className="px-4 lg:px-6">
               <Card>
@@ -269,7 +262,7 @@ export default function GameConfigPage() {
                       onClick={handleAddAccount}
                       size="sm"
                       className="w-full sm:w-auto"
-                      disabled={gameAccounts.length >= gamePlatforms.length}
+                      disabled={gameAccounts.length >= plataformas.length}
                     >
                       <IconPlus className="size-4" />
                       Agregar cuenta
@@ -295,12 +288,8 @@ export default function GameConfigPage() {
                         </Button>
                       </div>
                     ) : (
-                      gameAccounts.map((account, index) => {
-                        const platformInfo = getPlatformInfo(account.plataforma);
-                        const availablePlatforms = getAvailablePlatforms(
-                          account.plataforma
-                        );
-                        const PlatformIcon = platformInfo?.icon || IconDeviceGamepad2;
+                      gameAccounts.map((account) => {
+                        const availablePlatforms = getAvailablePlatforms(account.plataforma_id);
 
                         return (
                           <div
@@ -309,26 +298,30 @@ export default function GameConfigPage() {
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-3">
-                                <div
-                                  className={`rounded-full bg-muted p-2 ${platformInfo?.color || "text-foreground"}`}
-                                >
-                                  <PlatformIcon className="size-5" />
+                                <div className="rounded-full bg-muted p-2 text-primary">
+                                  <IconDeviceGamepad2 className="size-5" />
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-sm font-medium">
-                                    {platformInfo?.label || "Seleccionar plataforma"}
+                                    {account.plataforma || "Seleccionar plataforma"}
                                   </span>
-                                  {platformInfo && (
+                                  {account.identificador && (
                                     <span className="text-xs text-muted-foreground">
-                                      {platformInfo.description}
+                                      {account.identificador}
                                     </span>
                                   )}
                                 </div>
+                                {account.isNew && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Nuevo
+                                  </Badge>
+                                )}
                               </div>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleRemoveAccount(account.id)}
+                                disabled={isSaving}
                                 className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <IconTrash className="size-4" />
@@ -343,19 +336,16 @@ export default function GameConfigPage() {
                                   <span className="ml-1 text-destructive">*</span>
                                 </Label>
                                 <Select
-                                  value={account.plataforma}
+                                  value={account.plataforma_id}
                                   onValueChange={(value) =>
-                                    handleUpdateAccount(
-                                      account.id,
-                                      "plataforma",
-                                      value
-                                    )
+                                    handleUpdatePlataforma(account.id, value)
                                   }
+                                  disabled={!account.isNew}
                                 >
                                   <SelectTrigger
                                     id={`platform-${account.id}`}
                                     className={
-                                      !account.plataforma
+                                      !account.plataforma_id
                                         ? "border-destructive/50"
                                         : ""
                                     }
@@ -363,25 +353,20 @@ export default function GameConfigPage() {
                                     <SelectValue placeholder="Selecciona una plataforma" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {availablePlatforms.map((platform) => {
-                                      const Icon = platform.icon;
-                                      return (
-                                        <SelectItem
-                                          key={platform.value}
-                                          value={platform.value}
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <Icon
-                                              className={`size-4 ${platform.color}`}
-                                            />
-                                            <span>{platform.label}</span>
-                                          </div>
-                                        </SelectItem>
-                                      );
-                                    })}
+                                    {availablePlatforms.map((platform) => (
+                                      <SelectItem
+                                        key={platform.id}
+                                        value={platform.id}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <IconDeviceGamepad2 className="size-4" />
+                                          <span>{platform.valor}</span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
-                                {!account.plataforma && (
+                                {!account.plataforma_id && (
                                   <p className="text-xs text-destructive">
                                     Selecciona una plataforma
                                   </p>
@@ -398,30 +383,19 @@ export default function GameConfigPage() {
                                   id={`identifier-${account.id}`}
                                   value={account.identificador}
                                   onChange={(e) =>
-                                    handleUpdateAccount(
-                                      account.id,
-                                      "identificador",
-                                      e.target.value
-                                    )
+                                    handleUpdateIdentificador(account.id, e.target.value)
                                   }
-                                  placeholder={
-                                    platformInfo?.placeholder ||
-                                    "Ingresa tu ID de usuario"
-                                  }
+                                  placeholder="Ingresa tu ID de usuario"
                                   className={
                                     !account.identificador.trim()
                                       ? "border-destructive/50"
                                       : ""
                                   }
+                                  disabled={!account.isNew}
                                 />
                                 {!account.identificador.trim() && (
                                   <p className="text-xs text-destructive">
                                     Ingresa tu identificador
-                                  </p>
-                                )}
-                                {platformInfo && account.plataforma === "Riot" && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Formato: NombreDeUsuario#TAG (ejemplo: Player#NA1)
                                   </p>
                                 )}
                               </div>
@@ -460,9 +434,6 @@ export default function GameConfigPage() {
                       <ul className="ml-4 list-disc space-y-0.5 text-sm text-muted-foreground">
                         <li>Verifica que tus IDs estén escritos correctamente</li>
                         <li>
-                          Para Riot ID, usa el formato completo: Nombre#TAG
-                        </li>
-                        <li>
                           Puedes vincular múltiples plataformas según tus preferencias
                         </li>
                         <li>
@@ -475,62 +446,8 @@ export default function GameConfigPage() {
               </Card>
             </div>
 
-            {/* Guía rápida de plataformas */}
-            <div className="px-4 lg:px-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Guía rápida de plataformas
-                  </CardTitle>
-                  <CardDescription>
-                    Información sobre dónde encontrar tus IDs
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {[
-                      {
-                        platform: "PlayStation Network",
-                        info: "Configuración → Perfil → ID en línea",
-                      },
-                      {
-                        platform: "Xbox Live",
-                        info: "Mi perfil → Gamertag",
-                      },
-                      {
-                        platform: "Steam",
-                        info: "Perfil → Editar perfil → URL personalizada",
-                      },
-                      {
-                        platform: "Epic Games",
-                        info: "Cuenta → Información general → Nombre para mostrar",
-                      },
-                      {
-                        platform: "Riot ID",
-                        info: "Configuración → Riot ID (Nombre#TAG)",
-                      },
-                      {
-                        platform: "EA / Activision",
-                        info: "Revisa tu perfil en el juego correspondiente",
-                      },
-                    ].map((guide, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col gap-1 rounded-lg border bg-muted/30 p-3"
-                      >
-                        <p className="text-sm font-medium">{guide.platform}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {guide.info}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
             {/* Botones de acción */}
-            {hasChanges && (
+            {hasChanges && gameAccounts.some((a) => a.isNew) && (
               <div className="sticky bottom-4 px-4 lg:px-6">
                 <Card className="border-primary/50 bg-card/95 backdrop-blur-sm">
                   <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -552,7 +469,11 @@ export default function GameConfigPage() {
                         disabled={isSaving}
                         className="flex-1 sm:flex-none"
                       >
-                        <IconDeviceFloppy className="size-4" />
+                        {isSaving ? (
+                          <IconLoader2 className="size-4 animate-spin" />
+                        ) : (
+                          <IconDeviceFloppy className="size-4" />
+                        )}
                         {isSaving ? "Guardando..." : "Guardar cambios"}
                       </Button>
                     </div>

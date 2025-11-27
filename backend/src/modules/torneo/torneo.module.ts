@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TorneoService } from './torneo.service';
 import { TorneoController } from './torneo.controller';
+import { TorneoFuncionesService } from './torneo-funciones.service';
+import { TorneoFuncionesController } from './torneo-funciones.controller';
 import { Torneo } from './entities/torneo.entity';
 import { Usuario } from '../usuario/entities/usuario.entity';
 import { Juego } from '../juego/entities/juego.entity';
@@ -12,8 +14,8 @@ import { CatalogoTipoEntrada } from '../catalogo-tipo-entrada/entities/catalogo-
 
 @Module({
   imports: [TypeOrmModule.forFeature([Torneo, Usuario, Juego, CatalogoPlataforma, ModoJuego, CatalogoRegion, CatalogoTipoEntrada])],
-  controllers: [TorneoController],
-  providers: [TorneoService],
-  exports: [TorneoService],
+  controllers: [TorneoController, TorneoFuncionesController],
+  providers: [TorneoService, TorneoFuncionesService],
+  exports: [TorneoService, TorneoFuncionesService],
 })
 export class TorneoModule {}
