@@ -16,6 +16,8 @@ import { CatalogoAvatar } from '../../modules/catalogo-avatar/entities/catalogo-
 import { CatalogoTipoTorneo } from '../../modules/catalogo-tipo-torneo/entities/catalogo-tipo-torneo.entity';
 import { MembresiaTipo } from '../../modules/membresia-tipo/entities/membresia-tipo.entity';
 import { TiendaItem } from '../../modules/tienda-item/entities/tienda-item.entity';
+import { TiendaOrden } from '../../modules/tienda-orden/entities/tienda-orden.entity';
+import { TiendaSolicitudSoporte } from '../../modules/tienda-solicitud-soporte/entities/tienda-solicitud-soporte.entity';
 import { Persona } from '../../modules/persona/entities/persona.entity';
 import { Usuario } from '../../modules/usuario/entities/usuario.entity';
 import { Juego } from '../../modules/juego/entities/juego.entity';
@@ -57,6 +59,8 @@ import { SeederService } from './seeder.service';
       CatalogoTipoTorneo,
       MembresiaTipo,
       TiendaItem,
+      TiendaOrden,
+      TiendaSolicitudSoporte,
       Persona,
       Usuario,
       Juego,

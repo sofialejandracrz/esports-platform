@@ -39,6 +39,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/home/app-sidebar';
+import { SiteHeader } from '@/components/home/site-header';
+import { SiteFooter } from '@/components/home/site-footer';
 import { usePerfil } from "@/hooks/use-perfil";
 import { useAuth } from "@/contexts/auth-context";
 import {
@@ -307,48 +311,96 @@ export default function PerfilUsuarioPage() {
   // Estado de carga
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <IconLoader2 className="size-12 animate-spin text-primary" />
-          <p className="text-muted-foreground">Cargando perfil...</p>
-        </div>
-      </div>
+      <SidebarProvider
+        style={{
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties}
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col">
+            <main className="flex-1">
+              <div className="flex flex-1 items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                  <IconLoader2 className="size-12 animate-spin text-primary" />
+                  <p className="text-muted-foreground">Cargando perfil...</p>
+                </div>
+              </div>
+            </main>
+            <SiteFooter />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
   // Estado de error
   if (error) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="flex flex-col items-center gap-4 pt-6">
-            <IconUsers className="size-12 text-muted-foreground" />
-            <p className="text-center text-muted-foreground">{error}</p>
-            <Button asChild variant="outline">
-              <Link href="/dashboard">Volver al inicio</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <SidebarProvider
+        style={{
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties}
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col">
+            <main className="flex-1">
+              <div className="flex flex-1 items-center justify-center">
+                <Card className="max-w-md">
+                  <CardContent className="flex flex-col items-center gap-4 pt-6">
+                    <IconUsers className="size-12 text-muted-foreground" />
+                    <p className="text-center text-muted-foreground">{error}</p>
+                    <Button asChild variant="outline">
+                      <Link href="/dashboard">Volver al inicio</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </main>
+            <SiteFooter />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
   // Si no hay perfil
   if (!perfil) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="flex flex-col items-center gap-4 pt-6">
-            <IconUsers className="size-12 text-muted-foreground" />
-            <p className="text-center text-muted-foreground">
-              Usuario no encontrado
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/dashboard">Volver al inicio</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <SidebarProvider
+        style={{
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
+        } as React.CSSProperties}
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col">
+            <main className="flex-1">
+              <div className="flex flex-1 items-center justify-center">
+                <Card className="max-w-md">
+                  <CardContent className="flex flex-col items-center gap-4 pt-6">
+                    <IconUsers className="size-12 text-muted-foreground" />
+                    <p className="text-center text-muted-foreground">
+                      Usuario no encontrado
+                    </p>
+                    <Button asChild variant="outline">
+                      <Link href="/dashboard">Volver al inicio</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </main>
+            <SiteFooter />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
@@ -380,22 +432,32 @@ export default function PerfilUsuarioPage() {
   };
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-4">
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-          {/* Barra superior con navegación y tema */}
-          <div className="flex items-center justify-between px-4 lg:px-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="flex items-center gap-2"
-            >
-              <IconArrowLeft className="size-4" />
-              Volver
-            </Button>
-            <ThemeToggle />
-          </div>
+    <SidebarProvider
+      style={{
+        '--sidebar-width': 'calc(var(--spacing) * 72)',
+        '--header-height': 'calc(var(--spacing) * 12)',
+      } as React.CSSProperties}
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <main className="flex-1">
+            <div className="@container/main flex flex-1 flex-col gap-4">
+              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                {/* Barra superior con navegación y tema */}
+                <div className="flex items-center justify-between px-4 lg:px-6">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.back()}
+                    className="flex items-center gap-2"
+                  >
+                    <IconArrowLeft className="size-4" />
+                    Volver
+                  </Button>
+                  <ThemeToggle />
+                </div>
 
           {/* Header del perfil */}
           <div className="px-4 lg:px-6">
@@ -912,8 +974,12 @@ export default function PerfilUsuarioPage() {
               </TabsContent>
             </Tabs>
           </div>
+              </div>
+            </div>
+          </main>
+          <SiteFooter />
         </div>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

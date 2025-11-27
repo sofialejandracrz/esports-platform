@@ -417,7 +417,8 @@ export class SeederService {
       { tipo: tipoCreditosEntity, nombre: '15 Créditos', descripcion: 'Paquete de 15 créditos - Mejor valor', precio: '10.00', creditosOtorgados: 15, metadata: { destacado: true, mejorValor: true } },
       { tipo: tipoServicioEntity, nombre: 'Cambio de Nickname', descripcion: 'Cambia tu nombre de usuario único', precio: '3.99', creditosOtorgados: null, metadata: { servicioTipo: 'cambio_nickname' } },
       { tipo: tipoServicioEntity, nombre: 'Reiniciar Récord de Juego', descripcion: 'Reinicia tu historial completo de partidas', precio: '5.99', creditosOtorgados: null, metadata: { servicioTipo: 'reset_record', advertencia: 'Acción irreversible' } },
-      { tipo: tipoServicioEntity, nombre: 'Reiniciar Estadísticas', descripcion: 'Reinicia tus estadísticas de juego', precio: '3.99', creditosOtorgados: null, metadata: { servicioTipo: 'reset_stats', advertencia: 'Acción irreversible' } }
+      { tipo: tipoServicioEntity, nombre: 'Reiniciar Estadísticas', descripcion: 'Reinicia tus estadísticas de juego', precio: '3.99', creditosOtorgados: null, metadata: { servicioTipo: 'reset_stats', advertencia: 'Acción irreversible' } },
+      { tipo: tipoServicioEntity, nombre: 'Reclamar Nombre de Usuario', descripcion: 'Reclama un nombre de usuario inactivo. Se contacta con soporte en directo para verificar disponibilidad.', precio: '9.99', creditosOtorgados: null, metadata: { servicioTipo: 'reclamar_nickname', requiereSoporte: true } }
     ];
 
     for (const membresia of membresiasEntity) {

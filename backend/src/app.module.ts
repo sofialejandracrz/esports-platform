@@ -26,6 +26,9 @@ import { MembresiaTipoModule } from './modules/membresia-tipo/membresia-tipo.mod
 import { ModoJuegoModule } from './modules/modo-juego/modo-juego.module';
 import { PersonaModule } from './modules/persona/persona.module';
 import { TiendaItemModule } from './modules/tienda-item/tienda-item.module';
+import { TiendaOrdenModule } from './modules/tienda-orden/tienda-orden.module';
+import { TiendaSolicitudSoporteModule } from './modules/tienda-solicitud-soporte/tienda-solicitud-soporte.module';
+import { TiendaModule } from './modules/tienda/tienda.module';
 import { LogroModule } from './modules/logro/logro.module';
 import { TorneoModule } from './modules/torneo/torneo.module';
 import { TorneoInscripcionModule } from './modules/torneo-inscripcion/torneo-inscripcion.module';
@@ -86,6 +89,9 @@ import { SeederModule } from './database/seeds/seeder.module';
     ModoJuegoModule,
     PersonaModule,
     TiendaItemModule,
+    TiendaOrdenModule,
+    TiendaSolicitudSoporteModule,
+    TiendaModule,
     TorneoModule,
     TorneoInscripcionModule,
     TorneoPremioModule,
