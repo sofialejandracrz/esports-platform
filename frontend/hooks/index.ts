@@ -13,4 +13,4 @@ export { usePerfil } from './use-perfil';
 export { useConfiguracion } from './use-configuracion';
 
 // UI
-export { useMobile } from './use-mobile';
+export { useIsMobile } from './use-mobile';

@@ -53,6 +53,7 @@ lerna-debug.log*
 .env.production.local
 *.key
 *.pem
+azure/phase1-output.ps1
 
 # ===================================
 # Backend

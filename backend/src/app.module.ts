@@ -54,17 +54,40 @@ import { SeederModule } from './database/seeds/seeder.module';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: +configService.get<number>('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABASE'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') !== 'production',
-        logging: configService.get('NODE_ENV') !== 'production',
-      }),
+      useFactory: (configService: ConfigService) => {
+        const nodeEnv = configService.get('NODE_ENV');
+        const dbHost = configService.get('DB_HOST');
+        const isAzure = dbHost?.includes('azure');
+        const dbSslValue = configService.get('DB_SSL');
+        const sslEnabled = dbSslValue === 'true' || dbSslValue === true || isAzure;
+        
+        console.log('=== Database Configuration ===');
+        console.log('NODE_ENV:', nodeEnv);
+        console.log('DB_HOST:', dbHost);
+        console.log('DB_SSL raw value:', dbSslValue, 'type:', typeof dbSslValue);
+        console.log('Is Azure:', isAzure);
+        console.log('SSL enabled:', sslEnabled);
+        console.log('==============================');
+        
+        // Para Azure PostgreSQL, necesitamos configurar SSL correctamente
+        const sslConfig = sslEnabled ? {
+          rejectUnauthorized: false,
+          require: true,
+        } : false;
+        
+        return {
+          type: 'postgres',
+          host: dbHost,
+          port: +configService.get<number>('DB_PORT'),
+          username: configService.get('DB_USERNAME'),
+          password: configService.get('DB_PASSWORD'),
+          database: configService.get('DB_DATABASE'),
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: nodeEnv !== 'production',
+          logging: nodeEnv !== 'production',
+          ssl: sslConfig,
+        };
+      },
       inject: [ConfigService],
     }),
     AuthModule,

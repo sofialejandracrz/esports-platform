@@ -38,11 +38,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/home/app-sidebar';
 import { SiteHeader } from '@/components/home/site-header';
 import { SiteFooter } from '@/components/home/site-footer';
+import Particles from '@/components/Particles';
 import { usePerfil } from "@/hooks/use-perfil";
 import { useAuth } from "@/contexts/auth-context";
 import {
@@ -318,9 +318,21 @@ export default function PerfilUsuarioPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={120}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 flex-col">
+          <div className="relative z-10 flex flex-1 flex-col">
             <main className="flex-1">
               <div className="flex flex-1 items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
@@ -346,9 +358,21 @@ export default function PerfilUsuarioPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={200}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 flex-col">
+          <div className="relative z-10 flex flex-1 flex-col">
             <main className="flex-1">
               <div className="flex flex-1 items-center justify-center">
                 <Card className="max-w-md">
@@ -379,9 +403,21 @@ export default function PerfilUsuarioPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={200}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 flex-col">
+          <div className="relative z-10 flex flex-1 flex-col">
             <main className="flex-1">
               <div className="flex flex-1 items-center justify-center">
                 <Card className="max-w-md">
@@ -439,13 +475,25 @@ export default function PerfilUsuarioPage() {
       } as React.CSSProperties}
     >
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset className="relative">
+        <Particles
+          particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+          particleCount={700}
+          particleSpread={12}
+          speed={0.08}
+          particleBaseSize={200}
+          moveParticlesOnHover={false}
+          particleHoverFactor={0.5}
+          alphaParticles={true}
+          sizeRandomness={0.8}
+          className="pointer-events-none"
+        />
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="relative z-10 flex flex-1 flex-col">
           <main className="flex-1">
             <div className="@container/main flex flex-1 flex-col gap-4">
               <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                {/* Barra superior con navegación y tema */}
+                {/* Barra superior con navegación */}
                 <div className="flex items-center justify-between px-4 lg:px-6">
                   <Button
                     variant="ghost"
@@ -456,7 +504,6 @@ export default function PerfilUsuarioPage() {
                     <IconArrowLeft className="size-4" />
                     Volver
                   </Button>
-                  <ThemeToggle />
                 </div>
 
           {/* Header del perfil */}

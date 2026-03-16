@@ -1,21 +1,15 @@
 // Environment configuration with type safety
-
-const getEnv = (key: string, fallback?: string): string => {
-  const value = process.env[key];
-  if (!value && !fallback) {
-    throw new Error(`Missing environment variable: ${key}`);
-  }
-  return value || fallback || '';
-};
+// IMPORTANT: NEXT_PUBLIC_* variables must be referenced directly (not via dynamic lookup)
+// for Next.js to inline them at build time
 
 export const env = {
-  // API
-  NEXT_PUBLIC_API_URL: getEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3001'),
+  // API - Direct reference required for build-time inlining
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   
   // App
-  NEXT_PUBLIC_APP_NAME: getEnv('NEXT_PUBLIC_APP_NAME', 'eSports Hub'),
-  NEXT_PUBLIC_APP_DESCRIPTION: getEnv('NEXT_PUBLIC_APP_DESCRIPTION', 'The ultimate eSports platform'),
+  NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'eSports Hub',
+  NEXT_PUBLIC_APP_DESCRIPTION: process.env.NEXT_PUBLIC_APP_DESCRIPTION || 'The ultimate eSports platform',
   
   // Environment
-  NODE_ENV: getEnv('NODE_ENV', 'development') as 'development' | 'production' | 'test',
+  NODE_ENV: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',
 } as const;

@@ -39,7 +39,12 @@ services:
       DB_DATABASE: ${DB_DATABASE:-esports_platform}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-7d}
-      FRONTEND_URL: http://frontend:3000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
+      PAYPAL_SANDBOX: ${PAYPAL_SANDBOX:-true}
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
     depends_on:
       postgres:
         condition: service_healthy

@@ -28,6 +28,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/home/app-sidebar';
 import { SiteHeader } from '@/components/home/site-header';
 import { SiteFooter } from '@/components/home/site-footer';
+import Particles from '@/components/Particles';
 
 // Convertir los datos del torneo del backend al formato del formulario
 function torneoToFormData(torneo: any): TournamentFormData {
@@ -274,9 +275,21 @@ export default function EditarTorneoPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={120}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 items-center justify-center">
+          <div className="relative z-10 flex flex-1 items-center justify-center">
             <IconLoader2 className="size-8 animate-spin text-primary" />
           </div>
         </SidebarInset>
@@ -294,9 +307,21 @@ export default function EditarTorneoPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={200}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 items-center justify-center p-4">
+          <div className="relative z-10 flex flex-1 items-center justify-center p-4">
             <Card className="w-full max-w-md">
               <CardContent className="pt-6 text-center">
                 <IconLock className="mx-auto size-12 text-orange-500 mb-4" />
@@ -325,9 +350,21 @@ export default function EditarTorneoPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={200}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 items-center justify-center p-4">
+          <div className="relative z-10 flex flex-1 items-center justify-center p-4">
             <Card className="w-full max-w-md border-destructive/50 bg-destructive/10">
               <CardContent className="pt-6 text-center">
                 <IconAlertCircle className="mx-auto size-12 text-destructive mb-4" />
@@ -359,9 +396,21 @@ export default function EditarTorneoPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={200}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 items-center justify-center p-4">
+          <div className="relative z-10 flex flex-1 items-center justify-center p-4">
             <Card className="w-full max-w-md border-destructive/50 bg-destructive/10">
               <CardContent className="pt-6 text-center">
                 <IconShieldOff className="mx-auto size-12 text-destructive mb-4" />
@@ -390,9 +439,21 @@ export default function EditarTorneoPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={200}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 items-center justify-center p-4">
+          <div className="relative z-10 flex flex-1 items-center justify-center p-4">
             <Card className="w-full max-w-md border-orange-500/50 bg-orange-500/10">
               <CardContent className="pt-6 text-center">
                 <IconLock className="mx-auto size-12 text-orange-500 mb-4" />
@@ -419,9 +480,21 @@ export default function EditarTorneoPage() {
       } as React.CSSProperties}
     >
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset className="relative">
+        <Particles
+          particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+          particleCount={700}
+          particleSpread={12}
+          speed={0.08}
+          particleBaseSize={200}
+          moveParticlesOnHover={false}
+          particleHoverFactor={0.5}
+          alphaParticles={true}
+          sizeRandomness={0.8}
+          className="pointer-events-none"
+        />
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="relative z-10 flex flex-1 flex-col">
           <main className="flex-1">
             <div className="container mx-auto max-w-6xl space-y-6 p-4 pb-24 md:p-6 md:pb-8">
               {/* Header */}

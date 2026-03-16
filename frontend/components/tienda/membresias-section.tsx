@@ -46,7 +46,7 @@ export function MembresiasSection({
     <div className="space-y-8">
       {/* Info de membresía actual */}
       {membresiaActual && (
-        <Card className="border-green-500/50 bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+        <Card className="border-green-500/50 bg-linear-to-r from-green-500/10 to-emerald-500/10">
           <CardContent className="flex items-center gap-4 p-4">
             <div className="flex size-12 items-center justify-center rounded-full bg-green-500/20">
               <IconCrown className="size-6 text-green-500" />
@@ -133,9 +133,9 @@ function MembresiaCard({ item, beneficios, isPopular, isBestValue, onSelect }: M
     <Card 
       className={`relative overflow-hidden transition-all hover:shadow-lg ${
         isPopular 
-          ? 'border-2 border-purple-500 bg-gradient-to-br from-purple-500/10 to-blue-500/10' 
+          ? 'border-2 border-purple-500 bg-linear-to-br from-purple-500/10 to-blue-500/10' 
           : isBestValue
-            ? 'border-yellow-500/50 bg-gradient-to-br from-yellow-500/5 to-orange-500/5'
+            ? 'border-yellow-500/50 bg-linear-to-br from-yellow-500/5 to-orange-500/5'
             : ''
       }`}
     >
@@ -181,7 +181,7 @@ function MembresiaCard({ item, beneficios, isPopular, isBestValue, onSelect }: M
         <Button 
           className={`w-full ${
             isPopular 
-              ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600'
+              ? 'bg-linear-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600'
               : ''
           }`}
           onClick={() => onSelect(item)}

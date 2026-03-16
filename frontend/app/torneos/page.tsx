@@ -33,6 +33,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/home/app-sidebar';
 import { SiteHeader } from '@/components/home/site-header';
 import { SiteFooter } from '@/components/home/site-footer';
+import Particles from '@/components/Particles';
 
 // Mapear estados a badges con colores
 function getEstadoBadge(estado: string) {
@@ -153,9 +154,21 @@ export default function TorneosPage() {
       } as React.CSSProperties}
     >
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset className="relative">
+        <Particles
+          particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+          particleCount={700}
+          particleSpread={12}
+          speed={0.08}
+          particleBaseSize={120}
+          moveParticlesOnHover={false}
+          particleHoverFactor={0.5}
+          alphaParticles={true}
+          sizeRandomness={0.8}
+          className="pointer-events-none"
+        />
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="relative z-10 flex flex-1 flex-col">
           <main className="flex-1">
             <div className="container mx-auto px-4 py-8">
               {/* Header */}
@@ -291,85 +304,134 @@ export default function TorneosPage() {
                     Mostrando {torneos.length} de {total} torneos
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {torneos.map((torneo) => (
-                      <Card
-                        key={torneo.id}
-                        className="group transition-all duration-300 hover:shadow-lg hover:shadow-primary/5"
-                      >
-                        {/* Imagen/Banner */}
-                        {torneo.miniatura_url ? (
-                          <div className="relative h-32 overflow-hidden rounded-t-lg">
-                            <img
-                              src={torneo.miniatura_url}
-                              alt={torneo.titulo}
-                              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-linear-to-t from-background/80 to-transparent" />
-                            <div className="absolute bottom-2 left-2">
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {torneos.map((torneo) => {
+                      const inscritos = torneo.inscripciones ?? 0;
+                      const maxParticipantes = torneo.max_participantes;
+                      const tieneMaximo = maxParticipantes && maxParticipantes > 0;
+                      const porcentajeOcupacion = tieneMaximo 
+                        ? Math.min((inscritos / maxParticipantes) * 100, 100) 
+                        : 0;
+                      const estaLleno = tieneMaximo && inscritos >= maxParticipantes;
+                      
+                      return (
+                        <Card
+                          key={torneo.id}
+                          className="group relative overflow-hidden border-border/50 bg-linear-to-b from-card to-card/80 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10"
+                        >
+                          {/* Imagen/Banner */}
+                          <div className="relative h-40 overflow-hidden">
+                            {torneo.miniatura_url ? (
+                              <img
+                                src={torneo.miniatura_url}
+                                alt={torneo.titulo}
+                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary/20 via-primary/10 to-transparent">
+                                <IconTrophy className="size-16 text-primary/40" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-linear-to-t from-card via-card/50 to-transparent" />
+                            
+                            {/* Badge de estado - esquina superior derecha */}
+                            <div className="absolute right-2 top-2">
                               {getEstadoBadge(torneo.estado)}
                             </div>
+                            
+                            {/* Premio destacado si existe */}
+                            {torneo.fondo_premios > 0 && (
+                              <div className="absolute left-2 top-2">
+                                <Badge className="gap-1 bg-yellow-500/90 text-yellow-950 hover:bg-yellow-500">
+                                  <IconCoin className="size-3" />
+                                  ${torneo.fondo_premios.toLocaleString()}
+                                </Badge>
+                              </div>
+                            )}
+                            
+                            {/* Juego - sobre la imagen */}
+                            <div className="absolute bottom-2 left-2 right-2">
+                              <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                                <IconDeviceGamepad2 className="size-4 text-primary" />
+                                <span className="line-clamp-1">{torneo.juego || 'Sin especificar'}</span>
+                              </div>
+                            </div>
                           </div>
-                        ) : (
-                          <CardHeader className="pb-3">
-                            {getEstadoBadge(torneo.estado)}
+
+                          <CardHeader className="space-y-1 pb-2 pt-3">
+                            <CardTitle className="line-clamp-2 text-base font-bold leading-tight group-hover:text-primary transition-colors">
+                              {torneo.titulo}
+                            </CardTitle>
                           </CardHeader>
-                        )}
 
-                        <CardHeader className={torneo.miniatura_url ? 'pt-3 pb-3' : 'pt-0 pb-3'}>
-                          <CardTitle className="line-clamp-1 text-lg">{torneo.titulo}</CardTitle>
-                          <CardDescription className="flex items-center gap-1">
-                            <IconDeviceGamepad2 className="size-4" />
-                            <span className="line-clamp-1">{torneo.juego || 'Sin especificar'}</span>
-                          </CardDescription>
-                        </CardHeader>
-
-                        <CardContent className="space-y-3">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <IconCalendar className="size-4 shrink-0" />
-                            <span className="truncate">{formatDate(torneo.fecha_inicio)}</span>
-                          </div>
-
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <IconMapPin className="size-4 shrink-0" />
-                            <span>{torneo.region || 'Global'}</span>
-                          </div>
-
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <IconUsers className="size-4 shrink-0" />
-                            <span>
-                              {torneo.inscripciones || 0}/{torneo.max_participantes || '∞'} jugadores
-                            </span>
-                          </div>
-
-                          {torneo.fondo_premios > 0 && (
-                            <div className="flex items-center gap-2 text-sm font-medium text-chart-1">
-                              <IconCoin className="size-4 shrink-0" />
-                              <span>${torneo.fondo_premios} en premios</span>
+                          <CardContent className="space-y-3 pb-4">
+                            {/* Info en grid compacto */}
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <IconCalendar className="size-3.5 text-blue-400" />
+                                <span className="truncate">{formatDate(torneo.fecha_inicio).split(',')[0]}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <IconMapPin className="size-3.5 text-green-400" />
+                                <span className="truncate">{torneo.region || 'Global'}</span>
+                              </div>
                             </div>
-                          )}
 
-                          {/* Barra de progreso de inscripciones */}
-                          {torneo.max_participantes && (
-                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                              <div
-                                className="h-full bg-linear-to-r from-chart-1 to-chart-2 transition-all duration-500"
-                                style={{
-                                  width: `${Math.min(((torneo.inscripciones || 0) / torneo.max_participantes) * 100, 100)}%`,
-                                }}
-                              />
+                            {/* Participantes con barra de progreso mejorada */}
+                            <div className="space-y-2 rounded-lg bg-muted/50 p-2.5">
+                              <div className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-1.5">
+                                  <IconUsers className="size-4 text-primary" />
+                                  <span className="font-medium">Participantes</span>
+                                </div>
+                                <span className={`font-bold ${estaLleno ? 'text-red-400' : 'text-foreground'}`}>
+                                  {inscritos}{tieneMaximo ? `/${maxParticipantes}` : ''}
+                                </span>
+                              </div>
+                              
+                              {tieneMaximo ? (
+                                <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${
+                                      estaLleno 
+                                        ? 'bg-red-500' 
+                                        : porcentajeOcupacion > 75 
+                                          ? 'bg-linear-to-r from-yellow-500 to-orange-500'
+                                          : 'bg-linear-to-r from-primary to-violet-500'
+                                    }`}
+                                    style={{ width: `${porcentajeOcupacion}%` }}
+                                  />
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">Sin límite de participantes</p>
+                              )}
+                              
+                              {tieneMaximo && (
+                                <p className="text-xs text-muted-foreground">
+                                  {estaLleno 
+                                    ? '¡Cupos agotados!' 
+                                    : `${maxParticipantes - inscritos} lugares disponibles`
+                                  }
+                                </p>
+                              )}
                             </div>
-                          )}
 
-                          <Button className="mt-2 w-full gap-2" size="sm" asChild>
-                            <Link href={`/torneos/${torneo.id}`}>
-                              <IconTrophy className="size-4" />
-                              Ver Torneo
-                            </Link>
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                            {/* Botón de acción */}
+                            <Button 
+                              className="w-full gap-2 font-semibold transition-all group-hover:bg-primary group-hover:text-primary-foreground" 
+                              variant="outline"
+                              size="sm" 
+                              asChild
+                            >
+                              <Link href={`/torneos/${torneo.id}`}>
+                                <IconTrophy className="size-4" />
+                                Ver Detalles
+                              </Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
 
                   {/* Paginación */}

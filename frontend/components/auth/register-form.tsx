@@ -70,7 +70,7 @@ export function RegisterForm({
     confirmPassword: "",
     fechaNacimiento: "",
     genero: "",
-    timezone: "America/Mexico_City",
+    timezone: "America/Honduras_City",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -175,7 +175,7 @@ export function RegisterForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="border-border/50 bg-card/90 backdrop-blur-md shadow-xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
             <IconTrophy className="size-8 text-white" />
           </div>
           <CardTitle className="text-xl">Crear cuenta</CardTitle>

@@ -23,6 +23,7 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ItemCreditos, ItemMembresia, ItemServicio } from "@/types/tienda";
+import Particles from "@/components/Particles";
 
 type SelectedItem = 
   | { type: 'creditos'; item: ItemCreditos }
@@ -82,9 +83,21 @@ export default function TiendaPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={200}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 flex-col">
+          <div className="relative z-10 flex flex-1 flex-col">
             <main className="flex-1">
               <div className="container mx-auto px-4 py-8">
                 <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6 text-center">
@@ -250,9 +263,21 @@ function TiendaSkeleton() {
       } as React.CSSProperties}
     >
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset className="relative">
+        <Particles
+          particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+          particleCount={700}
+          particleSpread={12}
+          speed={0.08}
+          particleBaseSize={120}
+          moveParticlesOnHover={false}
+          particleHoverFactor={0.5}
+          alphaParticles={true}
+          sizeRandomness={0.8}
+          className="pointer-events-none"
+        />
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="relative z-10 flex flex-1 flex-col">
           <main className="flex-1">
             <div className="min-h-screen bg-linear-to-b from-background to-muted/20">
               <div className="border-b bg-background/95">

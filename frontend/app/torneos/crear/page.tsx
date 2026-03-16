@@ -24,6 +24,7 @@ import {
 } from '@tabler/icons-react';
 import { getToken } from '@/lib/auth-storage';
 import { useEffect, useState } from 'react';
+import Particles from '@/components/Particles';
 
 export default function CreateTournamentPage() {
   const router = useRouter();
@@ -112,7 +113,19 @@ export default function CreateTournamentPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl space-y-6 p-4 pb-24 md:p-6 md:pb-8">
+    <div className="relative container mx-auto max-w-6xl space-y-6 p-4 pb-24 md:p-6 md:pb-8">
+      <Particles
+        particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+        particleCount={700}
+        particleSpread={12}
+        speed={0.08}
+        particleBaseSize={120}
+        moveParticlesOnHover={false}
+        particleHoverFactor={0.5}
+        alphaParticles={true}
+        sizeRandomness={0.8}
+        className="pointer-events-none"
+      />
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">Crear Nuevo Torneo</h1>

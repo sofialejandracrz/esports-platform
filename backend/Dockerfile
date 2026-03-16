@@ -5,14 +5,14 @@ FROM base AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install --production && npm cache clean --force
+RUN npm install --production --legacy-peer-deps && npm cache clean --force
 
 # Builder stage
 FROM base AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 COPY . .
 

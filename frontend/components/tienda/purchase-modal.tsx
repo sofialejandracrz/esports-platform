@@ -327,7 +327,7 @@ export function PurchaseModal({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose} disabled={isProcessing}>
+          <Button variant="outline" onClick={onClose} disabled={isProcessing} className="mr-2">
             Cancelar
           </Button>
           <Button 

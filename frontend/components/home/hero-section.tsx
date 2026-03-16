@@ -8,7 +8,7 @@ export function HeroSection() {
   return (
     <section className="relative overflow-hidden py-12 md:py-20">
       {/* Background gradient */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 via-transparent to-chart-1/5" />
+      <div className="absolute inset-0 -z-10 bg-linear-to-br from-primary/5 via-transparent to-chart-1/5" />
       
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center text-center">
@@ -21,7 +21,7 @@ export function HeroSection() {
           {/* Title */}
           <h1 className="mb-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
             Compite, Gana y
-            <span className="bg-gradient-to-r from-chart-1 via-chart-2 to-chart-4 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-chart-1 via-chart-2 to-chart-4 bg-clip-text text-transparent">
               {" "}Domina
             </span>
           </h1>
@@ -41,7 +41,7 @@ export function HeroSection() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="gap-2" asChild>
-              <Link href="/api/auth/register">
+              <Link href="/api/auth/registro">
                 <IconUsers className="size-5" />
                 Registrarse Gratis
               </Link>

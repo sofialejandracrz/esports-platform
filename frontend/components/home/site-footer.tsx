@@ -41,7 +41,7 @@ export function SiteFooter() {
           {/* Brand section */}
           <div className="lg:col-span-2">
             <Link href="/" className="mb-4 flex items-center gap-2">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-gradient-to-br from-chart-1 to-chart-2">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-linear-to-br from-chart-1 to-chart-2">
                 <IconTrophy className="size-6 text-white" />
               </div>
               <span className="text-xl font-bold">eSports Platform</span>
@@ -113,11 +113,11 @@ export function SiteFooter() {
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <IconPhone className="size-4" />
-                <span>+1 (555) 123-4567</span>
+                <span>+504 3251-1540</span>
               </li>
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <IconMapPin className="mt-0.5 size-4" />
-                <span>Ciudad de México, México</span>
+                <span>La Paz, Honduras</span>
               </li>
             </ul>
           </div>

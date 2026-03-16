@@ -59,7 +59,7 @@ const data = {
   quickLinks: [
     {
       name: "Mis Torneos",
-      url: "/usuario/torneos",
+      url: "/torneos/mis-torneos",
       icon: IconTrophy,
     },
     {
@@ -69,7 +69,7 @@ const data = {
     },
     {
       name: "Mis Créditos",
-      url: "/tienda/creditos",
+      url: "/tienda/recargar",
       icon: IconCoin,
     },
     {
@@ -82,7 +82,7 @@ const data = {
   navSecondary: [
     {
       title: "Configuración",
-      url: "/usuario/configuracion",
+      url: "/usuario/configuracion/personal",
       icon: IconSettings,
     },
     {
@@ -118,10 +118,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link href="/">
-                <IconTrophy className="!size-5 text-chart-1" />
+                <IconTrophy className="size-5! text-chart-1" />
                 <span className="text-base font-semibold">eSports Platform</span>
               </Link>
             </SidebarMenuButton>

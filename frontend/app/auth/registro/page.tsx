@@ -21,7 +21,7 @@ export default function RegisterPage() {
           particleSpread={12}
           speed={0.08}
           particleBaseSize={120}
-          moveParticlesOnHover={true}
+          moveParticlesOnHover={false}
           particleHoverFactor={0.5}
           alphaParticles={true}
           sizeRandomness={0.8}
@@ -32,7 +32,7 @@ export default function RegisterPage() {
       {/* Content */}
       <div className="relative z-10 flex w-full max-w-md flex-col gap-6">
         <Link href="/" className="flex items-center gap-2 self-center font-medium">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
             <IconTrophy className="size-6 text-white" />
           </div>
           <span className="text-xl font-bold">eSports Platform</span>

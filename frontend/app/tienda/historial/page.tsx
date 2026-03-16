@@ -39,6 +39,7 @@ import { AppSidebar } from '@/components/home/app-sidebar';
 import { SiteHeader } from '@/components/home/site-header';
 import { SiteFooter } from '@/components/home/site-footer';
 import { useTienda } from "@/hooks/use-tienda";
+import Particles from "@/components/Particles";
 import { toNumber, formatPrice } from "@/lib/utils";
 import type { OrdenCompra } from "@/types/tienda";
 
@@ -89,9 +90,21 @@ export default function HistorialPage() {
         } as React.CSSProperties}
       >
         <AppSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="relative">
+          <Particles
+            particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+            particleCount={700}
+            particleSpread={12}
+            speed={0.08}
+            particleBaseSize={120}
+            moveParticlesOnHover={false}
+            particleHoverFactor={0.5}
+            alphaParticles={true}
+            sizeRandomness={0.8}
+            className="pointer-events-none"
+          />
           <SiteHeader />
-          <div className="flex flex-1 flex-col">
+          <div className="relative z-10 flex flex-1 flex-col">
             <main className="flex-1">
               <div className="container mx-auto max-w-6xl px-4 py-8">
                 <Card className="border-destructive">
@@ -121,9 +134,21 @@ export default function HistorialPage() {
       } as React.CSSProperties}
     >
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset className="relative">
+        <Particles
+          particleColors={["#8B5CF6", "#A855F7", "#06B6D4", "#EC4899"]}
+          particleCount={700}
+          particleSpread={12}
+          speed={0.08}
+          particleBaseSize={200}
+          moveParticlesOnHover={false}
+          particleHoverFactor={0.5}
+          alphaParticles={true}
+          sizeRandomness={0.8}
+          className="pointer-events-none"
+        />
         <SiteHeader />
-        <div className="flex flex-1 flex-col">
+        <div className="relative z-10 flex flex-1 flex-col">
           <main className="flex-1">
             <div className="container mx-auto max-w-6xl px-4 py-8">
       {/* Header */}
