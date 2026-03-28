@@ -113,6 +113,7 @@ docker-compose.override.yml
 *.db
 postgres-data/
 pgdata/
+Script Maestro (RUN)/
 
 # ===================================
 # Temporales y Cache

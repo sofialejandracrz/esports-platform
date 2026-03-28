@@ -114,8 +114,8 @@ CREATE TABLE IF NOT EXISTS public.catalogo_tipo_torneo
     descripcion text COLLATE pg_catalog."default",
     tipo_trofeo character varying COLLATE pg_catalog."default" NOT NULL,
     creado_en timestamp without time zone NOT NULL DEFAULT now(),
-    CONSTRAINT catalogo_tipo_torneo_pkey PRIMARY KEY (id),
-    CONSTRAINT catalogo_tipo_torneo_valor_key UNIQUE (valor)
+    CONSTRAINT "PK_d19d92d8d932d7962f579690ccc" PRIMARY KEY (id),
+    CONSTRAINT "UQ_5015bd5e17ac62480ffd8f9fbd7" UNIQUE (valor)
 );
 
 CREATE TABLE IF NOT EXISTS public.catalogo_transaccion_tipo
@@ -233,8 +233,6 @@ CREATE TABLE IF NOT EXISTS public.tienda_item
 CREATE TABLE IF NOT EXISTS public.tienda_orden
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
-    usuario_id uuid NOT NULL,
-    item_id uuid NOT NULL,
     paypal_order_id character varying COLLATE pg_catalog."default",
     paypal_capture_id character varying COLLATE pg_catalog."default",
     paypal_payer_id character varying COLLATE pg_catalog."default",
@@ -246,14 +244,14 @@ CREATE TABLE IF NOT EXISTS public.tienda_orden
     creado_en timestamp without time zone NOT NULL DEFAULT now(),
     completado_en timestamp without time zone,
     actualizado_en timestamp without time zone NOT NULL DEFAULT now(),
-    CONSTRAINT tienda_orden_pkey PRIMARY KEY (id)
+    usuario_id uuid NOT NULL,
+    item_id uuid NOT NULL,
+    CONSTRAINT "PK_77b2647b80248317c5c7f62bbb4" PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS public.tienda_solicitud_soporte
 (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
-    orden_id uuid,
-    usuario_id uuid NOT NULL,
     tipo character varying(50) COLLATE pg_catalog."default" NOT NULL,
     nickname_solicitado character varying COLLATE pg_catalog."default",
     estado character varying(50) COLLATE pg_catalog."default" NOT NULL DEFAULT 'pendiente'::character varying,
@@ -261,8 +259,10 @@ CREATE TABLE IF NOT EXISTS public.tienda_solicitud_soporte
     creado_en timestamp without time zone NOT NULL DEFAULT now(),
     actualizado_en timestamp without time zone NOT NULL DEFAULT now(),
     resuelto_en timestamp without time zone,
+    orden_id uuid,
+    usuario_id uuid NOT NULL,
     resuelto_por uuid,
-    CONSTRAINT tienda_solicitud_soporte_pkey PRIMARY KEY (id)
+    CONSTRAINT "PK_32f8056203781ad62b6975ae6a7" PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS public.torneo
@@ -282,20 +282,20 @@ CREATE TABLE IF NOT EXISTS public.torneo
     requiere_transmision boolean NOT NULL DEFAULT false,
     requiere_camara boolean NOT NULL DEFAULT false,
     capacidad integer,
-    anfitrion_id uuid NOT NULL,
-    juego_id uuid,
-    plataforma_id uuid,
-    modo_juego_id uuid,
-    region_id uuid NOT NULL,
-    tipo_entrada_id uuid NOT NULL,
-    estado_id uuid,
-    tipo_torneo_id uuid,
     banner_url character varying COLLATE pg_catalog."default",
     miniatura_url character varying COLLATE pg_catalog."default",
     contacto_anfitrion character varying COLLATE pg_catalog."default",
     discord_servidor character varying COLLATE pg_catalog."default",
     creado_en timestamp without time zone NOT NULL DEFAULT now(),
     actualizado_en timestamp without time zone NOT NULL DEFAULT now(),
+    anfitrion_id uuid NOT NULL,
+    juego_id uuid,
+    plataforma_id uuid,
+    modo_juego_id uuid,
+    region_id uuid NOT NULL,
+    estado_id uuid,
+    tipo_torneo_id uuid,
+    tipo_entrada_id uuid NOT NULL,
     CONSTRAINT "PK_594cbe0a907eb32cb0ddfd63fea" PRIMARY KEY (id)
 );
 
@@ -316,12 +316,12 @@ CREATE TABLE IF NOT EXISTS public.torneo_premios
     fondo_total numeric(12, 2) NOT NULL DEFAULT '0'::numeric,
     fondo_despues_comision numeric(12, 2) NOT NULL DEFAULT '0'::numeric,
     comision_porcentaje numeric(5, 2) NOT NULL DEFAULT '0'::numeric,
+    comision_total numeric(12, 2) NOT NULL DEFAULT '0'::numeric,
     ganador1_porcentaje numeric(5, 2) NOT NULL DEFAULT '0'::numeric,
     ganador2_porcentaje numeric(5, 2) NOT NULL DEFAULT '0'::numeric,
     torneo_id uuid,
-    comision_total numeric(12, 2) NOT NULL DEFAULT 0,
     CONSTRAINT "PK_d002e010d3343aca3faa87ddfcd" PRIMARY KEY (id),
-    CONSTRAINT "UQ_a3031bbf1c334efdde6a07e5a46" UNIQUE (torneo_id)
+    CONSTRAINT "REL_a3031bbf1c334efdde6a07e5a4" UNIQUE (torneo_id)
 );
 
 CREATE TABLE IF NOT EXISTS public.torneo_redes
@@ -638,7 +638,7 @@ ALTER TABLE IF EXISTS public.torneo_premios
     REFERENCES public.torneo (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS "UQ_a3031bbf1c334efdde6a07e5a46"
+CREATE INDEX IF NOT EXISTS "REL_a3031bbf1c334efdde6a07e5a4"
     ON public.torneo_premios(torneo_id);
 
 
