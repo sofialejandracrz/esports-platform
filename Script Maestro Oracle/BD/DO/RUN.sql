@@ -110,7 +110,31 @@ Prompt ./PACKAGE/PKG_PERFIL_BODY.sql
 @ ./PACKAGE/PKG_PERFIL_BODY.sql
 
 Prompt ============================================================
-Prompt   FASE 13: Triggers
+Prompt   FASE 13: Paquete PKG_TORNEO - Especificacion (Migracion)
+Prompt ============================================================
+Prompt ./PACKAGE/PKG_TORNEO_SPEC.sql
+@ ./PACKAGE/PKG_TORNEO_SPEC.sql
+
+Prompt ============================================================
+Prompt   FASE 14: Paquete PKG_TORNEO - Cuerpo (Migracion)
+Prompt ============================================================
+Prompt ./PACKAGE/PKG_TORNEO_BODY.sql
+@ ./PACKAGE/PKG_TORNEO_BODY.sql
+
+Prompt ============================================================
+Prompt   FASE 15: Paquete PKG_CONFIG - Especificacion (Migracion)
+Prompt ============================================================
+Prompt ./PACKAGE/PKG_CONFIG_SPEC.sql
+@ ./PACKAGE/PKG_CONFIG_SPEC.sql
+
+Prompt ============================================================
+Prompt   FASE 16: Paquete PKG_CONFIG - Cuerpo (Migracion)
+Prompt ============================================================
+Prompt ./PACKAGE/PKG_CONFIG_BODY.sql
+@ ./PACKAGE/PKG_CONFIG_BODY.sql
+
+Prompt ============================================================
+Prompt   FASE 17: Triggers
 Prompt ============================================================
 Prompt ./TRIGGER/01_TRIGGERS.sql
 @ ./TRIGGER/01_TRIGGERS.sql
@@ -128,12 +152,15 @@ PROMPT      - 40 Secuencias
 PROMPT      - 39 Tablas (15 catalogos + 24 transaccionales)
 PROMPT      - 1 Tabla de auditoria
 PROMPT      - 6 Vistas
-PROMPT      - 3 Paquetes:
+PROMPT      - 5 Paquetes PL/SQL:
 PROMPT        * PKG_ESPORTS (5 SP + 2 FN) - Original
 PROMPT        * PKG_TIENDA (8 FN) - Migrado de PostgreSQL
-PROMPT        * PKG_PERFIL (10 FN) - Migrado de PostgreSQL
+PROMPT        * PKG_PERFIL (10 FN) - Migrado de PostgreSQL  
+PROMPT        * PKG_TORNEO (9 FN) - Migrado de PostgreSQL
+PROMPT        * PKG_CONFIG (16 FN) - Migrado de PostgreSQL
 PROMPT      - 5 Triggers
 PROMPT      - ~1,800 registros de datos
+PROMPT      - Total: 50+ funciones migradas de PostgreSQL a Oracle PL/SQL
 PROMPT ----------------------------------------------------------------------------------
 
 spool off
