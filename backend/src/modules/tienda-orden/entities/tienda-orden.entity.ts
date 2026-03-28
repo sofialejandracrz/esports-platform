@@ -50,8 +50,8 @@ export class TiendaOrden {
     estado: string; // pendiente, completado, fallido, reembolsado, cancelado
 
     // Metadata adicional
-    @Column({ name: 'metadata', type: 'jsonb', default: '{}' })
-    metadata: any;
+    @Column({ name: 'metadata', type: 'clob', default: '{}' })
+    metadata: string;
 
     // Timestamps
     @Index()

@@ -16,7 +16,7 @@ tipo: CatalogoTipoItem;
 nombre: string;
 
 
-@Column({ name: 'descripcion', type: 'text', nullable: true })
+@Column({ name: 'descripcion', type: 'clob', nullable: true })
 descripcion?: string;
 
 
@@ -28,6 +28,6 @@ precio: string;
 creditosOtorgados?: number;
 
 
-@Column({ name: 'metadata', type: 'jsonb', nullable: true })
-metadata?: any;
+@Column({ name: 'metadata', type: 'clob', nullable: true })
+metadata?: string;
 }

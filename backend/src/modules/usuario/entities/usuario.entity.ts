@@ -68,8 +68,8 @@ avatar?: CatalogoAvatar;
 biografia?: string;
 
 
-@Column({ name: 'desafios_habilitados', type: 'boolean', default: true })
-desafiosHabilitados: boolean;
+@Column({ name: 'desafios_habilitados', type: 'number', precision: 1, default: 1 })
+desafiosHabilitados: number;
 
 
 @CreateDateColumn({ name: 'creado_en' })

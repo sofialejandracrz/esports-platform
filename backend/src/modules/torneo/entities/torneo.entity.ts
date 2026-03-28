@@ -42,7 +42,7 @@ modoJuego: ModoJuego;
 titulo: string;
 
 
-@Column({ name: 'descripcion', type: 'text', nullable: true })
+@Column({ name: 'descripcion', type: 'clob', nullable: true })
 descripcion?: string;
 
 
@@ -85,24 +85,24 @@ alMejorDe: number;
 formato?: string;
 
 
-@Column({ name: 'cerrado', type: 'boolean', default: false })
-cerrado: boolean;
+@Column({ name: 'cerrado', type: 'number', precision: 1, default: 0 })
+cerrado: number;
 
 
-@Column({ name: 'reglas', type: 'text', nullable: true })
+@Column({ name: 'reglas', type: 'clob', nullable: true })
 reglas?: string;
 
 
-@Column({ name: 'jugadores_pc_permitidos', type: 'boolean', default: true })
-jugadoresPcPermitidos: boolean;
+@Column({ name: 'jugadores_pc_permitidos', type: 'number', precision: 1, default: 1 })
+jugadoresPcPermitidos: number;
 
 
-@Column({ name: 'requiere_transmision', type: 'boolean', default: false })
-requiereTransmision: boolean;
+@Column({ name: 'requiere_transmision', type: 'number', precision: 1, default: 0 })
+requiereTransmision: number;
 
 
-@Column({ name: 'requiere_camara', type: 'boolean', default: false })
-requiereCamara: boolean;
+@Column({ name: 'requiere_camara', type: 'number', precision: 1, default: 0 })
+requiereCamara: number;
 
 
 @ManyToOne(() => CatalogoTipoEntrada, { nullable: false })

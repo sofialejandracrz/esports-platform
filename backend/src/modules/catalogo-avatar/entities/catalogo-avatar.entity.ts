@@ -17,11 +17,11 @@ export class CatalogoAvatar {
     @Column({ name: 'categoria', nullable: true })
     categoria?: string; // e.g. 'bottts', 'avataaars', etc.
 
-    @Column({ name: 'disponible', type: 'boolean', default: true })
-    disponible: boolean; // Si el avatar está disponible para usar
+    @Column({ name: 'disponible', type: 'number', precision: 1, default: 1 })
+    disponible: number; // Si el avatar está disponible para usar
 
-    @Column({ name: 'premium', type: 'boolean', default: false })
-    premium: boolean; // Si requiere membresía premium
+    @Column({ name: 'premium', type: 'number', precision: 1, default: 0 })
+    premium: number; // Si requiere membresía premium
 
     @CreateDateColumn({ name: 'creado_en' })
     creadoEn: Date;

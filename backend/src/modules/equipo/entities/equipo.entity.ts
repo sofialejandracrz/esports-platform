@@ -17,7 +17,7 @@ nombre: string;
 creadoPor: Usuario;
 
 
-@Column({ name: 'descripcion', type: 'text', nullable: true })
+@Column({ name: 'descripcion', type: 'clob', nullable: true })
 descripcion?: string;
 
 

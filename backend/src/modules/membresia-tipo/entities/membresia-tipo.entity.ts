@@ -18,6 +18,6 @@ precio: string;
 duracionDias: number;
 
 
-@Column({ name: 'beneficios', type: 'text', nullable: true })
+@Column({ name: 'beneficios', type: 'clob', nullable: true })
 beneficios?: string;
 }

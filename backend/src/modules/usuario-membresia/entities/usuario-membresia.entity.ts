@@ -26,6 +26,6 @@ fechaInicio: string;
 fechaFin: string;
 
 
-@Column({ name: 'activa', type: 'boolean', default: true })
-activa: boolean;
+@Column({ name: 'activa', type: 'number', precision: 1, default: 1 })
+activa: number;
 }

@@ -8,7 +8,7 @@ export class CatalogoTipoTorneo {
     @Column({ name: 'valor', unique: true })
     valor: string; // e.g. 'eliminacion_simple', 'eliminacion_doble', 'todos_contra_todos', 'grupos', 'suizo'
 
-    @Column({ name: 'descripcion', type: 'text', nullable: true })
+    @Column({ name: 'descripcion', type: 'clob', nullable: true })
     descripcion?: string;
 
     @Column({ name: 'tipo_trofeo' })

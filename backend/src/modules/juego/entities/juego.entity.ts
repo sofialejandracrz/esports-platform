@@ -12,7 +12,7 @@ id: string;
 nombre: string;
 
 
-@Column({ name: 'descripcion', type: 'text', nullable: true })
+@Column({ name: 'descripcion', type: 'clob', nullable: true })
 descripcion?: string;
 
 

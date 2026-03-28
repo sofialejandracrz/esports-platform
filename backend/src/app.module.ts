@@ -56,6 +56,7 @@ import { SeederModule } from './database/seeds/seeder.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         const nodeEnv = configService.get('NODE_ENV');
+        const dbType = configService.get('DB_TYPE') || 'postgres';
         const dbHost = configService.get('DB_HOST');
         const isAzure = dbHost?.includes('azure');
         const dbSslValue = configService.get('DB_SSL');
@@ -63,28 +64,48 @@ import { SeederModule } from './database/seeds/seeder.module';
         
         console.log('=== Database Configuration ===');
         console.log('NODE_ENV:', nodeEnv);
+        console.log('DB_TYPE:', dbType);
         console.log('DB_HOST:', dbHost);
         console.log('DB_SSL raw value:', dbSslValue, 'type:', typeof dbSslValue);
         console.log('Is Azure:', isAzure);
         console.log('SSL enabled:', sslEnabled);
         console.log('==============================');
         
-        // Para Azure PostgreSQL, necesitamos configurar SSL correctamente
+        // Configuración base común
+        const baseConfig = {
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: nodeEnv !== 'production',
+          logging: nodeEnv !== 'production',
+        };
+
+        // Configuración específica para Oracle
+        if (dbType === 'oracle') {
+          return {
+            ...baseConfig,
+            type: 'oracle',
+            host: dbHost,
+            port: +configService.get<number>('DB_PORT') || 1521,
+            serviceName: configService.get('DB_SERVICE_NAME') || 'XEPDB1',
+            username: configService.get('DB_USERNAME'),
+            password: configService.get('DB_PASSWORD'),
+            synchronize: false, // IMPORTANTE: Oracle no debe usar synchronize
+          };
+        }
+        
+        // Configuración para PostgreSQL (default)
         const sslConfig = sslEnabled ? {
           rejectUnauthorized: false,
           require: true,
         } : false;
         
         return {
+          ...baseConfig,
           type: 'postgres',
           host: dbHost,
           port: +configService.get<number>('DB_PORT'),
           username: configService.get('DB_USERNAME'),
           password: configService.get('DB_PASSWORD'),
           database: configService.get('DB_DATABASE'),
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: nodeEnv !== 'production',
-          logging: nodeEnv !== 'production',
           ssl: sslConfig,
         };
       },

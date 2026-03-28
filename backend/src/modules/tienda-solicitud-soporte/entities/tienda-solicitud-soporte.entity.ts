@@ -35,7 +35,7 @@ export class TiendaSolicitudSoporte {
     @Column({ name: 'estado', type: 'varchar', length: 50, default: 'pendiente' })
     estado: string; // pendiente, en_revision, aprobado, rechazado
 
-    @Column({ name: 'notas_admin', type: 'text', nullable: true })
+    @Column({ name: 'notas_admin', type: 'clob', nullable: true })
     notasAdmin?: string;
 
     @CreateDateColumn({ name: 'creado_en' })
