@@ -441,9 +441,9 @@ Frontend (Next.js) → API (NestJS) → TypeORM → Oracle/PostgreSQL
 
 **Solo si esa tabla necesita un endpoint en la API.** Las tablas catálogo y tablas de relación (como `juego_plataformas` o `equipo_miembros`) generalmente se manejan como parte de otro módulo. Por ejemplo, `equipo_miembros` se gestiona desde el módulo `equipo`.
 
-### ¿Puedo tener PostgreSQL en producción y Oracle para la clase?
+### ¿Se usará Oracle en producción?
 
-**Sí, y es exactamente lo que estamos haciendo.** El Script Maestro Oracle es independiente del proyecto NestJS. Tu aplicación sigue funcionando con PostgreSQL.
+**Sí.** El proyecto está migrando completamente a Oracle para cumplir con los requerimientos de la clase. La rama `backup-postgresql` contiene el código funcional con PostgreSQL en caso de necesitar revertir.
 
 ---
 
