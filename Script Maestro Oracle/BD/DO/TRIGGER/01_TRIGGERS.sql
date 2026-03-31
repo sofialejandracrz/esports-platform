@@ -132,4 +132,67 @@ BEGIN
 END;
 /
 
+-- =========================================================================
+-- TRIGGER 6: Actualizar fondo de premios al confirmar inscripción
+-- Migrado de PostgreSQL: trigger_actualizar_fondo_premios()
+-- Se dispara cuando una inscripción cambia a estado 'confirmada'
+-- =========================================================================
+CREATE OR REPLACE TRIGGER TRG_ACTUALIZAR_FONDO_PREMIOS
+AFTER INSERT OR UPDATE ON TORNEO_INSCRIPCION
+FOR EACH ROW
+DECLARE
+    v_cuota             NUMBER;
+    v_comision_pct      NUMBER(5,2);
+    v_inscritos         NUMBER;
+    v_fondo_total       NUMBER(12,2);
+    v_comision_total    NUMBER(12,2);
+    v_fondo_despues     NUMBER(12,2);
+    v_estado_conf_id    NUMBER;
+BEGIN
+    -- Obtener el ID del estado 'confirmada'
+    BEGIN
+        SELECT ID INTO v_estado_conf_id
+        FROM CATALOGO_ESTADO_INSCRIPCION 
+        WHERE VALOR = 'confirmada';
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            -- Si no existe el estado, salir sin hacer nada
+            RETURN;
+    END;
+    
+    -- Solo procesar si la inscripción es confirmada
+    IF :NEW.ESTADO_ID = v_estado_conf_id THEN
+        -- Obtener cuota y comisión del torneo
+        BEGIN
+            SELECT CUOTA, COMISION_PORCENTAJE 
+            INTO v_cuota, v_comision_pct
+            FROM TORNEO_PREMIOS 
+            WHERE TORNEO_ID = :NEW.TORNEO_ID;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                -- Si no hay registro de premios, no hacer nada
+                RETURN;
+        END;
+        
+        -- Contar inscritos confirmados
+        SELECT COUNT(*) INTO v_inscritos
+        FROM TORNEO_INSCRIPCION
+        WHERE TORNEO_ID = :NEW.TORNEO_ID 
+          AND ESTADO_ID = v_estado_conf_id;
+        
+        -- Calcular fondos
+        v_fondo_total := NVL(v_cuota, 0) * v_inscritos;
+        v_comision_total := v_fondo_total * NVL(v_comision_pct, 0) / 100;
+        v_fondo_despues := v_fondo_total - v_comision_total;
+        
+        -- Actualizar torneo_premios
+        UPDATE TORNEO_PREMIOS
+        SET FONDO_TOTAL = v_fondo_total,
+            COMISION_TOTAL = v_comision_total,
+            FONDO_DESPUES_COMISION = v_fondo_despues
+        WHERE TORNEO_ID = :NEW.TORNEO_ID;
+    END IF;
+END;
+/
+
 PROMPT >>> Triggers creados exitosamente <<<

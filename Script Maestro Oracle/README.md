@@ -76,11 +76,23 @@ Script Maestro Oracle/
 | Secuencias | 40       | Una por tabla                                              |
 | Tablas     | 40       | 15 catálogos + 24 transaccionales + 1 auditoría            |
 | Vistas     | 6        | Perfil, Dashboard, Ventas, Ranking, Equipos, Transacciones |
-| Paquete    | 1        | `PKG_ESPORTS` (5 SP + 2 FN)                                |
-| Triggers   | 5        | Auditoría, timestamps, validaciones                        |
+| Paquetes   | 5        | Ver detalle abajo                                          |
+| Triggers   | 6        | Auditoría, timestamps, validaciones, fondo premios         |
 | Registros  | ~1,800   | Mínimo 50 por tabla transaccional                          |
 
-### Paquete PKG_ESPORTS
+### Paquetes PL/SQL
+
+| Paquete       | Funciones | Descripción                           |
+| ------------- | --------- | ------------------------------------- |
+| `PKG_ESPORTS` | 5 SP + 2 FN | Paquete original con SPs y funciones |
+| `PKG_TIENDA`  | 10 FN     | Funciones de tienda migradas de PostgreSQL |
+| `PKG_PERFIL`  | 10 FN     | Funciones de perfil de usuario        |
+| `PKG_TORNEO`  | 9 FN      | Funciones de gestión de torneos       |
+| `PKG_CONFIG`  | 16 FN     | Funciones de configuración de usuario |
+
+**Total: 52 funciones/procedimientos PL/SQL**
+
+### Paquete PKG_ESPORTS (Original)
 
 | Tipo | Nombre                       | Descripción                                            |
 | ---- | ---------------------------- | ------------------------------------------------------ |
@@ -94,9 +106,9 @@ Script Maestro Oracle/
 
 ---
 
-## 🔄 Guía para Migración Completa a Oracle (Futuro)
+## ✅ Migración Completa de PostgreSQL a Oracle
 
-El Script Maestro actual cubre los requerimientos de la primera entrega. Sin embargo, el proyecto original en PostgreSQL tiene una cantidad significativa de lógica adicional que no fue incluida. Esta sección documenta **todo lo que haría falta** para una migración completa.
+La migración de las funciones PL/pgSQL a PL/SQL ha sido **completada**. Todos los componentes del proyecto original han sido portados a Oracle.
 
 ### Estado Actual vs Proyecto Completo
 
@@ -109,13 +121,13 @@ El Script Maestro actual cubre los requerimientos de la primera entrega. Sin emb
 │ Seeds/Datos                      │ ✅ ~1,800   │ ~200 (seeders)  │
 │ Secuencias                       │ ✅ 40       │ N/A (UUID)      │
 │ Vistas                           │ ✅ 6        │ 0               │
-│ Paquete (SP+FN)                  │ ✅ 5SP+2FN  │ N/A             │
-│ Triggers                         │ ✅ 5        │ 1               │
-│ Funciones PL/pgSQL (Tienda)      │ ❌          │ 8 funciones     │
-│ Funciones PL/pgSQL (Torneos)     │ ❌          │ 10+ funciones   │
-│ Funciones PL/pgSQL (Perfil)      │ ❌          │ 10+ funciones   │
-│ Funciones PL/pgSQL (Config)      │ ❌          │ 15+ funciones   │
-│ Tipos personalizados             │ ❌          │ 1 (perfil)      │
+│ Paquete Original (SP+FN)         │ ✅ 5SP+2FN  │ N/A             │
+│ Triggers                         │ ✅ 6        │ 1               │
+│ Funciones PL/pgSQL (Tienda)      │ ✅ 10 FN    │ 10 funciones    │
+│ Funciones PL/pgSQL (Torneos)     │ ✅ 9 FN     │ 9 funciones     │
+│ Funciones PL/pgSQL (Perfil)      │ ✅ 10 FN    │ 10 funciones    │
+│ Funciones PL/pgSQL (Config)      │ ✅ 16 FN    │ 16 funciones    │
+│ Trigger Fondo Premios            │ ✅          │ 1               │
 │ Backend NestJS + TypeORM         │ ❌          │ 38 módulos      │
 │ Frontend Next.js                 │ ❌          │ Completo        │
 └──────────────────────────────────┴─────────────┴─────────────────┘
@@ -340,68 +352,74 @@ END;
 /
 ```
 
-### Paso 5: Inventario Completo de Funciones por Migrar
+**✅ Este trigger ya ha sido agregado al Script Maestro como `TRG_ACTUALIZAR_FONDO_PREMIOS` en el archivo `TRIGGER/01_TRIGGERS.sql`.**
 
-#### Funciones de Tienda (azure-funciones.sql) - 8 funciones
+### Paso 5: Inventario de Funciones Migradas
 
-| Función PG                       | Complejidad | Notas                                            |
-| -------------------------------- | ----------- | ------------------------------------------------ |
-| `tienda_obtener_catalogo()`      | 🟡 Media    | Usa JSONB extensivamente                         |
-| `tienda_crear_orden()`           | 🟡 Media    | Validaciones + INSERT con RETURNING              |
-| `tienda_registrar_pago_paypal()` | 🟢 Baja     | Simple UPDATE                                    |
-| `tienda_confirmar_compra()`      | 🔴 Alta     | Lógica compleja: créditos, membresías, servicios |
-| `tienda_cancelar_orden()`        | 🟢 Baja     | Validaciones + UPDATE                            |
-| `tienda_historial_compras()`     | 🟡 Media    | JSONB aggregation                                |
-| `tienda_verificar_nickname()`    | 🟢 Baja     | Consultas simples                                |
-| `tienda_comprar_con_saldo()`     | 🟡 Media    | Llama a otras funciones                          |
+#### Funciones de Tienda (PKG_TIENDA) - 10 funciones ✅
 
-#### Funciones de Torneos (crear_torneos.sql) - 10+ funciones
+| Función PG                       | Función Oracle                  | Estado |
+| -------------------------------- | ------------------------------- | ------ |
+| `tienda_obtener_catalogo()`      | `FN_OBTENER_CATALOGO`           | ✅     |
+| `tienda_crear_orden()`           | `FN_CREAR_ORDEN`                | ✅     |
+| `tienda_registrar_pago_paypal()` | `FN_REGISTRAR_PAGO_PAYPAL`      | ✅     |
+| `tienda_confirmar_compra()`      | `FN_CONFIRMAR_COMPRA`           | ✅     |
+| `tienda_cancelar_orden()`        | `FN_CANCELAR_ORDEN`             | ✅     |
+| `tienda_historial_compras()`     | `FN_HISTORIAL_COMPRAS`          | ✅     |
+| `tienda_verificar_nickname()`    | `FN_VERIFICAR_NICKNAME`         | ✅     |
+| `tienda_comprar_con_saldo()`     | `FN_COMPRAR_CON_SALDO`          | ✅     |
+| `tienda_obtener_solicitudes_soporte()` | `FN_OBTENER_SOLICITUDES_SOPORTE` | ✅     |
+| `tienda_resolver_solicitud_soporte()`  | `FN_RESOLVER_SOLICITUD_SOPORTE`  | ✅     |
 
-| Función PG                     | Complejidad | Notas                                           |
-| ------------------------------ | ----------- | ----------------------------------------------- |
-| `torneo_crear()`               | 🔴 Alta     | 30+ parámetros, validaciones, inserts múltiples |
-| `torneo_actualizar()`          | 🟡 Media    | UPDATE con COALESCE                             |
-| `torneo_cambiar_estado()`      | 🟡 Media    | Máquina de estados                              |
-| `torneo_obtener_detalle()`     | 🔴 Alta     | JSON complejo con subconsultas                  |
-| `torneo_listar()`              | 🟡 Media    | Filtros dinámicos                               |
-| `torneo_obtener_catalogos()`   | 🟡 Media    | JSON anidado                                    |
-| `torneo_upsert_red_social()`   | 🟢 Baja     | UPSERT simple                                   |
-| `torneo_eliminar_red_social()` | 🟢 Baja     | DELETE simple                                   |
+#### Funciones de Torneos (PKG_TORNEO) - 9 funciones ✅
 
-#### Funciones de Perfil (datos-perfil-usuario.sql) - 10 funciones
+| Función PG                     | Función Oracle            | Estado |
+| ------------------------------ | ------------------------- | ------ |
+| `torneo_crear()`               | `FN_CREAR`                | ✅     |
+| `torneo_actualizar()`          | `FN_ACTUALIZAR`           | ✅     |
+| `torneo_cambiar_estado()`      | `FN_CAMBIAR_ESTADO`       | ✅     |
+| `torneo_obtener_detalle()`     | `FN_OBTENER_DETALLE`      | ✅     |
+| `torneo_listar()`              | `FN_LISTAR`               | ✅     |
+| `torneo_obtener_catalogos()`   | `FN_OBTENER_CATALOGOS`    | ✅     |
+| `torneo_upsert_red_social()`   | `FN_UPSERT_RED_SOCIAL`    | ✅     |
+| `torneo_eliminar_red_social()` | `FN_ELIMINAR_RED_SOCIAL`  | ✅     |
+| `torneo_finalizar()`           | `FN_FINALIZAR`            | ✅     |
 
-| Función PG                       | Complejidad | Notas                               |
-| -------------------------------- | ----------- | ----------------------------------- |
-| `obtener_perfil_usuario()`       | 🔴 Alta     | Tipo personalizado, múltiples JOINs |
-| `obtener_lista_amigos()`         | 🟡 Media    | RETURNS TABLE                       |
-| `obtener_vitrina_trofeos()`      | 🟡 Media    | RETURNS TABLE con JOINs             |
-| `obtener_logros_usuario()`       | 🟢 Baja     | Simple JOIN                         |
-| `obtener_estadisticas_juegos()`  | 🟡 Media    | Cálculos de porcentaje              |
-| `obtener_historial_torneos()`    | 🟡 Media    | JOINs múltiples                     |
-| `obtener_redes_sociales()`       | 🟢 Baja     | Simple                              |
-| `obtener_cuentas_juego()`        | 🟢 Baja     | Simple                              |
-| `obtener_equipos_usuario()`      | 🟡 Media    | Subconsulta COUNT                   |
-| `obtener_perfil_completo_json()` | 🔴 Alta     | Compone todos los anteriores        |
+#### Funciones de Perfil (PKG_PERFIL) - 10 funciones ✅
 
-#### Funciones de Configuración (config_get_completa_usuario.sql) - 15 funciones
+| Función PG                       | Función Oracle              | Estado |
+| -------------------------------- | --------------------------- | ------ |
+| `obtener_perfil_usuario()`       | `FN_OBTENER_PERFIL`         | ✅     |
+| `obtener_lista_amigos()`         | `FN_LISTA_AMIGOS`           | ✅     |
+| `obtener_vitrina_trofeos()`      | `FN_VITRINA_TROFEOS`        | ✅     |
+| `obtener_logros_usuario()`       | `FN_LOGROS_USUARIO`         | ✅     |
+| `obtener_estadisticas_juegos()`  | `FN_ESTADISTICAS_JUEGOS`    | ✅     |
+| `obtener_historial_torneos()`    | `FN_HISTORIAL_TORNEOS`      | ✅     |
+| `obtener_redes_sociales()`       | `FN_REDES_SOCIALES`         | ✅     |
+| `obtener_cuentas_juego()`        | `FN_CUENTAS_JUEGO`          | ✅     |
+| `obtener_equipos_usuario()`      | `FN_EQUIPOS_USUARIO`        | ✅     |
+| `obtener_perfil_completo_json()` | `FN_PERFIL_COMPLETO_JSON`   | ✅     |
 
-| Función PG                     | Complejidad | Notas                        |
-| ------------------------------ | ----------- | ---------------------------- |
-| `config_get_personal()`        | 🟢 Baja     | SELECT con JOINs             |
-| `config_update_personal()`     | 🟢 Baja     | UPDATE con COALESCE          |
-| `config_get_social()`          | 🟢 Baja     | JSON aggregation             |
-| `config_upsert_social()`       | 🟡 Media    | UPSERT lógica                |
-| `config_delete_social()`       | 🟢 Baja     | DELETE                       |
-| `config_get_juegos()`          | 🟢 Baja     | JSON aggregation             |
-| `config_upsert_cuenta_juego()` | 🟡 Media    | UPSERT lógica                |
-| `config_delete_cuenta_juego()` | 🟢 Baja     | DELETE                       |
-| `config_get_preferencias()`    | 🟢 Baja     | Simple SELECT                |
-| `config_update_preferencias()` | 🟢 Baja     | Simple UPDATE                |
-| `config_get_cuenta()`          | 🟢 Baja     | SELECT con JOIN              |
-| `config_update_password()`     | 🟢 Baja     | Simple UPDATE                |
-| `config_get_seguridad()`       | 🟢 Baja     | SELECT con JOIN              |
-| `config_update_seguridad()`    | 🟡 Media    | UPDATE múltiples campos      |
-| `config_get_completa()`        | 🟡 Media    | Compone todos los anteriores |
+#### Funciones de Configuración (PKG_CONFIG) - 16 funciones ✅
+
+| Función PG                     | Función Oracle             | Estado |
+| ------------------------------ | -------------------------- | ------ |
+| `config_get_personal()`        | `FN_GET_PERSONAL`          | ✅     |
+| `config_update_personal()`     | `FN_UPDATE_PERSONAL`       | ✅     |
+| `config_get_social()`          | `FN_GET_SOCIAL`            | ✅     |
+| `config_upsert_social()`       | `FN_UPSERT_SOCIAL`         | ✅     |
+| `config_delete_social()`       | `FN_DELETE_SOCIAL`         | ✅     |
+| `config_get_juegos()`          | `FN_GET_JUEGOS`            | ✅     |
+| `config_upsert_cuenta_juego()` | `FN_UPSERT_CUENTA_JUEGO`   | ✅     |
+| `config_delete_cuenta_juego()` | `FN_DELETE_CUENTA_JUEGO`   | ✅     |
+| `config_get_preferencias()`    | `FN_GET_PREFERENCIAS`      | ✅     |
+| `config_update_preferencias()` | `FN_UPDATE_PREFERENCIAS`   | ✅     |
+| `config_get_cuenta()`          | `FN_GET_CUENTA`            | ✅     |
+| `config_update_password()`     | `FN_UPDATE_PASSWORD`       | ✅     |
+| `config_get_seguridad()`       | `FN_GET_SEGURIDAD`         | ✅     |
+| `config_update_seguridad()`    | `FN_UPDATE_SEGURIDAD`      | ✅     |
+| `config_get_retiro()`          | `FN_GET_RETIRO`            | ✅     |
+| `config_get_completa()`        | `FN_GET_COMPLETA`          | ✅     |
 
 ### Paso 6: Consideraciones del Frontend
 
@@ -413,21 +431,23 @@ Frontend (Next.js) → API (NestJS) → TypeORM → Oracle/PostgreSQL
     SIN CAMBIOS                              SOLO AQUÍ HAY CAMBIOS
 ```
 
-### Paso 7: Hoja de Ruta para Migración Completa
+### Paso 7: Pasos Pendientes para Conexión del Backend
 
-| Fase               | Tarea                                           | Esfuerzo      | Prioridad |
+| Fase               | Tarea                                           | Esfuerzo      | Estado    |
 | ------------------ | ----------------------------------------------- | ------------- | --------- |
-| 1                  | Decidir UUID strategy (RAW(16) vs VARCHAR2(36)) | 2h            | 🔴 Alta   |
-| 2                  | Recrear DDL con UUID elegido                    | 4h            | 🔴 Alta   |
-| 3                  | Configurar TypeORM para Oracle                  | 2h            | 🔴 Alta   |
-| 4                  | Modificar entidades (.entity.ts) para Oracle    | 8h            | 🔴 Alta   |
-| 5                  | Migrar funciones de baja complejidad (🟢)       | 6h            | 🟡 Media  |
-| 6                  | Migrar funciones de media complejidad (🟡)      | 12h           | 🟡 Media  |
-| 7                  | Migrar funciones de alta complejidad (🔴)       | 16h           | 🟡 Media  |
-| 8                  | Migrar trigger de fondo de premios              | 2h            | 🟡 Media  |
-| 9                  | Pruebas de integración frontend ↔ API ↔ Oracle  | 8h            | 🔴 Alta   |
-| 10                 | Docker Compose para Oracle XE                   | 4h            | 🟢 Baja   |
-| **Total estimado** |                                                 | **~64 horas** |           |
+| 1                  | Decidir UUID strategy (RAW(16) vs VARCHAR2(36)) | 2h            | ⏳ Pendiente |
+| 2                  | Recrear DDL con UUID elegido                    | 4h            | ⏳ Pendiente |
+| 3                  | Configurar TypeORM para Oracle                  | 2h            | ⏳ Pendiente |
+| 4                  | Modificar entidades (.entity.ts) para Oracle    | 8h            | ⏳ Pendiente |
+| 5                  | Migrar funciones PL/SQL (Tienda)                | 6h            | ✅ Completado |
+| 6                  | Migrar funciones PL/SQL (Torneos)               | 8h            | ✅ Completado |
+| 7                  | Migrar funciones PL/SQL (Perfil)                | 6h            | ✅ Completado |
+| 8                  | Migrar funciones PL/SQL (Config)                | 8h            | ✅ Completado |
+| 9                  | Migrar trigger de fondo de premios              | 2h            | ✅ Completado |
+| 10                 | Pruebas de integración frontend ↔ API ↔ Oracle  | 8h            | ⏳ Pendiente |
+| 11                 | Docker Compose para Oracle XE                   | 4h            | ⏳ Pendiente |
+| **Completado**     |                                                 | **~30 horas** |           |
+| **Pendiente**      |                                                 | **~24 horas** |           |
 
 ---
 

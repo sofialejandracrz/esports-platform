@@ -12,7 +12,7 @@ CREATE OR REPLACE PACKAGE PKG_TIENDA AS
 
     /*
     =========================================================================
-    FUNCIONES DE TIENDA (8 funciones migradas de PostgreSQL)
+    FUNCIONES DE TIENDA (10 funciones migradas de PostgreSQL)
     =========================================================================
     */
     
@@ -74,6 +74,23 @@ CREATE OR REPLACE PACKAGE PKG_TIENDA AS
         p_usuario_id    IN VARCHAR2,
         p_item_id       IN VARCHAR2,
         p_metadata      IN CLOB DEFAULT '{}'
+    ) RETURN CLOB;
+    
+    -- FN9: Obtener solicitudes de soporte (Admin)
+    -- Retorna lista de solicitudes de soporte para el panel de administración
+    FUNCTION FN_OBTENER_SOLICITUDES_SOPORTE(
+        p_estado        IN VARCHAR2 DEFAULT NULL,
+        p_limit         IN NUMBER DEFAULT 20,
+        p_offset        IN NUMBER DEFAULT 0
+    ) RETURN CLOB;
+    
+    -- FN10: Resolver solicitud de soporte (Admin)
+    -- Permite a un admin aprobar o rechazar solicitudes de soporte
+    FUNCTION FN_RESOLVER_SOLICITUD_SOPORTE(
+        p_solicitud_id  IN VARCHAR2,
+        p_admin_id      IN VARCHAR2,
+        p_aprobar       IN NUMBER,
+        p_notas         IN VARCHAR2 DEFAULT NULL
     ) RETURN CLOB;
 
 END PKG_TIENDA;

@@ -532,6 +532,171 @@ CREATE OR REPLACE PACKAGE BODY PKG_TIENDA AS
             RETURN '{"success": false, "error": "' || SQLERRM || '"}';
     END FN_COMPRAR_CON_SALDO;
 
+    /*
+    =========================================================================
+    FN9: OBTENER SOLICITUDES DE SOPORTE (ADMIN)
+    Migrado de PostgreSQL: tienda_obtener_solicitudes_soporte()
+    =========================================================================
+    */
+    FUNCTION FN_OBTENER_SOLICITUDES_SOPORTE(
+        p_estado        IN VARCHAR2 DEFAULT NULL,
+        p_limit         IN NUMBER DEFAULT 20,
+        p_offset        IN NUMBER DEFAULT 0
+    ) RETURN CLOB
+    IS
+        v_total         NUMBER;
+        v_solicitudes   CLOB;
+    BEGIN
+        -- Contar total
+        SELECT COUNT(*) INTO v_total
+        FROM TIENDA_SOLICITUD_SOPORTE
+        WHERE (p_estado IS NULL OR ESTADO = p_estado);
+        
+        -- Obtener solicitudes con paginación
+        SELECT COALESCE(JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'id' VALUE s.id,
+                'tipo' VALUE s.tipo,
+                'nickname_solicitado' VALUE s.nickname_solicitado,
+                'estado' VALUE s.estado,
+                'usuario' VALUE JSON_OBJECT(
+                    'id' VALUE u.id,
+                    'nickname' VALUE u.nickname
+                ),
+                'orden' VALUE CASE 
+                    WHEN s.orden_id IS NOT NULL THEN 
+                        JSON_OBJECT('id' VALUE o.id, 'monto' VALUE o.monto)
+                    ELSE NULL 
+                END,
+                'notas_admin' VALUE s.notas_admin,
+                'creado_en' VALUE TO_CHAR(s.creado_en, 'YYYY-MM-DD"T"HH24:MI:SS'),
+                'resuelto_en' VALUE TO_CHAR(s.resuelto_en, 'YYYY-MM-DD"T"HH24:MI:SS')
+            ) ORDER BY s.creado_en DESC
+        ), '[]')
+        INTO v_solicitudes
+        FROM (
+            SELECT * FROM (
+                SELECT s2.*, ROWNUM AS rn
+                FROM (
+                    SELECT * FROM TIENDA_SOLICITUD_SOPORTE 
+                    WHERE (p_estado IS NULL OR ESTADO = p_estado)
+                    ORDER BY creado_en DESC
+                ) s2
+                WHERE ROWNUM <= p_offset + p_limit
+            )
+            WHERE rn > p_offset
+        ) s
+        JOIN USUARIO u ON s.usuario_id = u.id
+        LEFT JOIN TIENDA_ORDEN o ON s.orden_id = o.id;
+        
+        RETURN JSON_OBJECT(
+            'success' VALUE 'true',
+            'total' VALUE v_total,
+            'solicitudes' VALUE v_solicitudes FORMAT JSON
+        );
+    EXCEPTION
+        WHEN OTHERS THEN
+            RETURN '{"success": false, "error": "' || SQLERRM || '"}';
+    END FN_OBTENER_SOLICITUDES_SOPORTE;
+
+    /*
+    =========================================================================
+    FN10: RESOLVER SOLICITUD DE SOPORTE (ADMIN)
+    Migrado de PostgreSQL: tienda_resolver_solicitud_soporte()
+    =========================================================================
+    */
+    FUNCTION FN_RESOLVER_SOLICITUD_SOPORTE(
+        p_solicitud_id  IN VARCHAR2,
+        p_admin_id      IN VARCHAR2,
+        p_aprobar       IN NUMBER,
+        p_notas         IN VARCHAR2 DEFAULT NULL
+    ) RETURN CLOB
+    IS
+        v_es_admin          NUMBER;
+        v_solicitud_tipo    VARCHAR2(100);
+        v_solicitud_estado  VARCHAR2(50);
+        v_usuario_id        NUMBER;
+        v_nickname_solicit  VARCHAR2(100);
+        v_nickname_anterior VARCHAR2(100);
+    BEGIN
+        -- Verificar que quien resuelve es admin
+        SELECT COUNT(*) INTO v_es_admin
+        FROM USUARIO u
+        JOIN CATALOGO_ROL cr ON u.rol_id = cr.id
+        WHERE u.id = p_admin_id AND cr.valor = 'admin';
+        
+        IF v_es_admin = 0 THEN
+            RETURN '{"success": false, "error": "Solo administradores pueden resolver solicitudes"}';
+        END IF;
+        
+        -- Obtener datos de la solicitud
+        BEGIN
+            SELECT tipo, estado, usuario_id, nickname_solicitado
+            INTO v_solicitud_tipo, v_solicitud_estado, v_usuario_id, v_nickname_solicit
+            FROM TIENDA_SOLICITUD_SOPORTE
+            WHERE id = p_solicitud_id;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RETURN '{"success": false, "error": "Solicitud no encontrada"}';
+        END;
+        
+        -- Verificar que no esté resuelta
+        IF v_solicitud_estado NOT IN ('pendiente', 'en_revision') THEN
+            RETURN '{"success": false, "error": "La solicitud ya fue resuelta"}';
+        END IF;
+        
+        IF p_aprobar = 1 THEN
+            -- Si es reclamar nickname, hacer el cambio
+            IF v_solicitud_tipo = 'reclamar_nickname' THEN
+                -- Liberar el nickname del usuario inactivo (agregar sufijo)
+                UPDATE USUARIO 
+                SET nickname = nickname || '_old_' || TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISS')
+                WHERE nickname = v_nickname_solicit 
+                  AND id != v_usuario_id;
+                
+                -- Guardar nickname anterior del solicitante
+                SELECT nickname INTO v_nickname_anterior
+                FROM USUARIO WHERE id = v_usuario_id;
+                
+                -- Asignar nuevo nickname al solicitante
+                UPDATE USUARIO 
+                SET nickname = v_nickname_solicit, 
+                    actualizado_en = SYSTIMESTAMP
+                WHERE id = v_usuario_id;
+            END IF;
+            
+            -- Actualizar solicitud como aprobada
+            UPDATE TIENDA_SOLICITUD_SOPORTE
+            SET estado = 'aprobado',
+                notas_admin = p_notas,
+                resuelto_en = SYSTIMESTAMP,
+                resuelto_por = p_admin_id,
+                actualizado_en = SYSTIMESTAMP
+            WHERE id = p_solicitud_id;
+            
+            COMMIT;
+            
+            RETURN '{"success": true, "message": "Solicitud aprobada", "nickname_asignado": "' || v_nickname_solicit || '"}';
+        ELSE
+            -- Rechazar solicitud
+            UPDATE TIENDA_SOLICITUD_SOPORTE
+            SET estado = 'rechazado',
+                notas_admin = p_notas,
+                resuelto_en = SYSTIMESTAMP,
+                resuelto_por = p_admin_id,
+                actualizado_en = SYSTIMESTAMP
+            WHERE id = p_solicitud_id;
+            
+            COMMIT;
+            
+            RETURN '{"success": true, "message": "Solicitud rechazada"}';
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RETURN '{"success": false, "error": "' || SQLERRM || '"}';
+    END FN_RESOLVER_SOLICITUD_SOPORTE;
+
 END PKG_TIENDA;
 /
 

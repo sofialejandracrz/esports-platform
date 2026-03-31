@@ -154,13 +154,13 @@ PROMPT      - 1 Tabla de auditoria
 PROMPT      - 6 Vistas
 PROMPT      - 5 Paquetes PL/SQL:
 PROMPT        * PKG_ESPORTS (5 SP + 2 FN) - Original
-PROMPT        * PKG_TIENDA (8 FN) - Migrado de PostgreSQL
+PROMPT        * PKG_TIENDA (10 FN) - Migrado de PostgreSQL
 PROMPT        * PKG_PERFIL (10 FN) - Migrado de PostgreSQL  
 PROMPT        * PKG_TORNEO (9 FN) - Migrado de PostgreSQL
 PROMPT        * PKG_CONFIG (16 FN) - Migrado de PostgreSQL
-PROMPT      - 5 Triggers
+PROMPT      - 6 Triggers (incluyendo TRG_ACTUALIZAR_FONDO_PREMIOS)
 PROMPT      - ~1,800 registros de datos
-PROMPT      - Total: 50+ funciones migradas de PostgreSQL a Oracle PL/SQL
+PROMPT      - Total: 52 funciones migradas de PostgreSQL a Oracle PL/SQL
 PROMPT ----------------------------------------------------------------------------------
 
 spool off
