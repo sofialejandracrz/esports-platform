@@ -1,12 +1,12 @@
-import { IsInt, IsNotEmpty, IsPositive, IsUUID } from 'class-validator';
+import { IsNumber,  IsInt, IsNotEmpty, IsPositive } from 'class-validator';
 
 export class CreateTorneoResultadoDto {
   @IsNotEmpty({ message: 'El ID del torneo es requerido' })
-  @IsUUID('4', { message: 'El ID del torneo debe ser un UUID válido' })
+  @IsNumber()
   torneoId: string;
 
   @IsNotEmpty({ message: 'El ID del usuario es requerido' })
-  @IsUUID('4', { message: 'El ID del usuario debe ser un UUID válido' })
+  @IsNumber()
   usuarioId: string;
 
   @IsNotEmpty({ message: 'La posición es requerida' })

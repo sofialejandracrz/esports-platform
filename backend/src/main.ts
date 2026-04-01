@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { SeederService } from './database/seeds/seeder.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -45,10 +44,15 @@ async function bootstrap() {
     customCss: '.swagger-ui .topbar { display: none }',
   });
 
-  // Ejecutar seeds solo si la variable de entorno SKIP_SEEDS no está presente
-  if (process.env.SKIP_SEEDS !== 'true') {
-    const seederService = app.get(SeederService);
+  // Seeds: solo para PostgreSQL.
+  // Con Oracle, los datos se insertan mediante el Script Maestro (DML/01_CATALOGOS.sql y DML/02_DATOS_MASIVOS.sql)
+  const dbType = process.env.DB_TYPE || 'postgres';
+  if (dbType === 'oracle') {
+    console.log('⏭️  Seeds omitidos: DB_TYPE=oracle. Los datos se manejan con el Script Maestro Oracle.');
+  } else if (process.env.SKIP_SEEDS !== 'true') {
     try {
+      const { SeederService } = await import('./database/seeds/seeder.service');
+      const seederService = app.get(SeederService);
       await seederService.seed();
     } catch (error) {
       console.error('❌ Error ejecutando seeds:', error.message);

@@ -14,8 +14,8 @@ import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, One
 
 @Entity({ name: 'torneo' })
 export class Torneo {
-@PrimaryGeneratedColumn('uuid')
-id: string;
+@PrimaryGeneratedColumn('increment')
+id: number;
 
 
 @ManyToOne(() => Usuario, { nullable: false })

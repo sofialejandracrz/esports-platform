@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateCatalogoAvatarDto {
     @IsString()
@@ -17,11 +17,11 @@ export class CreateCatalogoAvatarDto {
     @IsOptional()
     categoria?: string;
 
-    @IsBoolean()
+    @IsNumber()
     @IsOptional()
-    disponible?: boolean;
+    disponible?: number; // 1 = true, 0 = false (Oracle compatibility)
 
-    @IsBoolean()
+    @IsNumber()
     @IsOptional()
-    premium?: boolean;
+    premium?: number; // 1 = true, 0 = false (Oracle compatibility)
 }

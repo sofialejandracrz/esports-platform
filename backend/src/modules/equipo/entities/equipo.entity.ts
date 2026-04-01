@@ -4,8 +4,8 @@ import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, Pri
 
 @Entity({ name: 'equipo' })
 export class Equipo {
-@PrimaryGeneratedColumn('uuid')
-id: string;
+@PrimaryGeneratedColumn('increment')
+id: number;
 
 
 @Column({ name: 'nombre', unique: true })

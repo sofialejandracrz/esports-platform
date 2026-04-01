@@ -33,32 +33,32 @@ export class TorneoService {
   async create(createTorneoDto: CreateTorneoDto): Promise<Torneo> {
     const { anfitrionId, juegoId, plataformaId, modoJuegoId, regionId, tipoEntradaId, ...rest } = createTorneoDto;
 
-    const anfitrion = await this.usuarioRepository.findOne({ where: { id: anfitrionId } });
+    const anfitrion = await this.usuarioRepository.findOne({ where: { id: +anfitrionId } });
     if (!anfitrion) {
       throw new NotFoundException(`Usuario con ID ${anfitrionId} no encontrado`);
     }
 
-    const juego = await this.juegoRepository.findOne({ where: { id: juegoId } });
+    const juego = await this.juegoRepository.findOne({ where: { id: +juegoId } });
     if (!juego) {
       throw new NotFoundException(`Juego con ID ${juegoId} no encontrado`);
     }
 
-    const plataforma = await this.catalogoPlataformaRepository.findOne({ where: { id: plataformaId } });
+    const plataforma = await this.catalogoPlataformaRepository.findOne({ where: { id: +plataformaId } });
     if (!plataforma) {
       throw new NotFoundException(`Plataforma con ID ${plataformaId} no encontrada`);
     }
 
-    const modoJuego = await this.modoJuegoRepository.findOne({ where: { id: modoJuegoId } });
+    const modoJuego = await this.modoJuegoRepository.findOne({ where: { id: +modoJuegoId } });
     if (!modoJuego) {
       throw new NotFoundException(`Modo de juego con ID ${modoJuegoId} no encontrado`);
     }
 
-    const region = await this.catalogoRegionRepository.findOne({ where: { id: regionId } });
+    const region = await this.catalogoRegionRepository.findOne({ where: { id: +regionId } });
     if (!region) {
       throw new NotFoundException(`Región con ID ${regionId} no encontrada`);
     }
 
-    const tipoEntrada = await this.catalogoTipoEntradaRepository.findOne({ where: { id: tipoEntradaId } });
+    const tipoEntrada = await this.catalogoTipoEntradaRepository.findOne({ where: { id: +tipoEntradaId } });
     if (!tipoEntrada) {
       throw new NotFoundException(`Tipo de entrada con ID ${tipoEntradaId} no encontrado`);
     }
@@ -85,7 +85,7 @@ export class TorneoService {
 
   async findOne(id: string): Promise<Torneo> {
     const torneo = await this.torneoRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['anfitrion', 'juego', 'plataforma', 'modoJuego', 'region', 'tipoEntrada', 'inscripciones', 'redes', 'premio', 'resultados', 'estado', 'tipoTorneoRelacion'],
     });
 
@@ -102,7 +102,7 @@ export class TorneoService {
     const { anfitrionId, juegoId, plataformaId, modoJuegoId, regionId, tipoEntradaId, ...rest } = updateTorneoDto;
 
     if (anfitrionId) {
-      const anfitrion = await this.usuarioRepository.findOne({ where: { id: anfitrionId } });
+      const anfitrion = await this.usuarioRepository.findOne({ where: { id: +anfitrionId } });
       if (!anfitrion) {
         throw new NotFoundException(`Usuario con ID ${anfitrionId} no encontrado`);
       }
@@ -110,7 +110,7 @@ export class TorneoService {
     }
 
     if (juegoId) {
-      const juego = await this.juegoRepository.findOne({ where: { id: juegoId } });
+      const juego = await this.juegoRepository.findOne({ where: { id: +juegoId } });
       if (!juego) {
         throw new NotFoundException(`Juego con ID ${juegoId} no encontrado`);
       }
@@ -118,7 +118,7 @@ export class TorneoService {
     }
 
     if (plataformaId) {
-      const plataforma = await this.catalogoPlataformaRepository.findOne({ where: { id: plataformaId } });
+      const plataforma = await this.catalogoPlataformaRepository.findOne({ where: { id: +plataformaId } });
       if (!plataforma) {
         throw new NotFoundException(`Plataforma con ID ${plataformaId} no encontrada`);
       }
@@ -126,7 +126,7 @@ export class TorneoService {
     }
 
     if (modoJuegoId) {
-      const modoJuego = await this.modoJuegoRepository.findOne({ where: { id: modoJuegoId } });
+      const modoJuego = await this.modoJuegoRepository.findOne({ where: { id: +modoJuegoId } });
       if (!modoJuego) {
         throw new NotFoundException(`Modo de juego con ID ${modoJuegoId} no encontrado`);
       }
@@ -134,7 +134,7 @@ export class TorneoService {
     }
 
     if (regionId) {
-      const region = await this.catalogoRegionRepository.findOne({ where: { id: regionId } });
+      const region = await this.catalogoRegionRepository.findOne({ where: { id: +regionId } });
       if (!region) {
         throw new NotFoundException(`Región con ID ${regionId} no encontrada`);
       }
@@ -142,7 +142,7 @@ export class TorneoService {
     }
 
     if (tipoEntradaId) {
-      const tipoEntrada = await this.catalogoTipoEntradaRepository.findOne({ where: { id: tipoEntradaId } });
+      const tipoEntrada = await this.catalogoTipoEntradaRepository.findOne({ where: { id: +tipoEntradaId } });
       if (!tipoEntrada) {
         throw new NotFoundException(`Tipo de entrada con ID ${tipoEntradaId} no encontrado`);
       }

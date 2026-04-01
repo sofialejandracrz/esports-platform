@@ -4,8 +4,8 @@ import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDa
 
 @Entity({ name: 'usuario_estadisticas_juego' })
 export class UsuarioEstadisticaJuego {
-@PrimaryGeneratedColumn('uuid')
-id: string;
+@PrimaryGeneratedColumn('increment')
+id: number;
 
 
 @ManyToOne(() => Usuario)

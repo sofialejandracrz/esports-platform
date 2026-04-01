@@ -1,8 +1,8 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUrl, IsUUID, MaxLength } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, IsUrl, MaxLength } from 'class-validator';
 
 export class CreateUsuarioDto {
   @IsNotEmpty({ message: 'El ID de la persona es requerido' })
-  @IsUUID('4', { message: 'El ID de la persona debe ser un UUID válido' })
+  @IsNumber()
   personaId: string;
 
   @IsNotEmpty({ message: 'El nickname es requerido' })
@@ -10,7 +10,7 @@ export class CreateUsuarioDto {
   nickname: string;
 
   @IsNotEmpty({ message: 'El ID del rol es requerido' })
-  @IsUUID('4', { message: 'El ID del rol debe ser un UUID válido' })
+  @IsNumber()
   rolId: string;
 
   @IsOptional()
@@ -37,8 +37,8 @@ export class CreateUsuarioDto {
   biografia?: string;
 
   @IsOptional()
-  @IsBoolean({ message: 'Desafíos habilitados debe ser un valor booleano' })
-  desafiosHabilitados?: boolean;
+  @IsNumber()
+  desafiosHabilitados?: number; // 1 = true, 0 = false (Oracle compatibility)
 
   @IsOptional()
   @IsString({ message: 'El país debe ser una cadena de texto' })

@@ -3,8 +3,8 @@ import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "t
 
 @Entity({ name: 'usuario_red_social' })
 export class UsuarioRedSocial {
-@PrimaryGeneratedColumn('uuid')
-id: string;
+@PrimaryGeneratedColumn('increment')
+id: number;
 
 
 @ManyToOne(() => Usuario, (u) => u.redesSociales, { onDelete: 'CASCADE' })

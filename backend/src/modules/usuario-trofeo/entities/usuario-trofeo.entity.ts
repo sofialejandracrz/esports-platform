@@ -4,8 +4,8 @@ import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGenerat
 
 @Entity({ name: 'usuario_trofeos' })
 export class UsuarioTrofeo {
-@PrimaryGeneratedColumn('uuid')
-id: string;
+@PrimaryGeneratedColumn('increment')
+id: number;
 
 
 @ManyToOne(() => Usuario, (u) => u.trofeos, { onDelete: 'CASCADE' })

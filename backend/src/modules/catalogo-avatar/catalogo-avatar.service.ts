@@ -18,21 +18,21 @@ export class CatalogoAvatarService {
 
   async findAll(): Promise<CatalogoAvatar[]> {
     return await this.catalogoAvatarRepository.find({
-      where: { disponible: true },
+      where: { disponible: 1 },
       order: { nombre: 'ASC' },
     });
   }
 
   async findAllWithPremium(): Promise<CatalogoAvatar[]> {
     return await this.catalogoAvatarRepository.find({
-      where: { disponible: true },
+      where: { disponible: 1 },
       order: { premium: 'DESC', nombre: 'ASC' },
     });
   }
 
   async findOne(id: string): Promise<CatalogoAvatar> {
     const avatar = await this.catalogoAvatarRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!avatar) {

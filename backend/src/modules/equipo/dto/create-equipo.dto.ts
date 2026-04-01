@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNumber,  IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateEquipoDto {
   @IsNotEmpty({ message: 'El nombre es requerido' })
@@ -6,7 +6,7 @@ export class CreateEquipoDto {
   nombre: string;
 
   @IsNotEmpty({ message: 'El ID del creador es requerido' })
-  @IsUUID('4', { message: 'El ID del creador debe ser un UUID válido' })
+  @IsNumber()
   creadoPorId: string;
 
   @IsOptional()

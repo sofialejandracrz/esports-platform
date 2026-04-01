@@ -21,12 +21,12 @@ export class UsuarioMembresiaService {
   async create(createUsuarioMembresiaDto: CreateUsuarioMembresiaDto): Promise<UsuarioMembresia> {
     const { usuarioId, membresiaTipoId, ...rest } = createUsuarioMembresiaDto;
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
 
-    const membresiaTipo = await this.membresiaTipoRepository.findOne({ where: { id: membresiaTipoId } });
+    const membresiaTipo = await this.membresiaTipoRepository.findOne({ where: { id: +membresiaTipoId } });
     if (!membresiaTipo) {
       throw new NotFoundException(`Tipo de membresía con ID ${membresiaTipoId} no encontrado`);
     }
@@ -49,7 +49,7 @@ export class UsuarioMembresiaService {
 
   async findOne(id: string): Promise<UsuarioMembresia> {
     const usuarioMembresia = await this.usuarioMembresiaRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['usuario', 'membresiaTipo'],
     });
 
@@ -66,7 +66,7 @@ export class UsuarioMembresiaService {
     const { usuarioId, membresiaTipoId, ...rest } = updateUsuarioMembresiaDto;
 
     if (usuarioId) {
-      const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+      const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
       if (!usuario) {
         throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
       }
@@ -74,7 +74,7 @@ export class UsuarioMembresiaService {
     }
 
     if (membresiaTipoId) {
-      const membresiaTipo = await this.membresiaTipoRepository.findOne({ where: { id: membresiaTipoId } });
+      const membresiaTipo = await this.membresiaTipoRepository.findOne({ where: { id: +membresiaTipoId } });
       if (!membresiaTipo) {
         throw new NotFoundException(`Tipo de membresía con ID ${membresiaTipoId} no encontrado`);
       }

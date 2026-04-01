@@ -13,29 +13,22 @@ import {
   CuentaJuegoDto,
   EquipoDto,
 } from './dto/perfil-usuario.dto';
+import { OracleFunctionHelper } from '../../common/helpers/oracle-function.helper';
 
 /**
  * ============================================================================
  * PerfilUsuarioService
  * 
- * Este servicio se encarga de ejecutar las funciones almacenadas (stored functions)
- * de PostgreSQL para obtener los datos del perfil de usuario.
+ * Este servicio ejecuta las funciones almacenadas para obtener los datos del
+ * perfil de usuario. Compatible con PostgreSQL y Oracle.
  * 
- * ¿Por qué usar funciones almacenadas?
- * 1. Rendimiento: Una sola consulta obtiene todos los datos necesarios
- * 2. Lógica centralizada: La lógica de negocio está en la base de datos
- * 3. Seguridad: Menor exposición de la estructura de tablas
- * 4. Reducción de queries: Evita el problema N+1
+ * PostgreSQL: funciones independientes (obtener_perfil_completo_json, etc.)
+ * Oracle: funciones empaquetadas en PKG_PERFIL (FN_PERFIL_COMPLETO_JSON, etc.)
  * ============================================================================
  */
 @Injectable()
 export class PerfilUsuarioService {
   constructor(
-    /**
-     * DataSource es la conexión principal a la base de datos.
-     * Lo usamos para ejecutar queries raw (SQL directo) y llamar
-     * a funciones almacenadas.
-     */
     private readonly dataSource: DataSource,
     
     @InjectRepository(Usuario)
@@ -45,13 +38,8 @@ export class PerfilUsuarioService {
   /**
    * ============================================================================
    * MÉTODO PRINCIPAL: Obtener perfil completo
-   * 
-   * Llama a la función almacenada 'obtener_perfil_completo_json' que retorna
-   * TODA la información del perfil en formato JSON.
-   * 
-   * @param nickname - El nickname del usuario a consultar
-   * @param viewerId - UUID del usuario que está viendo el perfil (opcional)
-   * @returns PerfilCompletoDto - Objeto con toda la información del perfil
+   * PG: obtener_perfil_completo_json
+   * Oracle: PKG_PERFIL.FN_PERFIL_COMPLETO_JSON
    * ============================================================================
    */
   async obtenerPerfilCompleto(
@@ -59,28 +47,21 @@ export class PerfilUsuarioService {
     viewerId?: string,
   ): Promise<PerfilCompletoDto> {
     try {
-      /**
-       * Ejecutamos la función almacenada usando query() de DataSource.
-       * 
-       * SELECT obtener_perfil_completo_json($1, $2)
-       * - $1 y $2 son parámetros posicionales (evitan SQL injection)
-       * - La función retorna JSONB directamente desde PostgreSQL
-       */
-      const result = await this.dataSource.query(
-        `SELECT obtener_perfil_completo_json($1, $2) as perfil`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'obtener_perfil_completo_json',
+        'PKG_PERFIL.FN_PERFIL_COMPLETO_JSON',
         [nickname, viewerId || null],
       );
 
-      // El resultado viene en result[0].perfil (ya es un objeto JSON)
-      if (!result || !result[0] || !result[0].perfil) {
+      if (!result) {
         throw new NotFoundException(
           `Usuario con nickname "${nickname}" no encontrado`,
         );
       }
 
-      return result[0].perfil as PerfilCompletoDto;
+      return result as PerfilCompletoDto;
     } catch (error) {
-      // Si el error viene de PostgreSQL (RAISE EXCEPTION en la función)
       if (error.message?.includes('no encontrado')) {
         throw new NotFoundException(
           `Usuario con nickname "${nickname}" no encontrado`,
@@ -93,9 +74,8 @@ export class PerfilUsuarioService {
   /**
    * ============================================================================
    * Obtener lista de amigos paginada
-   * 
-   * Llama a la función 'obtener_lista_amigos' para obtener amigos con paginación.
-   * Útil cuando quieres cargar más amigos (scroll infinito, por ejemplo).
+   * PG: obtener_lista_amigos (retorna SETOF)
+   * Oracle: PKG_PERFIL.FN_LISTA_AMIGOS (retorna CLOB con JSON array)
    * ============================================================================
    */
   async obtenerListaAmigos(
@@ -103,27 +83,42 @@ export class PerfilUsuarioService {
     limit: number = 20,
     offset: number = 0,
   ): Promise<AmigoDto[]> {
-    const result = await this.dataSource.query(
-      `SELECT * FROM obtener_lista_amigos($1, $2, $3)`,
-      [nickname, limit, offset],
-    );
+    const dbType = this.dataSource.options.type;
 
-    // Mapeamos los nombres de columnas de snake_case a la estructura del DTO
-    return result.map((row: any) => ({
-      id: row.amigo_id,
-      nickname: row.amigo_nickname,
-      foto_perfil: row.amigo_foto_perfil,
-      avatar_url: row.amigo_avatar_url,
-      estado: row.amigo_estado,
-      ultima_conexion: row.amigo_ultima_conexion,
-      xp: row.amigo_xp,
-      fecha_amistad: row.fecha_amistad,
-    }));
+    if (dbType === 'oracle') {
+      // Oracle: la función retorna CLOB con un JSON array
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'obtener_lista_amigos',
+        'PKG_PERFIL.FN_LISTA_AMIGOS',
+        [nickname, limit, offset],
+      );
+      return Array.isArray(result) ? result : [];
+    } else {
+      // PostgreSQL: retorna filas individuales
+      const result = await this.dataSource.query(
+        `SELECT * FROM obtener_lista_amigos($1, $2, $3)`,
+        [nickname, limit, offset],
+      );
+
+      return result.map((row: any) => ({
+        id: row.amigo_id,
+        nickname: row.amigo_nickname,
+        foto_perfil: row.amigo_foto_perfil,
+        avatar_url: row.amigo_avatar_url,
+        estado: row.amigo_estado,
+        ultima_conexion: row.amigo_ultima_conexion,
+        xp: row.amigo_xp,
+        fecha_amistad: row.fecha_amistad,
+      }));
+    }
   }
 
   /**
    * ============================================================================
    * Obtener vitrina de trofeos paginada
+   * PG: obtener_vitrina_trofeos
+   * Oracle: PKG_PERFIL.FN_VITRINA_TROFEOS
    * ============================================================================
    */
   async obtenerVitrinaTrofeos(
@@ -131,25 +126,39 @@ export class PerfilUsuarioService {
     limit: number = 50,
     offset: number = 0,
   ): Promise<TrofeoDto[]> {
-    const result = await this.dataSource.query(
-      `SELECT * FROM obtener_vitrina_trofeos($1, $2, $3)`,
-      [nickname, limit, offset],
-    );
+    const dbType = this.dataSource.options.type;
 
-    return result.map((row: any) => ({
-      id: row.trofeo_id,
-      tipo: row.tipo_trofeo,
-      ganado_en: row.ganado_en,
-      torneo_id: row.torneo_id,
-      torneo_titulo: row.torneo_titulo,
-      torneo_juego: row.torneo_juego,
-      posicion: row.posicion_final,
-    }));
+    if (dbType === 'oracle') {
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'obtener_vitrina_trofeos',
+        'PKG_PERFIL.FN_VITRINA_TROFEOS',
+        [nickname, limit, offset],
+      );
+      return Array.isArray(result) ? result : [];
+    } else {
+      const result = await this.dataSource.query(
+        `SELECT * FROM obtener_vitrina_trofeos($1, $2, $3)`,
+        [nickname, limit, offset],
+      );
+
+      return result.map((row: any) => ({
+        id: row.trofeo_id,
+        tipo: row.tipo_trofeo,
+        ganado_en: row.ganado_en,
+        torneo_id: row.torneo_id,
+        torneo_titulo: row.torneo_titulo,
+        torneo_juego: row.torneo_juego,
+        posicion: row.posicion_final,
+      }));
+    }
   }
 
   /**
    * ============================================================================
    * Obtener logros del usuario paginados
+   * PG: obtener_logros_usuario
+   * Oracle: PKG_PERFIL.FN_LOGROS_USUARIO
    * ============================================================================
    */
   async obtenerLogros(
@@ -157,45 +166,73 @@ export class PerfilUsuarioService {
     limit: number = 50,
     offset: number = 0,
   ): Promise<LogroDto[]> {
-    const result = await this.dataSource.query(
-      `SELECT * FROM obtener_logros_usuario($1, $2, $3)`,
-      [nickname, limit, offset],
-    );
+    const dbType = this.dataSource.options.type;
 
-    return result.map((row: any) => ({
-      id: row.logro_id,
-      nombre: row.logro_nombre,
-      descripcion: row.logro_descripcion,
-      fecha_obtenido: row.fecha_obtenido,
-    }));
+    if (dbType === 'oracle') {
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'obtener_logros_usuario',
+        'PKG_PERFIL.FN_LOGROS_USUARIO',
+        [nickname, limit, offset],
+      );
+      return Array.isArray(result) ? result : [];
+    } else {
+      const result = await this.dataSource.query(
+        `SELECT * FROM obtener_logros_usuario($1, $2, $3)`,
+        [nickname, limit, offset],
+      );
+
+      return result.map((row: any) => ({
+        id: row.logro_id,
+        nombre: row.logro_nombre,
+        descripcion: row.logro_descripcion,
+        fecha_obtenido: row.fecha_obtenido,
+      }));
+    }
   }
 
   /**
    * ============================================================================
    * Obtener estadísticas por juego
+   * PG: obtener_estadisticas_juegos
+   * Oracle: PKG_PERFIL.FN_ESTADISTICAS_JUEGOS
    * ============================================================================
    */
   async obtenerEstadisticasJuegos(nickname: string): Promise<EstadisticaJuegoDto[]> {
-    const result = await this.dataSource.query(
-      `SELECT * FROM obtener_estadisticas_juegos($1)`,
-      [nickname],
-    );
+    const dbType = this.dataSource.options.type;
 
-    return result.map((row: any) => ({
-      juego_id: row.juego_id,
-      juego_nombre: row.juego_nombre,
-      victorias: row.victorias,
-      derrotas: row.derrotas,
-      empates: row.empates,
-      porcentaje_victorias: parseFloat(row.porcentaje_victorias),
-      nivel_rango: row.nivel_rango,
-      horas_jugadas: row.horas_jugadas,
-    }));
+    if (dbType === 'oracle') {
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'obtener_estadisticas_juegos',
+        'PKG_PERFIL.FN_ESTADISTICAS_JUEGOS',
+        [nickname],
+      );
+      return Array.isArray(result) ? result : [];
+    } else {
+      const result = await this.dataSource.query(
+        `SELECT * FROM obtener_estadisticas_juegos($1)`,
+        [nickname],
+      );
+
+      return result.map((row: any) => ({
+        juego_id: row.juego_id,
+        juego_nombre: row.juego_nombre,
+        victorias: row.victorias,
+        derrotas: row.derrotas,
+        empates: row.empates,
+        porcentaje_victorias: parseFloat(row.porcentaje_victorias),
+        nivel_rango: row.nivel_rango,
+        horas_jugadas: row.horas_jugadas,
+      }));
+    }
   }
 
   /**
    * ============================================================================
    * Obtener historial de torneos paginado
+   * PG: obtener_historial_torneos
+   * Oracle: PKG_PERFIL.FN_HISTORIAL_TORNEOS
    * ============================================================================
    */
   async obtenerHistorialTorneos(
@@ -203,80 +240,134 @@ export class PerfilUsuarioService {
     limit: number = 20,
     offset: number = 0,
   ): Promise<HistorialTorneoDto[]> {
-    const result = await this.dataSource.query(
-      `SELECT * FROM obtener_historial_torneos($1, $2, $3)`,
-      [nickname, limit, offset],
-    );
+    const dbType = this.dataSource.options.type;
 
-    return result.map((row: any) => ({
-      torneo_id: row.torneo_id,
-      titulo: row.torneo_titulo,
-      juego: row.juego_nombre,
-      fecha_inicio: row.fecha_inicio,
-      fecha_inscripcion: row.fecha_inscripcion,
-      estado_inscripcion: row.estado_inscripcion,
-      posicion_final: row.posicion_final,
-      premio_ganado: parseFloat(row.premio_ganado || '0'),
-      trofeo: row.tipo_trofeo,
-    }));
+    if (dbType === 'oracle') {
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'obtener_historial_torneos',
+        'PKG_PERFIL.FN_HISTORIAL_TORNEOS',
+        [nickname, limit, offset],
+      );
+      return Array.isArray(result) ? result : [];
+    } else {
+      const result = await this.dataSource.query(
+        `SELECT * FROM obtener_historial_torneos($1, $2, $3)`,
+        [nickname, limit, offset],
+      );
+
+      return result.map((row: any) => ({
+        torneo_id: row.torneo_id,
+        titulo: row.torneo_titulo,
+        juego: row.juego_nombre,
+        fecha_inicio: row.fecha_inicio,
+        fecha_inscripcion: row.fecha_inscripcion,
+        estado_inscripcion: row.estado_inscripcion,
+        posicion_final: row.posicion_final,
+        premio_ganado: parseFloat(row.premio_ganado || '0'),
+        trofeo: row.tipo_trofeo,
+      }));
+    }
   }
 
   /**
    * ============================================================================
    * Obtener redes sociales del usuario
+   * PG: obtener_redes_sociales
+   * Oracle: PKG_PERFIL.FN_REDES_SOCIALES
    * ============================================================================
    */
   async obtenerRedesSociales(nickname: string): Promise<RedSocialDto[]> {
-    const result = await this.dataSource.query(
-      `SELECT * FROM obtener_redes_sociales($1)`,
-      [nickname],
-    );
+    const dbType = this.dataSource.options.type;
 
-    return result.map((row: any) => ({
-      id: row.red_id,
-      plataforma: row.plataforma,
-      enlace: row.enlace,
-    }));
+    if (dbType === 'oracle') {
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'obtener_redes_sociales',
+        'PKG_PERFIL.FN_REDES_SOCIALES',
+        [nickname],
+      );
+      return Array.isArray(result) ? result : [];
+    } else {
+      const result = await this.dataSource.query(
+        `SELECT * FROM obtener_redes_sociales($1)`,
+        [nickname],
+      );
+
+      return result.map((row: any) => ({
+        id: row.red_id,
+        plataforma: row.plataforma,
+        enlace: row.enlace,
+      }));
+    }
   }
 
   /**
    * ============================================================================
    * Obtener cuentas de juego del usuario
+   * PG: obtener_cuentas_juego
+   * Oracle: PKG_PERFIL.FN_CUENTAS_JUEGO
    * ============================================================================
    */
   async obtenerCuentasJuego(nickname: string): Promise<CuentaJuegoDto[]> {
-    const result = await this.dataSource.query(
-      `SELECT * FROM obtener_cuentas_juego($1)`,
-      [nickname],
-    );
+    const dbType = this.dataSource.options.type;
 
-    return result.map((row: any) => ({
-      id: row.cuenta_id,
-      plataforma: row.plataforma,
-      identificador: row.identificador,
-    }));
+    if (dbType === 'oracle') {
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'obtener_cuentas_juego',
+        'PKG_PERFIL.FN_CUENTAS_JUEGO',
+        [nickname],
+      );
+      return Array.isArray(result) ? result : [];
+    } else {
+      const result = await this.dataSource.query(
+        `SELECT * FROM obtener_cuentas_juego($1)`,
+        [nickname],
+      );
+
+      return result.map((row: any) => ({
+        id: row.cuenta_id,
+        plataforma: row.plataforma,
+        identificador: row.identificador,
+      }));
+    }
   }
 
   /**
    * ============================================================================
    * Obtener equipos del usuario
+   * PG: obtener_equipos_usuario
+   * Oracle: PKG_PERFIL.FN_EQUIPOS_USUARIO
    * ============================================================================
    */
   async obtenerEquipos(nickname: string): Promise<EquipoDto[]> {
-    const result = await this.dataSource.query(
-      `SELECT * FROM obtener_equipos_usuario($1)`,
-      [nickname],
-    );
+    const dbType = this.dataSource.options.type;
 
-    return result.map((row: any) => ({
-      id: row.equipo_id,
-      nombre: row.equipo_nombre,
-      descripcion: row.equipo_descripcion,
-      avatar_url: row.equipo_avatar_url,
-      rol: row.rol_en_equipo,
-      fecha_ingreso: row.fecha_ingreso,
-      total_miembros: parseInt(row.total_miembros),
-    }));
+    if (dbType === 'oracle') {
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'obtener_equipos_usuario',
+        'PKG_PERFIL.FN_EQUIPOS_USUARIO',
+        [nickname],
+      );
+      return Array.isArray(result) ? result : [];
+    } else {
+      const result = await this.dataSource.query(
+        `SELECT * FROM obtener_equipos_usuario($1)`,
+        [nickname],
+      );
+
+      return result.map((row: any) => ({
+        id: row.equipo_id,
+        nombre: row.equipo_nombre,
+        descripcion: row.equipo_descripcion,
+        avatar_url: row.equipo_avatar_url,
+        rol: row.rol_en_equipo,
+        fecha_ingreso: row.fecha_ingreso,
+        total_miembros: parseInt(row.total_miembros),
+      }));
+    }
   }
 
   /**
@@ -294,7 +385,6 @@ export class PerfilUsuarioService {
   /**
    * ============================================================================
    * Método auxiliar: Obtener ID de usuario por nickname
-   * Útil para cuando necesitas el UUID del usuario logueado
    * ============================================================================
    */
   async obtenerIdPorNickname(nickname: string): Promise<string | null> {

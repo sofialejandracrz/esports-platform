@@ -1,8 +1,9 @@
-import { IsUUID, IsBoolean, IsOptional, IsString, IsIn } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, IsIn } from 'class-validator';
 
 export class ResolverSolicitudDto {
-  @IsUUID()
-  solicitudId: string;
+  @IsNotEmpty()
+  @IsNumber()
+  solicitudId: number;
 
   @IsBoolean()
   aprobar: boolean;

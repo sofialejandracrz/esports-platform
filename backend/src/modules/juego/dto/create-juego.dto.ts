@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNumber,  IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateJuegoDto {
   @IsNotEmpty({ message: 'El nombre es requerido' })
@@ -11,6 +11,6 @@ export class CreateJuegoDto {
 
   @IsOptional()
   @IsArray({ message: 'Las plataformas deben ser un array' })
-  @IsUUID('4', { each: true, message: 'Cada ID de plataforma debe ser un UUID válido' })
+  @IsNumber()
   plataformaIds?: string[];
 }

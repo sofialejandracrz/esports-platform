@@ -22,20 +22,20 @@ export class UsuarioSeguidoresService {
       throw new ConflictException('Un usuario no puede seguirse a sí mismo');
     }
 
-    const seguidor = await this.usuarioRepository.findOne({ where: { id: seguidorId } });
+    const seguidor = await this.usuarioRepository.findOne({ where: { id: +seguidorId } });
     if (!seguidor) {
       throw new NotFoundException(`Usuario seguidor con ID ${seguidorId} no encontrado`);
     }
 
-    const seguido = await this.usuarioRepository.findOne({ where: { id: seguidoId } });
+    const seguido = await this.usuarioRepository.findOne({ where: { id: +seguidoId } });
     if (!seguido) {
       throw new NotFoundException(`Usuario seguido con ID ${seguidoId} no encontrado`);
     }
 
     const existeRelacion = await this.usuarioSeguidoresRepository.findOne({
       where: {
-        seguidor: { id: seguidorId },
-        seguido: { id: seguidoId },
+        seguidor: { id: +seguidorId },
+        seguido: { id: +seguidoId },
       },
     });
 
@@ -61,7 +61,7 @@ export class UsuarioSeguidoresService {
 
   async findOne(id: string): Promise<UsuarioSeguidores> {
     const usuarioSeguidor = await this.usuarioSeguidoresRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['seguidor', 'seguido'],
     });
 
@@ -82,7 +82,7 @@ export class UsuarioSeguidoresService {
     }
 
     if (seguidorId) {
-      const seguidor = await this.usuarioRepository.findOne({ where: { id: seguidorId } });
+      const seguidor = await this.usuarioRepository.findOne({ where: { id: +seguidorId } });
       if (!seguidor) {
         throw new NotFoundException(`Usuario seguidor con ID ${seguidorId} no encontrado`);
       }
@@ -90,7 +90,7 @@ export class UsuarioSeguidoresService {
     }
 
     if (seguidoId) {
-      const seguido = await this.usuarioRepository.findOne({ where: { id: seguidoId } });
+      const seguido = await this.usuarioRepository.findOne({ where: { id: +seguidoId } });
       if (!seguido) {
         throw new NotFoundException(`Usuario seguido con ID ${seguidoId} no encontrado`);
       }

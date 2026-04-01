@@ -4,7 +4,7 @@
 // de los endpoints de configuración del dashboard de usuario.
 // ============================================================================
 
-import { IsBoolean, IsEmail, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsNumber,  IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 // ============================================================================
 // SECCIÓN: /usuario/configuracion/personal
@@ -38,7 +38,7 @@ export class UpdateConfigPersonalDto {
   biografia?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El ID del género debe ser un UUID válido' })
+  @IsNumber()
   genero_id?: string;
 
   @IsOptional()
@@ -46,7 +46,7 @@ export class UpdateConfigPersonalDto {
   timezone?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El ID del avatar debe ser un UUID válido' })
+  @IsNumber()
   avatar_id?: string;
 }
 
@@ -77,12 +77,12 @@ export class UpsertRedSocialDto {
   enlace: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El ID de la red social debe ser un UUID válido' })
+  @IsNumber()
   red_id?: string;
 }
 
 export class DeleteRedSocialDto {
-  @IsUUID('4', { message: 'El ID de la red social debe ser un UUID válido' })
+  @IsNumber()
   red_id: string;
 }
 
@@ -108,7 +108,7 @@ export class ConfigJuegosResponseDto {
 }
 
 export class UpsertCuentaJuegoDto {
-  @IsUUID('4', { message: 'El ID de la plataforma debe ser un UUID válido' })
+  @IsNumber()
   plataforma_id: string;
 
   @IsString({ message: 'El identificador es requerido' })
@@ -117,12 +117,12 @@ export class UpsertCuentaJuegoDto {
   identificador: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El ID de la cuenta debe ser un UUID válido' })
+  @IsNumber()
   cuenta_id?: string;
 }
 
 export class DeleteCuentaJuegoDto {
-  @IsUUID('4', { message: 'El ID de la cuenta debe ser un UUID válido' })
+  @IsNumber()
   cuenta_id: string;
 }
 

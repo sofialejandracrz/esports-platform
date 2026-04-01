@@ -3,8 +3,8 @@ import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, Primary
 
 @Entity({ name: 'persona' })
 export class Persona {
-@PrimaryGeneratedColumn('uuid', { name: 'id' })
-id: string;
+@PrimaryGeneratedColumn('increment')
+id: number;
 
 
 @Column({ name: 'p_nombre' })

@@ -1,20 +1,20 @@
-import { IsBoolean, IsDateString, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
+import { IsDateString, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
 
 export class CreateTorneoDto {
   @IsNotEmpty({ message: 'El ID del anfitrión es requerido' })
-  @IsUUID('4', { message: 'El ID del anfitrión debe ser un UUID válido' })
+  @IsNumber()
   anfitrionId: string;
 
   @IsNotEmpty({ message: 'El ID del juego es requerido' })
-  @IsUUID('4', { message: 'El ID del juego debe ser un UUID válido' })
+  @IsNumber()
   juegoId: string;
 
   @IsNotEmpty({ message: 'El ID de la plataforma es requerido' })
-  @IsUUID('4', { message: 'El ID de la plataforma debe ser un UUID válido' })
+  @IsNumber()
   plataformaId: string;
 
   @IsNotEmpty({ message: 'El ID del modo de juego es requerido' })
-  @IsUUID('4', { message: 'El ID del modo de juego debe ser un UUID válido' })
+  @IsNumber()
   modoJuegoId: string;
 
   @IsNotEmpty({ message: 'El título es requerido' })
@@ -38,7 +38,7 @@ export class CreateTorneoDto {
   fechaInicioTorneo?: string;
 
   @IsNotEmpty({ message: 'El ID de la región es requerido' })
-  @IsUUID('4', { message: 'El ID de la región debe ser un UUID válido' })
+  @IsNumber()
   regionId: string;
 
   @IsOptional()
@@ -55,27 +55,27 @@ export class CreateTorneoDto {
   formato?: string;
 
   @IsOptional()
-  @IsBoolean({ message: 'Cerrado debe ser un valor booleano' })
-  cerrado?: boolean;
+  @IsNumber()
+  cerrado?: number;
 
   @IsOptional()
   @IsString({ message: 'Las reglas deben ser una cadena de texto' })
   reglas?: string;
 
   @IsOptional()
-  @IsBoolean({ message: 'Jugadores PC permitidos debe ser un valor booleano' })
-  jugadoresPcPermitidos?: boolean;
+  @IsNumber()
+  jugadoresPcPermitidos?: number;
 
   @IsOptional()
-  @IsBoolean({ message: 'Requiere transmisión debe ser un valor booleano' })
-  requiereTransmision?: boolean;
+  @IsNumber()
+  requiereTransmision?: number;
 
   @IsOptional()
-  @IsBoolean({ message: 'Requiere cámara debe ser un valor booleano' })
-  requiereCamara?: boolean;
+  @IsNumber()
+  requiereCamara?: number;
 
   @IsNotEmpty({ message: 'El ID del tipo de entrada es requerido' })
-  @IsUUID('4', { message: 'El ID del tipo de entrada debe ser un UUID válido' })
+  @IsNumber()
   tipoEntradaId: string;
 
   @IsOptional()

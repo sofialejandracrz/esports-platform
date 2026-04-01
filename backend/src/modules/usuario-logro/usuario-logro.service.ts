@@ -21,20 +21,20 @@ export class UsuarioLogroService {
   async create(createUsuarioLogroDto: CreateUsuarioLogroDto): Promise<UsuarioLogro> {
     const { usuarioId, logroId, ...rest } = createUsuarioLogroDto;
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
 
-    const logro = await this.logroRepository.findOne({ where: { id: logroId } });
+    const logro = await this.logroRepository.findOne({ where: { id: +logroId } });
     if (!logro) {
       throw new NotFoundException(`Logro con ID ${logroId} no encontrado`);
     }
 
     const existeLogro = await this.usuarioLogroRepository.findOne({
       where: {
-        usuario: { id: usuarioId },
-        logro: { id: logroId },
+        usuario: { id: +usuarioId },
+        logro: { id: +logroId },
       },
     });
 
@@ -60,7 +60,7 @@ export class UsuarioLogroService {
 
   async findOne(id: string): Promise<UsuarioLogro> {
     const usuarioLogro = await this.usuarioLogroRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['usuario', 'logro'],
     });
 
@@ -77,7 +77,7 @@ export class UsuarioLogroService {
     const { usuarioId, logroId, ...rest } = updateUsuarioLogroDto;
 
     if (usuarioId) {
-      const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+      const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
       if (!usuario) {
         throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
       }
@@ -85,7 +85,7 @@ export class UsuarioLogroService {
     }
 
     if (logroId) {
-      const logro = await this.logroRepository.findOne({ where: { id: logroId } });
+      const logro = await this.logroRepository.findOne({ where: { id: +logroId } });
       if (!logro) {
         throw new NotFoundException(`Logro con ID ${logroId} no encontrado`);
       }

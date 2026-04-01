@@ -1,12 +1,12 @@
-import { IsBoolean, IsDateString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
 export class CreateUsuarioMembresiaDto {
   @IsNotEmpty({ message: 'El ID del usuario es requerido' })
-  @IsUUID('4', { message: 'El ID del usuario debe ser un UUID válido' })
+  @IsNumber()
   usuarioId: string;
 
   @IsNotEmpty({ message: 'El ID del tipo de membresía es requerido' })
-  @IsUUID('4', { message: 'El ID del tipo de membresía debe ser un UUID válido' })
+  @IsNumber()
   membresiaTipoId: string;
 
   @IsNotEmpty({ message: 'La fecha de inicio es requerida' })
@@ -18,6 +18,6 @@ export class CreateUsuarioMembresiaDto {
   fechaFin: string;
 
   @IsOptional()
-  @IsBoolean({ message: 'El campo activa debe ser booleano' })
-  activa?: boolean;
+  @IsNumber()
+  activa?: number; // 1 = true, 0 = false (Oracle compatibility)
 }

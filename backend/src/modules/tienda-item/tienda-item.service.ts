@@ -18,7 +18,7 @@ export class TiendaItemService {
   async create(createTiendaItemDto: CreateTiendaItemDto): Promise<TiendaItem> {
     const { tipoId, ...rest } = createTiendaItemDto;
 
-    const tipo = await this.catalogoTipoItemRepository.findOne({ where: { id: tipoId } });
+    const tipo = await this.catalogoTipoItemRepository.findOne({ where: { id: +tipoId } });
     if (!tipo) {
       throw new NotFoundException(`Tipo de item con ID ${tipoId} no encontrado`);
     }
@@ -40,7 +40,7 @@ export class TiendaItemService {
 
   async findOne(id: string): Promise<TiendaItem> {
     const tiendaItem = await this.tiendaItemRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['tipo'],
     });
 
@@ -57,7 +57,7 @@ export class TiendaItemService {
     const { tipoId, ...rest } = updateTiendaItemDto;
 
     if (tipoId) {
-      const tipo = await this.catalogoTipoItemRepository.findOne({ where: { id: tipoId } });
+      const tipo = await this.catalogoTipoItemRepository.findOne({ where: { id: +tipoId } });
       if (!tipo) {
         throw new NotFoundException(`Tipo de item con ID ${tipoId} no encontrado`);
       }

@@ -64,7 +64,7 @@ export class EquipoMiembroService {
 
   async findOne(id: string): Promise<EquipoMiembro> {
     const equipoMiembro = await this.equipoMiembroRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['equipo', 'usuario'],
     });
 

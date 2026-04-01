@@ -21,24 +21,17 @@ import {
   TorneoCatalogosResponse,
   TorneoFinalizarResponse,
 } from './dto/torneo-funciones.dto';
+import { OracleFunctionHelper } from '../../common/helpers/oracle-function.helper';
 
 /**
  * ============================================================================
  * TorneoFuncionesService
  * 
- * Servicio que ejecuta las funciones almacenadas de PostgreSQL para manejar
- * la gestión completa de torneos.
+ * Servicio que ejecuta las funciones almacenadas para manejar la gestión
+ * completa de torneos. Compatible con PostgreSQL y Oracle.
  * 
- * Funciones consumidas:
- * - torneo_crear: Crea un nuevo torneo
- * - torneo_actualizar: Actualiza un torneo existente
- * - torneo_cambiar_estado: Cambia el estado del torneo
- * - torneo_upsert_red_social: Crea/actualiza red social del torneo
- * - torneo_eliminar_red_social: Elimina red social del torneo
- * - torneo_obtener_detalle: Obtiene toda la información de un torneo
- * - torneo_listar: Lista torneos con filtros
- * - torneo_obtener_catalogos: Obtiene catálogos para el formulario
- * - torneo_finalizar: Finaliza torneo y distribuye premios
+ * PostgreSQL: funciones independientes (torneo_crear, torneo_actualizar, etc.)
+ * Oracle: funciones empaquetadas en PKG_TORNEO (FN_CREAR, FN_ACTUALIZAR, etc.)
  * ============================================================================
  */
 @Injectable()
@@ -50,48 +43,19 @@ export class TorneoFuncionesService {
   // ============================================================================
 
   /**
-   * Crea un nuevo torneo usando la función almacenada torneo_crear.
-   * 
-   * @param anfitrionId - UUID del usuario que crea el torneo
-   * @param dto - Datos del torneo a crear
+   * Crea un nuevo torneo.
+   * PG: torneo_crear
+   * Oracle: PKG_TORNEO.FN_CREAR
    */
   async crearTorneo(
     anfitrionId: string,
     dto: CrearTorneoFuncionDto,
   ): Promise<TorneoCrearResponse> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT torneo_crear(
-          $1,   -- p_anfitrion_id
-          $2,   -- p_titulo
-          $3,   -- p_descripcion
-          $4,   -- p_fecha_inicio_registro
-          $5,   -- p_fecha_fin_registro
-          $6,   -- p_fecha_inicio_torneo
-          $7,   -- p_juego_id
-          $8,   -- p_plataforma_id
-          $9,   -- p_modo_juego_id
-          $10,  -- p_region_id
-          $11,  -- p_tipo_torneo_id
-          $12,  -- p_al_mejor_de
-          $13,  -- p_formato
-          $14,  -- p_cerrado
-          $15,  -- p_reglas
-          $16,  -- p_jugadores_pc_permitidos
-          $17,  -- p_requiere_transmision
-          $18,  -- p_requiere_camara
-          $19,  -- p_tipo_entrada_id
-          $20,  -- p_capacidad
-          $21,  -- p_cuota
-          $22,  -- p_comision_porcentaje
-          $23,  -- p_ganador1_porcentaje
-          $24,  -- p_ganador2_porcentaje
-          $25,  -- p_contacto_anfitrion
-          $26,  -- p_discord_servidor
-          $27,  -- p_redes_sociales
-          $28,  -- p_banner_url
-          $29   -- p_miniatura_url
-        ) as resultado`,
+      const response = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'torneo_crear',
+        'PKG_TORNEO.FN_CREAR',
         [
           anfitrionId,
           dto.titulo,
@@ -123,9 +87,7 @@ export class TorneoFuncionesService {
           dto.banner_url ?? null,
           dto.miniatura_url ?? null,
         ],
-      );
-
-      const response = result[0].resultado as TorneoCrearResponse;
+      ) as TorneoCrearResponse;
       
       if (!response.success) {
         throw new BadRequestException(response.error || 'Error al crear el torneo');
@@ -143,11 +105,8 @@ export class TorneoFuncionesService {
 
   /**
    * Actualiza un torneo existente.
-   * Solo el anfitrión puede modificar su torneo.
-   * 
-   * @param torneoId - UUID del torneo a actualizar
-   * @param anfitrionId - UUID del usuario que hace la solicitud
-   * @param dto - Datos a actualizar
+   * PG: torneo_actualizar
+   * Oracle: PKG_TORNEO.FN_ACTUALIZAR
    */
   async actualizarTorneo(
     torneoId: string,
@@ -155,38 +114,10 @@ export class TorneoFuncionesService {
     dto: ActualizarTorneoFuncionDto,
   ): Promise<TorneoActualizarResponse> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT torneo_actualizar(
-          $1,   -- p_torneo_id
-          $2,   -- p_anfitrion_id
-          $3,   -- p_titulo
-          $4,   -- p_descripcion
-          $5,   -- p_fecha_inicio_registro
-          $6,   -- p_fecha_fin_registro
-          $7,   -- p_fecha_inicio_torneo
-          $8,   -- p_juego_id
-          $9,   -- p_plataforma_id
-          $10,  -- p_modo_juego_id
-          $11,  -- p_region_id
-          $12,  -- p_tipo_torneo_id
-          $13,  -- p_al_mejor_de
-          $14,  -- p_formato
-          $15,  -- p_cerrado
-          $16,  -- p_reglas
-          $17,  -- p_jugadores_pc_permitidos
-          $18,  -- p_requiere_transmision
-          $19,  -- p_requiere_camara
-          $20,  -- p_tipo_entrada_id
-          $21,  -- p_capacidad
-          $22,  -- p_cuota
-          $23,  -- p_comision_porcentaje
-          $24,  -- p_ganador1_porcentaje
-          $25,  -- p_ganador2_porcentaje
-          $26,  -- p_contacto_anfitrion
-          $27,  -- p_discord_servidor
-          $28,  -- p_banner_url
-          $29   -- p_miniatura_url
-        ) as resultado`,
+      const response = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'torneo_actualizar',
+        'PKG_TORNEO.FN_ACTUALIZAR',
         [
           torneoId,
           anfitrionId,
@@ -218,9 +149,7 @@ export class TorneoFuncionesService {
           dto.banner_url ?? null,
           dto.miniatura_url ?? null,
         ],
-      );
-
-      const response = result[0].resultado as TorneoActualizarResponse;
+      ) as TorneoActualizarResponse;
       
       if (!response.success) {
         this.throwSpecificError(response.error);
@@ -238,7 +167,8 @@ export class TorneoFuncionesService {
 
   /**
    * Cambia el estado de un torneo.
-   * Estados: proximamente, en_curso, terminado, cancelado
+   * PG: torneo_cambiar_estado
+   * Oracle: PKG_TORNEO.FN_CAMBIAR_ESTADO
    */
   async cambiarEstado(
     torneoId: string,
@@ -246,12 +176,12 @@ export class TorneoFuncionesService {
     dto: CambiarEstadoTorneoDto,
   ): Promise<TorneoCambiarEstadoResponse> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT torneo_cambiar_estado($1, $2, $3) as resultado`,
+      const response = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'torneo_cambiar_estado',
+        'PKG_TORNEO.FN_CAMBIAR_ESTADO',
         [torneoId, anfitrionId, dto.nuevo_estado],
-      );
-
-      const response = result[0].resultado as TorneoCambiarEstadoResponse;
+      ) as TorneoCambiarEstadoResponse;
       
       if (!response.success) {
         this.throwSpecificError(response.error);
@@ -269,6 +199,8 @@ export class TorneoFuncionesService {
 
   /**
    * Crea o actualiza una red social del torneo.
+   * PG: torneo_upsert_red_social
+   * Oracle: PKG_TORNEO.FN_UPSERT_RED_SOCIAL
    */
   async upsertRedSocial(
     torneoId: string,
@@ -276,12 +208,12 @@ export class TorneoFuncionesService {
     dto: UpsertRedSocialTorneoDto,
   ): Promise<TorneoRedSocialResponse> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT torneo_upsert_red_social($1, $2, $3, $4, $5) as resultado`,
+      const response = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'torneo_upsert_red_social',
+        'PKG_TORNEO.FN_UPSERT_RED_SOCIAL',
         [torneoId, anfitrionId, dto.plataforma, dto.url, dto.red_id ?? null],
-      );
-
-      const response = result[0].resultado as TorneoRedSocialResponse;
+      ) as TorneoRedSocialResponse;
       
       if (!response.success) {
         this.throwSpecificError(response.error);
@@ -295,6 +227,8 @@ export class TorneoFuncionesService {
 
   /**
    * Elimina una red social del torneo.
+   * PG: torneo_eliminar_red_social
+   * Oracle: PKG_TORNEO.FN_ELIMINAR_RED_SOCIAL
    */
   async eliminarRedSocial(
     torneoId: string,
@@ -302,12 +236,12 @@ export class TorneoFuncionesService {
     redId: string,
   ): Promise<TorneoRedSocialResponse> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT torneo_eliminar_red_social($1, $2, $3) as resultado`,
+      const response = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'torneo_eliminar_red_social',
+        'PKG_TORNEO.FN_ELIMINAR_RED_SOCIAL',
         [torneoId, anfitrionId, redId],
-      );
-
-      const response = result[0].resultado as TorneoRedSocialResponse;
+      ) as TorneoRedSocialResponse;
       
       if (!response.success) {
         this.throwSpecificError(response.error);
@@ -325,15 +259,17 @@ export class TorneoFuncionesService {
 
   /**
    * Obtiene toda la información detallada de un torneo.
+   * PG: torneo_obtener_detalle
+   * Oracle: PKG_TORNEO.FN_OBTENER_DETALLE
    */
   async obtenerDetalle(torneoId: string): Promise<TorneoDetalleResponse> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT torneo_obtener_detalle($1) as resultado`,
+      const response = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'torneo_obtener_detalle',
+        'PKG_TORNEO.FN_OBTENER_DETALLE',
         [torneoId],
-      );
-
-      const response = result[0].resultado as TorneoDetalleResponse;
+      ) as TorneoDetalleResponse;
       
       if (!response.success) {
         throw new NotFoundException(response.error || 'Torneo no encontrado');
@@ -351,11 +287,15 @@ export class TorneoFuncionesService {
 
   /**
    * Lista torneos con filtros opcionales.
+   * PG: torneo_listar
+   * Oracle: PKG_TORNEO.FN_LISTAR
    */
   async listarTorneos(query: ListarTorneosQueryDto): Promise<TorneoListarResponse> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT torneo_listar($1, $2, $3, $4, $5, $6, $7) as resultado`,
+      const response = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'torneo_listar',
+        'PKG_TORNEO.FN_LISTAR',
         [
           query.estado ?? null,
           query.juego_id ?? null,
@@ -365,9 +305,7 @@ export class TorneoFuncionesService {
           query.limit ?? 20,
           query.offset ?? 0,
         ],
-      );
-
-      const response = result[0].resultado as TorneoListarResponse;
+      ) as TorneoListarResponse;
       
       if (!response.success) {
         throw new BadRequestException(response.error || 'Error al listar torneos');
@@ -385,16 +323,17 @@ export class TorneoFuncionesService {
 
   /**
    * Obtiene todos los catálogos necesarios para el formulario de creación.
-   * Incluye: juegos (con plataformas y modos), regiones, tipos de torneo,
-   * tipos de entrada, opciones de "al mejor de", formatos, y redes sociales.
+   * PG: torneo_obtener_catalogos
+   * Oracle: PKG_TORNEO.FN_OBTENER_CATALOGOS
    */
   async obtenerCatalogos(): Promise<TorneoCatalogosResponse> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT torneo_obtener_catalogos() as resultado`,
-      );
-
-      const response = result[0].resultado as TorneoCatalogosResponse;
+      const response = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'torneo_obtener_catalogos',
+        'PKG_TORNEO.FN_OBTENER_CATALOGOS',
+        [],
+      ) as TorneoCatalogosResponse;
       
       if (!response.success) {
         throw new BadRequestException(response.error || 'Error al obtener catálogos');
@@ -412,6 +351,8 @@ export class TorneoFuncionesService {
 
   /**
    * Finaliza un torneo, registra resultados, asigna trofeos y distribuye premios.
+   * PG: torneo_finalizar
+   * Oracle: PKG_TORNEO.FN_FINALIZAR
    */
   async finalizarTorneo(
     torneoId: string,
@@ -419,12 +360,12 @@ export class TorneoFuncionesService {
     dto: FinalizarTorneoDto,
   ): Promise<TorneoFinalizarResponse> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT torneo_finalizar($1, $2, $3) as resultado`,
+      const response = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'torneo_finalizar',
+        'PKG_TORNEO.FN_FINALIZAR',
         [torneoId, anfitrionId, JSON.stringify(dto.resultados)],
-      );
-
-      const response = result[0].resultado as TorneoFinalizarResponse;
+      ) as TorneoFinalizarResponse;
       
       if (!response.success) {
         this.throwSpecificError(response.error);
@@ -441,13 +382,14 @@ export class TorneoFuncionesService {
   // ============================================================================
 
   /**
-   * Lanza errores específicos basados en el mensaje de error
+   * Lanza errores específicos basados en el mensaje de error.
+   * Compatible con mensajes de PostgreSQL y Oracle.
    */
   private throwSpecificError(errorMessage: string): never {
     if (errorMessage?.includes('no existe')) {
       throw new NotFoundException(errorMessage);
     }
-    if (errorMessage?.includes('Solo el anfitrión')) {
+    if (errorMessage?.includes('Solo el anfitrión') || errorMessage?.includes('ORA-20403')) {
       throw new ForbiddenException(errorMessage);
     }
     if (errorMessage?.includes('no puede')) {
@@ -458,6 +400,7 @@ export class TorneoFuncionesService {
 
   /**
    * Maneja errores de la base de datos de forma consistente.
+   * Compatible con errores de PostgreSQL y Oracle.
    */
   private handleDatabaseError(error: any): never {
     // Si ya es un error de NestJS, re-lanzarlo
@@ -469,18 +412,20 @@ export class TorneoFuncionesService {
       throw error;
     }
 
-    // Errores de RAISE EXCEPTION en PostgreSQL
-    if (error.message?.includes('no existe')) {
-      throw new NotFoundException(error.message);
+    const errorMsg = error.message || '';
+
+    // Errores de RAISE EXCEPTION (PG) o RAISE_APPLICATION_ERROR (Oracle)
+    if (errorMsg.includes('no existe') || errorMsg.includes('ORA-20404')) {
+      throw new NotFoundException(errorMsg);
     }
-    if (error.message?.includes('Solo el anfitrión')) {
-      throw new ForbiddenException(error.message);
+    if (errorMsg.includes('Solo el anfitrión') || errorMsg.includes('ORA-20403')) {
+      throw new ForbiddenException(errorMsg);
     }
-    if (error.message?.includes('obligatorio') || error.message?.includes('requerid')) {
-      throw new BadRequestException(error.message);
+    if (errorMsg.includes('obligatorio') || errorMsg.includes('requerid')) {
+      throw new BadRequestException(errorMsg);
     }
-    if (error.message?.includes('no puede') || error.message?.includes('no válid')) {
-      throw new BadRequestException(error.message);
+    if (errorMsg.includes('no puede') || errorMsg.includes('no válid')) {
+      throw new BadRequestException(errorMsg);
     }
 
     // Error genérico

@@ -33,7 +33,7 @@ export class CatalogoRegionService {
 
   async findOne(id: string): Promise<CatalogoRegion> {
     const catalogoRegion = await this.catalogoRegionRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!catalogoRegion) {
@@ -51,7 +51,7 @@ export class CatalogoRegionService {
         where: { valor: updateCatalogoRegionDto.valor },
       });
 
-      if (existing && existing.id !== id) {
+      if (existing && existing.id !== +id) {
         throw new ConflictException('Ya existe una región con ese valor');
       }
     }

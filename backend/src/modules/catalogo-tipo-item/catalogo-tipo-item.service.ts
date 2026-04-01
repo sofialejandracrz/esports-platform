@@ -33,7 +33,7 @@ export class CatalogoTipoItemService {
 
   async findOne(id: string): Promise<CatalogoTipoItem> {
     const catalogoTipoItem = await this.catalogoTipoItemRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!catalogoTipoItem) {
@@ -51,7 +51,7 @@ export class CatalogoTipoItemService {
         where: { valor: updateCatalogoTipoItemDto.valor },
       });
 
-      if (existing && existing.id !== id) {
+      if (existing && existing.id !== +id) {
         throw new ConflictException('Ya existe un tipo de item con ese valor');
       }
     }

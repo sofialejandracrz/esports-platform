@@ -24,17 +24,17 @@ export class TransaccionService {
   async create(createTransaccionDto: CreateTransaccionDto): Promise<Transaccion> {
     const { usuarioId, tipoId, origenId, ...rest } = createTransaccionDto;
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
 
-    const tipo = await this.catalogoTransaccionTipoRepository.findOne({ where: { id: tipoId } });
+    const tipo = await this.catalogoTransaccionTipoRepository.findOne({ where: { id: +tipoId } });
     if (!tipo) {
       throw new NotFoundException(`Tipo de transacción con ID ${tipoId} no encontrado`);
     }
 
-    const origen = await this.catalogoOrigenTransaccionRepository.findOne({ where: { id: origenId } });
+    const origen = await this.catalogoOrigenTransaccionRepository.findOne({ where: { id: +origenId } });
     if (!origen) {
       throw new NotFoundException(`Origen de transacción con ID ${origenId} no encontrado`);
     }
@@ -58,7 +58,7 @@ export class TransaccionService {
 
   async findOne(id: string): Promise<Transaccion> {
     const transaccion = await this.transaccionRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['usuario', 'tipo', 'origen'],
     });
 
@@ -75,7 +75,7 @@ export class TransaccionService {
     const { usuarioId, tipoId, origenId, ...rest } = updateTransaccionDto;
 
     if (usuarioId) {
-      const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+      const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
       if (!usuario) {
         throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
       }
@@ -83,7 +83,7 @@ export class TransaccionService {
     }
 
     if (tipoId) {
-      const tipo = await this.catalogoTransaccionTipoRepository.findOne({ where: { id: tipoId } });
+      const tipo = await this.catalogoTransaccionTipoRepository.findOne({ where: { id: +tipoId } });
       if (!tipo) {
         throw new NotFoundException(`Tipo de transacción con ID ${tipoId} no encontrado`);
       }
@@ -91,7 +91,7 @@ export class TransaccionService {
     }
 
     if (origenId) {
-      const origen = await this.catalogoOrigenTransaccionRepository.findOne({ where: { id: origenId } });
+      const origen = await this.catalogoOrigenTransaccionRepository.findOne({ where: { id: +origenId } });
       if (!origen) {
         throw new NotFoundException(`Origen de transacción con ID ${origenId} no encontrado`);
       }

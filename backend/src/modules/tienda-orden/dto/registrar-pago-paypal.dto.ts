@@ -1,8 +1,9 @@
-import { IsUUID, IsString, IsOptional, IsEmail } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsOptional, IsEmail } from 'class-validator';
 
 export class RegistrarPagoPaypalDto {
-  @IsUUID()
-  ordenId: string;
+  @IsNotEmpty()
+  @IsNumber()
+  ordenId: number;
 
   @IsString()
   paypalOrderId: string;

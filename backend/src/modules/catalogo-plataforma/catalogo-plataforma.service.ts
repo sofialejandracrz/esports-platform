@@ -33,7 +33,7 @@ export class CatalogoPlataformaService {
 
   async findOne(id: string): Promise<CatalogoPlataforma> {
     const catalogoPlataforma = await this.catalogoPlataformaRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!catalogoPlataforma) {
@@ -51,7 +51,7 @@ export class CatalogoPlataformaService {
         where: { valor: updateCatalogoPlataformaDto.valor },
       });
 
-      if (existing && existing.id !== id) {
+      if (existing && existing.id !== +id) {
         throw new ConflictException('Ya existe una plataforma con ese valor');
       }
     }

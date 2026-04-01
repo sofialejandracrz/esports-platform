@@ -21,12 +21,12 @@ export class UsuarioEstadisticaJuegoService {
   async create(createUsuarioEstadisticaJuegoDto: CreateUsuarioEstadisticaJuegoDto): Promise<UsuarioEstadisticaJuego> {
     const { usuarioId, juegoId, ...rest } = createUsuarioEstadisticaJuegoDto;
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
 
-    const juego = await this.juegoRepository.findOne({ where: { id: juegoId } });
+    const juego = await this.juegoRepository.findOne({ where: { id: +juegoId } });
     if (!juego) {
       throw new NotFoundException(`Juego con ID ${juegoId} no encontrado`);
     }
@@ -49,7 +49,7 @@ export class UsuarioEstadisticaJuegoService {
 
   async findOne(id: string): Promise<UsuarioEstadisticaJuego> {
     const usuarioEstadisticaJuego = await this.usuarioEstadisticaJuegoRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['usuario', 'juego'],
     });
 
@@ -66,7 +66,7 @@ export class UsuarioEstadisticaJuegoService {
     const { usuarioId, juegoId, ...rest } = updateUsuarioEstadisticaJuegoDto;
 
     if (usuarioId) {
-      const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+      const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
       if (!usuario) {
         throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
       }
@@ -74,7 +74,7 @@ export class UsuarioEstadisticaJuegoService {
     }
 
     if (juegoId) {
-      const juego = await this.juegoRepository.findOne({ where: { id: juegoId } });
+      const juego = await this.juegoRepository.findOne({ where: { id: +juegoId } });
       if (!juego) {
         throw new NotFoundException(`Juego con ID ${juegoId} no encontrado`);
       }

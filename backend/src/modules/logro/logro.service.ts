@@ -25,7 +25,7 @@ export class LogroService {
 
   async findOne(id: string): Promise<Logro> {
     const logro = await this.logroRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!logro) {

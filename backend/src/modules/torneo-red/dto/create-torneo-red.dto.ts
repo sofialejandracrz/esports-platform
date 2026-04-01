@@ -1,8 +1,8 @@
-import { IsNotEmpty, IsString, IsUrl, IsUUID } from 'class-validator';
+import { IsNumber,  IsNotEmpty, IsString, IsUrl } from 'class-validator';
 
 export class CreateTorneoRedDto {
   @IsNotEmpty({ message: 'El ID del torneo es requerido' })
-  @IsUUID('4', { message: 'El ID del torneo debe ser un UUID válido' })
+  @IsNumber()
   torneoId: string;
 
   @IsNotEmpty({ message: 'La plataforma es requerida' })

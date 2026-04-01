@@ -1,8 +1,9 @@
-import { IsUUID, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsOptional } from 'class-validator';
 
 export class ConfirmarCompraDto {
-  @IsUUID()
-  ordenId: string;
+  @IsNotEmpty()
+  @IsNumber()
+  ordenId: number;
 
   @IsOptional()
   @IsString()

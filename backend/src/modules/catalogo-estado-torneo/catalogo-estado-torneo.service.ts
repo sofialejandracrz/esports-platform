@@ -33,7 +33,7 @@ export class CatalogoEstadoTorneoService {
 
   async findOne(id: string): Promise<CatalogoEstadoTorneo> {
     const catalogoEstadoTorneo = await this.catalogoEstadoTorneoRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!catalogoEstadoTorneo) {
@@ -51,7 +51,7 @@ export class CatalogoEstadoTorneoService {
         where: { valor: updateCatalogoEstadoTorneoDto.valor },
       });
 
-      if (existing && existing.id !== id) {
+      if (existing && existing.id !== +id) {
         throw new ConflictException('Ya existe un estado de torneo con ese valor');
       }
     }

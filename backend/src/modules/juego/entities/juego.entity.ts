@@ -4,8 +4,8 @@ import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, OneToMany, Pri
 
 @Entity({ name: 'juego' })
 export class Juego {
-@PrimaryGeneratedColumn('uuid')
-id: string;
+@PrimaryGeneratedColumn('increment')
+id: number;
 
 
 @Column({ name: 'nombre', unique: true })

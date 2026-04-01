@@ -1,8 +1,8 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNumber,  IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateModoJuegoDto {
   @IsNotEmpty({ message: 'El ID del juego es requerido' })
-  @IsUUID('4', { message: 'El ID del juego debe ser un UUID válido' })
+  @IsNumber()
   juegoId: string;
 
   @IsNotEmpty({ message: 'El nombre es requerido' })

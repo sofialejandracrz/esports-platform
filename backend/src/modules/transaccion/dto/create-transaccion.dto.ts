@@ -1,12 +1,12 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNumber,  IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateTransaccionDto {
   @IsNotEmpty({ message: 'El ID del usuario es requerido' })
-  @IsUUID('4', { message: 'El ID del usuario debe ser un UUID válido' })
+  @IsNumber()
   usuarioId: string;
 
   @IsNotEmpty({ message: 'El ID del tipo es requerido' })
-  @IsUUID('4', { message: 'El ID del tipo debe ser un UUID válido' })
+  @IsNumber()
   tipoId: string;
 
   @IsNotEmpty({ message: 'El monto es requerido' })
@@ -18,6 +18,6 @@ export class CreateTransaccionDto {
   descripcion?: string;
 
   @IsNotEmpty({ message: 'El ID del origen es requerido' })
-  @IsUUID('4', { message: 'El ID del origen debe ser un UUID válido' })
+  @IsNumber()
   origenId: string;
 }

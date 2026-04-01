@@ -18,7 +18,7 @@ export class UsuarioRedSocialService {
   async create(createUsuarioRedSocialDto: CreateUsuarioRedSocialDto): Promise<UsuarioRedSocial> {
     const { usuarioId, ...rest } = createUsuarioRedSocialDto;
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
@@ -39,7 +39,7 @@ export class UsuarioRedSocialService {
 
   async findOne(id: string): Promise<UsuarioRedSocial> {
     const usuarioRedSocial = await this.usuarioRedSocialRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['usuario'],
     });
 
@@ -56,7 +56,7 @@ export class UsuarioRedSocialService {
     const { usuarioId, ...rest } = updateUsuarioRedSocialDto;
 
     if (usuarioId) {
-      const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+      const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
       if (!usuario) {
         throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
       }

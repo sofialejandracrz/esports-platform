@@ -1,12 +1,12 @@
-import { IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
+import { IsNumber,  IsInt, IsNotEmpty, IsOptional, IsPositive, IsString } from 'class-validator';
 
 export class CreateUsuarioEstadisticaJuegoDto {
   @IsNotEmpty({ message: 'El ID del usuario es requerido' })
-  @IsUUID('4', { message: 'El ID del usuario debe ser un UUID válido' })
+  @IsNumber()
   usuarioId: string;
 
   @IsNotEmpty({ message: 'El ID del juego es requerido' })
-  @IsUUID('4', { message: 'El ID del juego debe ser un UUID válido' })
+  @IsNumber()
   juegoId: string;
 
   @IsOptional()

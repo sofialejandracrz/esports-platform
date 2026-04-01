@@ -29,12 +29,12 @@ export class UsuarioService {
       throw new ConflictException(`El nickname ${createUsuarioDto.nickname} ya está en uso`);
     }
 
-    const persona = await this.personaRepository.findOne({ where: { id: personaId } });
+    const persona = await this.personaRepository.findOne({ where: { id: +personaId } });
     if (!persona) {
       throw new NotFoundException(`Persona con ID ${personaId} no encontrada`);
     }
 
-    const rol = await this.catalogoRolRepository.findOne({ where: { id: rolId } });
+    const rol = await this.catalogoRolRepository.findOne({ where: { id: +rolId } });
     if (!rol) {
       throw new NotFoundException(`Rol con ID ${rolId} no encontrado`);
     }
@@ -57,7 +57,7 @@ export class UsuarioService {
 
   async findOne(id: string): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['persona', 'rol', 'redesSociales', 'cuentasJuego', 'membresias', 'trofeos'],
     });
 
@@ -85,7 +85,7 @@ export class UsuarioService {
     }
 
     if (personaId) {
-      const persona = await this.personaRepository.findOne({ where: { id: personaId } });
+      const persona = await this.personaRepository.findOne({ where: { id: +personaId } });
       if (!persona) {
         throw new NotFoundException(`Persona con ID ${personaId} no encontrada`);
       }
@@ -93,7 +93,7 @@ export class UsuarioService {
     }
 
     if (rolId) {
-      const rol = await this.catalogoRolRepository.findOne({ where: { id: rolId } });
+      const rol = await this.catalogoRolRepository.findOne({ where: { id: +rolId } });
       if (!rol) {
         throw new NotFoundException(`Rol con ID ${rolId} no encontrado`);
       }

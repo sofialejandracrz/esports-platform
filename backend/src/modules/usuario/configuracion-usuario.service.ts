@@ -28,22 +28,17 @@ import {
   UpdatePasswordDto,
   UpdateSeguridadDto,
 } from './dto/configuracion-usuario.dto';
+import { OracleFunctionHelper } from '../../common/helpers/oracle-function.helper';
 
 /**
  * ============================================================================
  * ConfiguracionUsuarioService
  * 
- * Este servicio ejecuta las funciones almacenadas de PostgreSQL para manejar
- * la configuración del usuario en el dashboard.
+ * Servicio que ejecuta las funciones almacenadas para manejar la configuración
+ * del usuario. Compatible con PostgreSQL y Oracle.
  * 
- * Secciones cubiertas:
- * - Personal: nickname, biografía, género, timezone, avatar
- * - Social: redes sociales (Twitter, Twitch, etc.)
- * - Juegos: cuentas de plataformas de juego
- * - Preferencias: desafíos habilitados
- * - Cuenta: correo, contraseña
- * - Seguridad: datos de pago (PayPal, dirección)
- * - Retiro: placeholder para integración futura
+ * PostgreSQL: funciones independientes (config_get_personal, config_update_personal, etc.)
+ * Oracle: funciones empaquetadas en PKG_CONFIG (FN_GET_PERSONAL, FN_UPDATE_PERSONAL, etc.)
  * ============================================================================
  */
 @Injectable()
@@ -60,24 +55,25 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Obtiene TODA la configuración del usuario en una sola llamada.
-   * Útil para cargar el dashboard completo de configuración.
-   * 
-   * @param usuarioId - UUID del usuario autenticado
+   * PG: config_get_completa
+   * Oracle: PKG_CONFIG.FN_GET_COMPLETA
    */
   async obtenerConfiguracionCompleta(
     usuarioId: string,
   ): Promise<ConfigCompletaResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_get_completa($1) as config`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_get_completa',
+        'PKG_CONFIG.FN_GET_COMPLETA',
         [usuarioId],
       );
 
-      if (!result?.[0]?.config) {
+      if (!result) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      return result[0].config as ConfigCompletaResponseDto;
+      return result as ConfigCompletaResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -89,19 +85,23 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Obtiene la configuración personal del usuario.
+   * PG: config_get_personal
+   * Oracle: PKG_CONFIG.FN_GET_PERSONAL
    */
   async obtenerConfigPersonal(usuarioId: string): Promise<ConfigPersonalResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_get_personal($1) as config`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_get_personal',
+        'PKG_CONFIG.FN_GET_PERSONAL',
         [usuarioId],
       );
 
-      if (!result?.[0]?.config) {
+      if (!result) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      return result[0].config as ConfigPersonalResponseDto;
+      return result as ConfigPersonalResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -109,14 +109,18 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Actualiza la configuración personal del usuario.
+   * PG: config_update_personal
+   * Oracle: PKG_CONFIG.FN_UPDATE_PERSONAL
    */
   async actualizarConfigPersonal(
     usuarioId: string,
     dto: UpdateConfigPersonalDto,
   ): Promise<ConfigSuccessResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_update_personal($1, $2, $3, $4, $5) as resultado`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_update_personal',
+        'PKG_CONFIG.FN_UPDATE_PERSONAL',
         [
           usuarioId,
           dto.biografia ?? null,
@@ -126,7 +130,7 @@ export class ConfiguracionUsuarioService {
         ],
       );
 
-      return result[0].resultado as ConfigSuccessResponseDto;
+      return result as ConfigSuccessResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -138,19 +142,23 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Obtiene las redes sociales configuradas del usuario.
+   * PG: config_get_social
+   * Oracle: PKG_CONFIG.FN_GET_SOCIAL
    */
   async obtenerConfigSocial(usuarioId: string): Promise<ConfigSocialResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_get_social($1) as config`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_get_social',
+        'PKG_CONFIG.FN_GET_SOCIAL',
         [usuarioId],
       );
 
-      if (!result?.[0]?.config) {
+      if (!result) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      return result[0].config as ConfigSocialResponseDto;
+      return result as ConfigSocialResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -158,18 +166,22 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Crea o actualiza una red social del usuario.
+   * PG: config_upsert_social
+   * Oracle: PKG_CONFIG.FN_UPSERT_SOCIAL
    */
   async upsertRedSocial(
     usuarioId: string,
     dto: UpsertRedSocialDto,
   ): Promise<UpsertSocialSuccessDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_upsert_social($1, $2, $3, $4) as resultado`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_upsert_social',
+        'PKG_CONFIG.FN_UPSERT_SOCIAL',
         [usuarioId, dto.plataforma, dto.enlace, dto.red_id ?? null],
       );
 
-      return result[0].resultado as UpsertSocialSuccessDto;
+      return result as UpsertSocialSuccessDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -177,18 +189,22 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Elimina una red social del usuario.
+   * PG: config_delete_social
+   * Oracle: PKG_CONFIG.FN_DELETE_SOCIAL
    */
   async eliminarRedSocial(
     usuarioId: string,
     redId: string,
   ): Promise<ConfigSuccessResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_delete_social($1, $2) as resultado`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_delete_social',
+        'PKG_CONFIG.FN_DELETE_SOCIAL',
         [usuarioId, redId],
       );
 
-      return result[0].resultado as ConfigSuccessResponseDto;
+      return result as ConfigSuccessResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -200,19 +216,23 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Obtiene las cuentas de juego configuradas del usuario.
+   * PG: config_get_juegos
+   * Oracle: PKG_CONFIG.FN_GET_JUEGOS
    */
   async obtenerConfigJuegos(usuarioId: string): Promise<ConfigJuegosResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_get_juegos($1) as config`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_get_juegos',
+        'PKG_CONFIG.FN_GET_JUEGOS',
         [usuarioId],
       );
 
-      if (!result?.[0]?.config) {
+      if (!result) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      return result[0].config as ConfigJuegosResponseDto;
+      return result as ConfigJuegosResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -220,18 +240,22 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Crea o actualiza una cuenta de juego del usuario.
+   * PG: config_upsert_cuenta_juego
+   * Oracle: PKG_CONFIG.FN_UPSERT_CUENTA_JUEGO
    */
   async upsertCuentaJuego(
     usuarioId: string,
     dto: UpsertCuentaJuegoDto,
   ): Promise<UpsertCuentaJuegoSuccessDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_upsert_cuenta_juego($1, $2, $3, $4) as resultado`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_upsert_cuenta_juego',
+        'PKG_CONFIG.FN_UPSERT_CUENTA_JUEGO',
         [usuarioId, dto.plataforma_id, dto.identificador, dto.cuenta_id ?? null],
       );
 
-      return result[0].resultado as UpsertCuentaJuegoSuccessDto;
+      return result as UpsertCuentaJuegoSuccessDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -239,18 +263,22 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Elimina una cuenta de juego del usuario.
+   * PG: config_delete_cuenta_juego
+   * Oracle: PKG_CONFIG.FN_DELETE_CUENTA_JUEGO
    */
   async eliminarCuentaJuego(
     usuarioId: string,
     cuentaId: string,
   ): Promise<ConfigSuccessResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_delete_cuenta_juego($1, $2) as resultado`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_delete_cuenta_juego',
+        'PKG_CONFIG.FN_DELETE_CUENTA_JUEGO',
         [usuarioId, cuentaId],
       );
 
-      return result[0].resultado as ConfigSuccessResponseDto;
+      return result as ConfigSuccessResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -262,21 +290,25 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Obtiene las preferencias del usuario.
+   * PG: config_get_preferencias
+   * Oracle: PKG_CONFIG.FN_GET_PREFERENCIAS
    */
   async obtenerConfigPreferencias(
     usuarioId: string,
   ): Promise<ConfigPreferenciasResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_get_preferencias($1) as config`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_get_preferencias',
+        'PKG_CONFIG.FN_GET_PREFERENCIAS',
         [usuarioId],
       );
 
-      if (!result?.[0]?.config) {
+      if (!result) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      return result[0].config as ConfigPreferenciasResponseDto;
+      return result as ConfigPreferenciasResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -284,18 +316,22 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Actualiza las preferencias del usuario.
+   * PG: config_update_preferencias
+   * Oracle: PKG_CONFIG.FN_UPDATE_PREFERENCIAS
    */
   async actualizarPreferencias(
     usuarioId: string,
     dto: UpdatePreferenciasDto,
   ): Promise<UpdatePreferenciasSuccessDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_update_preferencias($1, $2) as resultado`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_update_preferencias',
+        'PKG_CONFIG.FN_UPDATE_PREFERENCIAS',
         [usuarioId, dto.desafios_habilitados],
       );
 
-      return result[0].resultado as UpdatePreferenciasSuccessDto;
+      return result as UpdatePreferenciasSuccessDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -307,19 +343,23 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Obtiene la información de cuenta del usuario.
+   * PG: config_get_cuenta
+   * Oracle: PKG_CONFIG.FN_GET_CUENTA
    */
   async obtenerConfigCuenta(usuarioId: string): Promise<ConfigCuentaResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_get_cuenta($1) as config`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_get_cuenta',
+        'PKG_CONFIG.FN_GET_CUENTA',
         [usuarioId],
       );
 
-      if (!result?.[0]?.config) {
+      if (!result) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      return result[0].config as ConfigCuentaResponseDto;
+      return result as ConfigCuentaResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -328,6 +368,8 @@ export class ConfiguracionUsuarioService {
   /**
    * Cambia la contraseña del usuario.
    * Valida la contraseña actual antes de actualizar.
+   * PG: config_update_password
+   * Oracle: PKG_CONFIG.FN_UPDATE_PASSWORD
    */
   async cambiarPassword(
     usuarioId: string,
@@ -340,7 +382,7 @@ export class ConfiguracionUsuarioService {
 
     // Obtener el usuario con su contraseña actual
     const usuario = await this.usuarioRepository.findOne({
-      where: { id: usuarioId },
+      where: { id: +usuarioId },
       select: ['id', 'password'],
     });
 
@@ -358,12 +400,14 @@ export class ConfiguracionUsuarioService {
     const nuevoHash = await bcrypt.hash(dto.password_nuevo, 10);
 
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_update_password($1, $2) as resultado`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_update_password',
+        'PKG_CONFIG.FN_UPDATE_PASSWORD',
         [usuarioId, nuevoHash],
       );
 
-      return result[0].resultado as ConfigSuccessResponseDto;
+      return result as ConfigSuccessResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -375,21 +419,25 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Obtiene la información de seguridad/pago del usuario.
+   * PG: config_get_seguridad
+   * Oracle: PKG_CONFIG.FN_GET_SEGURIDAD
    */
   async obtenerConfigSeguridad(
     usuarioId: string,
   ): Promise<ConfigSeguridadResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_get_seguridad($1) as config`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_get_seguridad',
+        'PKG_CONFIG.FN_GET_SEGURIDAD',
         [usuarioId],
       );
 
-      if (!result?.[0]?.config) {
+      if (!result) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      return result[0].config as ConfigSeguridadResponseDto;
+      return result as ConfigSeguridadResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -397,14 +445,18 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Actualiza la información de seguridad/pago del usuario.
+   * PG: config_update_seguridad
+   * Oracle: PKG_CONFIG.FN_UPDATE_SEGURIDAD
    */
   async actualizarSeguridad(
     usuarioId: string,
     dto: UpdateSeguridadDto,
   ): Promise<ConfigSuccessResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_update_seguridad($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) as resultado`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_update_seguridad',
+        'PKG_CONFIG.FN_UPDATE_SEGURIDAD',
         [
           usuarioId,
           dto.correo_paypal ?? null,
@@ -422,7 +474,7 @@ export class ConfiguracionUsuarioService {
         ],
       );
 
-      return result[0].resultado as ConfigSuccessResponseDto;
+      return result as ConfigSuccessResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -434,19 +486,23 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Obtiene la información de retiro del usuario.
+   * PG: config_get_retiro
+   * Oracle: PKG_CONFIG.FN_GET_RETIRO
    */
   async obtenerConfigRetiro(usuarioId: string): Promise<ConfigRetiroResponseDto> {
     try {
-      const result = await this.dataSource.query(
-        `SELECT config_get_retiro($1) as config`,
+      const result = await OracleFunctionHelper.callFunction(
+        this.dataSource,
+        'config_get_retiro',
+        'PKG_CONFIG.FN_GET_RETIRO',
         [usuarioId],
       );
 
-      if (!result?.[0]?.config) {
+      if (!result) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      return result[0].config as ConfigRetiroResponseDto;
+      return result as ConfigRetiroResponseDto;
     } catch (error) {
       this.handleDatabaseError(error);
     }
@@ -458,20 +514,23 @@ export class ConfiguracionUsuarioService {
 
   /**
    * Maneja errores de la base de datos de forma consistente.
+   * Compatible con errores de PostgreSQL (RAISE EXCEPTION) y Oracle (RAISE_APPLICATION_ERROR).
    */
   private handleDatabaseError(error: any): never {
-    // Errores de RAISE EXCEPTION en PostgreSQL
-    if (error.message?.includes('no encontrado')) {
-      throw new NotFoundException(error.message);
+    // Errores de RAISE EXCEPTION (PostgreSQL) o RAISE_APPLICATION_ERROR (Oracle)
+    const errorMsg = error.message || '';
+    
+    if (errorMsg.includes('no encontrado') || errorMsg.includes('ORA-20404')) {
+      throw new NotFoundException(errorMsg);
     }
-    if (error.message?.includes('no válid')) {
-      throw new BadRequestException(error.message);
+    if (errorMsg.includes('no válid') || errorMsg.includes('ORA-20400')) {
+      throw new BadRequestException(errorMsg);
     }
-    if (error.message?.includes('requerid')) {
-      throw new BadRequestException(error.message);
+    if (errorMsg.includes('requerid')) {
+      throw new BadRequestException(errorMsg);
     }
-    if (error.message?.includes('no disponible')) {
-      throw new BadRequestException(error.message);
+    if (errorMsg.includes('no disponible')) {
+      throw new BadRequestException(errorMsg);
     }
 
     // Si es un error ya manejado por NestJS, re-lanzarlo

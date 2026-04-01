@@ -18,7 +18,7 @@ export class ModoJuegoService {
   async create(createModoJuegoDto: CreateModoJuegoDto): Promise<ModoJuego> {
     const { juegoId, ...rest } = createModoJuegoDto;
 
-    const juego = await this.juegoRepository.findOne({ where: { id: juegoId } });
+    const juego = await this.juegoRepository.findOne({ where: { id: +juegoId } });
     if (!juego) {
       throw new NotFoundException(`Juego con ID ${juegoId} no encontrado`);
     }
@@ -40,7 +40,7 @@ export class ModoJuegoService {
 
   async findOne(id: string): Promise<ModoJuego> {
     const modoJuego = await this.modoJuegoRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['juego'],
     });
 
@@ -57,7 +57,7 @@ export class ModoJuegoService {
     const { juegoId, ...rest } = updateModoJuegoDto;
 
     if (juegoId) {
-      const juego = await this.juegoRepository.findOne({ where: { id: juegoId } });
+      const juego = await this.juegoRepository.findOne({ where: { id: +juegoId } });
       if (!juego) {
         throw new NotFoundException(`Juego con ID ${juegoId} no encontrado`);
       }

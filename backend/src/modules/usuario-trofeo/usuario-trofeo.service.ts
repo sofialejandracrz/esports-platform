@@ -21,14 +21,14 @@ export class UsuarioTrofeoService {
   async create(createUsuarioTrofeoDto: CreateUsuarioTrofeoDto): Promise<UsuarioTrofeo> {
     const { usuarioId, torneoId, ...rest } = createUsuarioTrofeoDto;
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
 
     let torneo = null;
     if (torneoId) {
-      torneo = await this.torneoRepository.findOne({ where: { id: torneoId } });
+      torneo = await this.torneoRepository.findOne({ where: { id: +torneoId } });
       if (!torneo) {
         throw new NotFoundException(`Torneo con ID ${torneoId} no encontrado`);
       }
@@ -52,7 +52,7 @@ export class UsuarioTrofeoService {
 
   async findOne(id: string): Promise<UsuarioTrofeo> {
     const usuarioTrofeo = await this.usuarioTrofeoRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['usuario', 'torneo'],
     });
 
@@ -69,7 +69,7 @@ export class UsuarioTrofeoService {
     const { usuarioId, torneoId, ...rest } = updateUsuarioTrofeoDto;
 
     if (usuarioId) {
-      const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+      const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
       if (!usuario) {
         throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
       }
@@ -78,7 +78,7 @@ export class UsuarioTrofeoService {
 
     if (torneoId !== undefined) {
       if (torneoId) {
-        const torneo = await this.torneoRepository.findOne({ where: { id: torneoId } });
+        const torneo = await this.torneoRepository.findOne({ where: { id: +torneoId } });
         if (!torneo) {
           throw new NotFoundException(`Torneo con ID ${torneoId} no encontrado`);
         }

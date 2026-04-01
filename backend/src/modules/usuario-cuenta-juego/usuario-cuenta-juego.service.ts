@@ -21,12 +21,12 @@ export class UsuarioCuentaJuegoService {
   async create(createUsuarioCuentaJuegoDto: CreateUsuarioCuentaJuegoDto): Promise<UsuarioCuentaJuego> {
     const { usuarioId, plataformaJuegoId, ...rest } = createUsuarioCuentaJuegoDto;
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
 
-    const plataformaJuego = await this.catalogoPlataformaRepository.findOne({ where: { id: plataformaJuegoId } });
+    const plataformaJuego = await this.catalogoPlataformaRepository.findOne({ where: { id: +plataformaJuegoId } });
     if (!plataformaJuego) {
       throw new NotFoundException(`Plataforma de juego con ID ${plataformaJuegoId} no encontrada`);
     }
@@ -49,7 +49,7 @@ export class UsuarioCuentaJuegoService {
 
   async findOne(id: string): Promise<UsuarioCuentaJuego> {
     const usuarioCuentaJuego = await this.usuarioCuentaJuegoRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['usuario', 'plataformaJuego'],
     });
 
@@ -66,7 +66,7 @@ export class UsuarioCuentaJuegoService {
     const { usuarioId, plataformaJuegoId, ...rest } = updateUsuarioCuentaJuegoDto;
 
     if (usuarioId) {
-      const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+      const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
       if (!usuario) {
         throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
       }
@@ -74,7 +74,7 @@ export class UsuarioCuentaJuegoService {
     }
 
     if (plataformaJuegoId) {
-      const plataformaJuego = await this.catalogoPlataformaRepository.findOne({ where: { id: plataformaJuegoId } });
+      const plataformaJuego = await this.catalogoPlataformaRepository.findOne({ where: { id: +plataformaJuegoId } });
       if (!plataformaJuego) {
         throw new NotFoundException(`Plataforma de juego con ID ${plataformaJuegoId} no encontrada`);
       }

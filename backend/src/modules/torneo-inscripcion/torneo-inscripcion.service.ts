@@ -27,7 +27,7 @@ export class TorneoInscripcionService {
 
   async inscribirUsuario(torneoId: string, usuarioId: string): Promise<TorneoInscripcion> {
     const torneo = await this.torneoRepository.findOne({ 
-      where: { id: torneoId },
+      where: { id: +torneoId },
       relations: ['estado'],
     });
     if (!torneo) {
@@ -45,7 +45,7 @@ export class TorneoInscripcionService {
       throw new BadRequestException(`Este torneo requiere un equipo (formato ${formatoValor}). Usa el endpoint de inscripción con equipo.`);
     }
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
@@ -53,8 +53,8 @@ export class TorneoInscripcionService {
     // Verificar si ya está inscrito
     const existeInscripcion = await this.torneoInscripcionRepository.findOne({
       where: {
-        torneo: { id: torneoId },
-        usuario: { id: usuarioId },
+        torneo: { id: +torneoId },
+        usuario: { id: +usuarioId },
       },
     });
 
@@ -64,7 +64,7 @@ export class TorneoInscripcionService {
 
     // Verificar cupos disponibles
     const inscripcionesActuales = await this.torneoInscripcionRepository.count({
-      where: { torneo: { id: torneoId } },
+      where: { torneo: { id: +torneoId } },
     });
 
     if (torneo.capacidad && inscripcionesActuales >= torneo.capacidad) {
@@ -99,7 +99,7 @@ export class TorneoInscripcionService {
     equipoId: string
   ): Promise<TorneoInscripcion> {
     const torneo = await this.torneoRepository.findOne({ 
-      where: { id: torneoId },
+      where: { id: +torneoId },
       relations: ['estado'],
     });
     if (!torneo) {
@@ -117,7 +117,7 @@ export class TorneoInscripcionService {
       throw new BadRequestException(`Este torneo es 1v1, no necesitas un equipo. Usa el endpoint de inscripción individual.`);
     }
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
@@ -129,8 +129,8 @@ export class TorneoInscripcionService {
     // Verificar si ya está inscrito
     const existeInscripcion = await this.torneoInscripcionRepository.findOne({
       where: {
-        torneo: { id: torneoId },
-        usuario: { id: usuarioId },
+        torneo: { id: +torneoId },
+        usuario: { id: +usuarioId },
       },
     });
 
@@ -140,7 +140,7 @@ export class TorneoInscripcionService {
 
     // Verificar cupos disponibles
     const inscripcionesActuales = await this.torneoInscripcionRepository.count({
-      where: { torneo: { id: torneoId } },
+      where: { torneo: { id: +torneoId } },
     });
 
     if (torneo.capacidad && inscripcionesActuales >= torneo.capacidad) {
@@ -174,8 +174,8 @@ export class TorneoInscripcionService {
   async verificarInscripcion(torneoId: string, usuarioId: string): Promise<{ inscrito: boolean; inscripcion?: TorneoInscripcion }> {
     const inscripcion = await this.torneoInscripcionRepository.findOne({
       where: {
-        torneo: { id: torneoId },
-        usuario: { id: usuarioId },
+        torneo: { id: +torneoId },
+        usuario: { id: +usuarioId },
       },
       relations: ['estado'],
     });
@@ -193,8 +193,8 @@ export class TorneoInscripcionService {
   async cancelarInscripcion(torneoId: string, usuarioId: string): Promise<{ message: string }> {
     const inscripcion = await this.torneoInscripcionRepository.findOne({
       where: {
-        torneo: { id: torneoId },
-        usuario: { id: usuarioId },
+        torneo: { id: +torneoId },
+        usuario: { id: +usuarioId },
       },
       relations: ['torneo', 'torneo.estado'],
     });
@@ -219,7 +219,7 @@ export class TorneoInscripcionService {
 
   async obtenerInscritosTorneo(torneoId: string): Promise<TorneoInscripcion[]> {
     return await this.torneoInscripcionRepository.find({
-      where: { torneo: { id: torneoId } },
+      where: { torneo: { id: +torneoId } },
       relations: ['usuario', 'estado'],
       order: { fecha: 'ASC' },
     });
@@ -232,25 +232,25 @@ export class TorneoInscripcionService {
   async create(createTorneoInscripcionDto: CreateTorneoInscripcionDto): Promise<TorneoInscripcion> {
     const { torneoId, usuarioId, estadoId, ...rest } = createTorneoInscripcionDto;
 
-    const torneo = await this.torneoRepository.findOne({ where: { id: torneoId } });
+    const torneo = await this.torneoRepository.findOne({ where: { id: +torneoId } });
     if (!torneo) {
       throw new NotFoundException(`Torneo con ID ${torneoId} no encontrado`);
     }
 
-    const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+    const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
     }
 
-    const estado = await this.catalogoEstadoInscripcionRepository.findOne({ where: { id: estadoId } });
+    const estado = await this.catalogoEstadoInscripcionRepository.findOne({ where: { id: +estadoId } });
     if (!estado) {
       throw new NotFoundException(`Estado de inscripción con ID ${estadoId} no encontrado`);
     }
 
     const existeInscripcion = await this.torneoInscripcionRepository.findOne({
       where: {
-        torneo: { id: torneoId },
-        usuario: { id: usuarioId },
+        torneo: { id: +torneoId },
+        usuario: { id: +usuarioId },
       },
     });
 
@@ -277,7 +277,7 @@ export class TorneoInscripcionService {
 
   async findOne(id: string): Promise<TorneoInscripcion> {
     const torneoInscripcion = await this.torneoInscripcionRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['torneo', 'usuario', 'estado'],
     });
 
@@ -294,7 +294,7 @@ export class TorneoInscripcionService {
     const { torneoId, usuarioId, estadoId, ...rest } = updateTorneoInscripcionDto;
 
     if (torneoId) {
-      const torneo = await this.torneoRepository.findOne({ where: { id: torneoId } });
+      const torneo = await this.torneoRepository.findOne({ where: { id: +torneoId } });
       if (!torneo) {
         throw new NotFoundException(`Torneo con ID ${torneoId} no encontrado`);
       }
@@ -302,7 +302,7 @@ export class TorneoInscripcionService {
     }
 
     if (usuarioId) {
-      const usuario = await this.usuarioRepository.findOne({ where: { id: usuarioId } });
+      const usuario = await this.usuarioRepository.findOne({ where: { id: +usuarioId } });
       if (!usuario) {
         throw new NotFoundException(`Usuario con ID ${usuarioId} no encontrado`);
       }
@@ -310,7 +310,7 @@ export class TorneoInscripcionService {
     }
 
     if (estadoId) {
-      const estado = await this.catalogoEstadoInscripcionRepository.findOne({ where: { id: estadoId } });
+      const estado = await this.catalogoEstadoInscripcionRepository.findOne({ where: { id: +estadoId } });
       if (!estado) {
         throw new NotFoundException(`Estado de inscripción con ID ${estadoId} no encontrado`);
       }

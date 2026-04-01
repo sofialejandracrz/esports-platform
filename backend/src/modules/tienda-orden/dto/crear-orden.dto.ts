@@ -1,8 +1,9 @@
-import { IsUUID, IsOptional, IsString, MinLength, MaxLength, IsObject } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, MinLength, MaxLength, IsObject } from 'class-validator';
 
 export class CrearOrdenDto {
-  @IsUUID()
-  itemId: string;
+  @IsNotEmpty()
+  @IsNumber()
+  itemId: number;
 
   @IsOptional()
   @IsObject()

@@ -114,6 +114,7 @@ docker-compose.override.yml
 postgres-data/
 pgdata/
 Script Maestro (RUN)/
+Recursos para Proyecto-20260401/
 
 # ===================================
 # Temporales y Cache

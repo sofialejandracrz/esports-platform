@@ -2,8 +2,8 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeor
 
 @Entity({ name: 'catalogo_rol' })
 export class CatalogoRol {
-    @PrimaryGeneratedColumn('uuid', { name: 'id' })
-    id: string;
+    @PrimaryGeneratedColumn('increment')
+    id: number;
 
     @Column({ name: 'valor', unique: true })
     valor: string; // e.g. 'usuario','admin'

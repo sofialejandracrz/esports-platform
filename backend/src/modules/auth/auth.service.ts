@@ -123,7 +123,7 @@ export class AuthService {
       
       if (persona) {
         usuario = await this.usuarioRepository.findOne({
-          where: { persona: { id: persona.id } },
+          where: { persona: { id: +persona.id } },
           relations: ['persona', 'rol', 'avatar'],
         });
       }
@@ -141,7 +141,7 @@ export class AuthService {
 
     // Cargar el password (campo con select: false)
     const usuarioConPassword = await this.usuarioRepository.findOne({
-      where: { id: usuario.id },
+      where: { id: +usuario.id },
       select: ['id', 'nickname', 'password', 'estado'],
       relations: ['persona', 'rol'],
     });
@@ -196,7 +196,7 @@ export class AuthService {
 
   async validateUser(userId: string) {
     const usuario = await this.usuarioRepository.findOne({
-      where: { id: userId },
+      where: { id: +userId },
       relations: ['persona', 'rol', 'avatar'],
     });
 

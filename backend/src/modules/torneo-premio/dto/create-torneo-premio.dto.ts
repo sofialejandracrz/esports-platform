@@ -1,8 +1,8 @@
-import { IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
+import { IsNumber,  IsInt, IsNotEmpty, IsOptional, IsPositive, IsString } from 'class-validator';
 
 export class CreateTorneoPremioDto {
   @IsNotEmpty({ message: 'El ID del torneo es requerido' })
-  @IsUUID('4', { message: 'El ID del torneo debe ser un UUID válido' })
+  @IsNumber()
   torneoId: string;
 
   @IsOptional()

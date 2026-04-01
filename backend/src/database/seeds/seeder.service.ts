@@ -330,8 +330,8 @@ export class SeederService {
           url: `https://api.dicebear.com/9.x/bottts/svg?seed=${seed}`,
           seed,
           categoria: 'bottts',
-          disponible: true,
-          premium: index >= 50,
+          disponible: 1,
+          premium: index >= 50 ? 1 : 0,
         });
         created++;
       }
@@ -715,7 +715,7 @@ export class SeederService {
       xp: 0,
       saldo: '0',
       creditos: 1000,
-      desafiosHabilitados: true,
+      desafiosHabilitados: 1,
     });
 
     await this.usuarioRepository.save(usuario);

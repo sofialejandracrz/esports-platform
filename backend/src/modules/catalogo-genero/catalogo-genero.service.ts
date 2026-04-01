@@ -33,7 +33,7 @@ export class CatalogoGeneroService {
 
   async findOne(id: string): Promise<CatalogoGenero> {
     const catalogoGenero = await this.catalogoGeneroRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!catalogoGenero) {
@@ -51,7 +51,7 @@ export class CatalogoGeneroService {
         where: { valor: updateCatalogoGeneroDto.valor },
       });
 
-      if (existing && existing.id !== id) {
+      if (existing && existing.id !== +id) {
         throw new ConflictException('Ya existe un género con ese valor');
       }
     }

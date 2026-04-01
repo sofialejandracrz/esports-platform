@@ -25,7 +25,7 @@ export class MembresiaTipoService {
 
   async findOne(id: string): Promise<MembresiaTipo> {
     const membresiaTipo = await this.membresiaTipoRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!membresiaTipo) {

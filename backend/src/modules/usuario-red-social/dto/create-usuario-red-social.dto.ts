@@ -1,8 +1,8 @@
-import { IsNotEmpty, IsString, IsUrl, IsUUID, MaxLength } from 'class-validator';
+import { IsNumber,  IsNotEmpty, IsString, IsUrl, MaxLength } from 'class-validator';
 
 export class CreateUsuarioRedSocialDto {
   @IsNotEmpty({ message: 'El ID del usuario es requerido' })
-  @IsUUID('4', { message: 'El ID del usuario debe ser un UUID válido' })
+  @IsNumber()
   usuarioId: string;
 
   @IsNotEmpty({ message: 'La plataforma es requerida' })

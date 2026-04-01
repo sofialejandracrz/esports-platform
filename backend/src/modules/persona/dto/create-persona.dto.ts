@@ -1,4 +1,4 @@
-import { IsDateString, IsEmail, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsNumber,  IsDateString, IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreatePersonaDto {
   @IsNotEmpty({ message: 'El primer nombre es requerido' })
@@ -26,7 +26,7 @@ export class CreatePersonaDto {
   fechaNacimiento?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El ID del género debe ser un UUID válido' })
+  @IsNumber()
   generoId?: string;
 
   @IsOptional()

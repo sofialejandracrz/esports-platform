@@ -1,8 +1,8 @@
-import { IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
+import { IsNumber,  IsInt, IsNotEmpty, IsOptional, IsPositive, IsString } from 'class-validator';
 
 export class CreateTiendaItemDto {
   @IsNotEmpty({ message: 'El ID del tipo es requerido' })
-  @IsUUID('4', { message: 'El ID del tipo debe ser un UUID válido' })
+  @IsNumber()
   tipoId: string;
 
   @IsNotEmpty({ message: 'El nombre es requerido' })

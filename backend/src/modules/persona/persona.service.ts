@@ -28,7 +28,7 @@ export class PersonaService {
 
     let genero = undefined;
     if (generoId) {
-      genero = await this.catalogoGeneroRepository.findOne({ where: { id: generoId } });
+      genero = await this.catalogoGeneroRepository.findOne({ where: { id: +generoId } });
       if (!genero) {
         throw new NotFoundException(`Género con ID ${generoId} no encontrado`);
       }
@@ -51,7 +51,7 @@ export class PersonaService {
 
   async findOne(id: string): Promise<Persona> {
     const persona = await this.personaRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['genero'],
     });
 
@@ -82,7 +82,7 @@ export class PersonaService {
       if (generoId === null) {
         persona.genero = null;
       } else {
-        const genero = await this.catalogoGeneroRepository.findOne({ where: { id: generoId } });
+        const genero = await this.catalogoGeneroRepository.findOne({ where: { id: +generoId } });
         if (!genero) {
           throw new NotFoundException(`Género con ID ${generoId} no encontrado`);
         }

@@ -3,8 +3,8 @@ import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "ty
 
 @Entity({ name: 'torneo_premios' })
 export class TorneoPremio {
-@PrimaryGeneratedColumn('uuid')
-id: string;
+@PrimaryGeneratedColumn('increment')
+id: number;
 
 
 @OneToOne(() => Torneo, (t) => t.premio, { onDelete: 'CASCADE' })

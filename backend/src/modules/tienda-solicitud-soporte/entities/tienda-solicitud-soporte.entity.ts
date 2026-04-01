@@ -13,8 +13,8 @@ import {
 
 @Entity({ name: 'tienda_solicitud_soporte' })
 export class TiendaSolicitudSoporte {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn('increment')
+    id: number;
 
     @ManyToOne(() => TiendaOrden, { nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'orden_id' })

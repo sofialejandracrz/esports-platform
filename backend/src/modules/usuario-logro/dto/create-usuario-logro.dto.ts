@@ -1,12 +1,12 @@
-import { IsDateString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import { IsNumber,  IsDateString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateUsuarioLogroDto {
   @IsNotEmpty({ message: 'El ID del usuario es requerido' })
-  @IsUUID('4', { message: 'El ID del usuario debe ser un UUID válido' })
+  @IsNumber()
   usuarioId: string;
 
   @IsNotEmpty({ message: 'El ID del logro es requerido' })
-  @IsUUID('4', { message: 'El ID del logro debe ser un UUID válido' })
+  @IsNumber()
   logroId: string;
 
   @IsOptional()

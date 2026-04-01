@@ -29,12 +29,12 @@ export class UsuarioAmigosService {
     }
 
     // Verificar que ambos usuarios existen
-    const solicitante = await this.usuarioRepository.findOne({ where: { id: solicitanteId } });
+    const solicitante = await this.usuarioRepository.findOne({ where: { id: +solicitanteId } });
     if (!solicitante) {
       throw new NotFoundException('Usuario solicitante no encontrado');
     }
 
-    const destinatario = await this.usuarioRepository.findOne({ where: { id: destinatarioId } });
+    const destinatario = await this.usuarioRepository.findOne({ where: { id: +destinatarioId } });
     if (!destinatario) {
       throw new NotFoundException('Usuario destinatario no encontrado');
     }
@@ -42,8 +42,8 @@ export class UsuarioAmigosService {
     // Verificar si ya existe una relación
     const existeRelacion = await this.usuarioAmigosRepository.findOne({
       where: [
-        { usuario1: { id: solicitanteId }, usuario2: { id: destinatarioId } },
-        { usuario1: { id: destinatarioId }, usuario2: { id: solicitanteId } },
+        { usuario1: { id: +solicitanteId }, usuario2: { id: +destinatarioId } },
+        { usuario1: { id: +destinatarioId }, usuario2: { id: +solicitanteId } },
       ],
       relations: ['estado'],
     });
@@ -85,7 +85,7 @@ export class UsuarioAmigosService {
    */
   async aceptarSolicitud(solicitudId: string, usuarioId: string): Promise<UsuarioAmigos> {
     const solicitud = await this.usuarioAmigosRepository.findOne({
-      where: { id: solicitudId },
+      where: { id: +solicitudId },
       relations: ['usuario1', 'usuario2', 'estado'],
     });
 
@@ -121,7 +121,7 @@ export class UsuarioAmigosService {
    */
   async rechazarSolicitud(solicitudId: string, usuarioId: string): Promise<void> {
     const solicitud = await this.usuarioAmigosRepository.findOne({
-      where: { id: solicitudId },
+      where: { id: +solicitudId },
       relations: ['usuario1', 'usuario2', 'estado'],
     });
 
@@ -148,7 +148,7 @@ export class UsuarioAmigosService {
    */
   async cancelarSolicitud(solicitudId: string, usuarioId: string): Promise<void> {
     const solicitud = await this.usuarioAmigosRepository.findOne({
-      where: { id: solicitudId },
+      where: { id: +solicitudId },
       relations: ['usuario1', 'usuario2', 'estado'],
     });
 
@@ -174,7 +174,7 @@ export class UsuarioAmigosService {
    */
   async eliminarAmigo(amistadId: string, usuarioId: string): Promise<void> {
     const amistad = await this.usuarioAmigosRepository.findOne({
-      where: { id: amistadId },
+      where: { id: +amistadId },
       relations: ['usuario1', 'usuario2', 'estado'],
     });
 
@@ -200,7 +200,7 @@ export class UsuarioAmigosService {
   async obtenerSolicitudesRecibidas(usuarioId: string): Promise<UsuarioAmigos[]> {
     return await this.usuarioAmigosRepository.find({
       where: {
-        usuario2: { id: usuarioId },
+        usuario2: { id: +usuarioId },
         estado: { valor: 'pendiente' },
       },
       relations: ['usuario1', 'usuario1.avatar', 'estado'],
@@ -214,7 +214,7 @@ export class UsuarioAmigosService {
   async obtenerSolicitudesEnviadas(usuarioId: string): Promise<UsuarioAmigos[]> {
     return await this.usuarioAmigosRepository.find({
       where: {
-        usuario1: { id: usuarioId },
+        usuario1: { id: +usuarioId },
         estado: { valor: 'pendiente' },
       },
       relations: ['usuario2', 'usuario2.avatar', 'estado'],
@@ -225,25 +225,25 @@ export class UsuarioAmigosService {
   async create(createUsuarioAmigoDto: CreateUsuarioAmigoDto): Promise<UsuarioAmigos> {
     const { usuario1Id, usuario2Id, estadoId } = createUsuarioAmigoDto;
 
-    const usuario1 = await this.usuarioRepository.findOne({ where: { id: usuario1Id } });
+    const usuario1 = await this.usuarioRepository.findOne({ where: { id: +usuario1Id } });
     if (!usuario1) {
       throw new NotFoundException(`Usuario con ID ${usuario1Id} no encontrado`);
     }
 
-    const usuario2 = await this.usuarioRepository.findOne({ where: { id: usuario2Id } });
+    const usuario2 = await this.usuarioRepository.findOne({ where: { id: +usuario2Id } });
     if (!usuario2) {
       throw new NotFoundException(`Usuario con ID ${usuario2Id} no encontrado`);
     }
 
-    const estado = await this.catalogoEstadoAmistadRepository.findOne({ where: { id: estadoId } });
+    const estado = await this.catalogoEstadoAmistadRepository.findOne({ where: { id: +estadoId } });
     if (!estado) {
       throw new NotFoundException(`Estado de amistad con ID ${estadoId} no encontrado`);
     }
 
     const existeRelacion = await this.usuarioAmigosRepository.findOne({
       where: [
-        { usuario1: { id: usuario1Id }, usuario2: { id: usuario2Id } },
-        { usuario1: { id: usuario2Id }, usuario2: { id: usuario1Id } },
+        { usuario1: { id: +usuario1Id }, usuario2: { id: +usuario2Id } },
+        { usuario1: { id: +usuario2Id }, usuario2: { id: +usuario1Id } },
       ],
     });
 
@@ -269,7 +269,7 @@ export class UsuarioAmigosService {
 
   async findOne(id: string): Promise<UsuarioAmigos> {
     const usuarioAmigos = await this.usuarioAmigosRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['usuario1', 'usuario2', 'estado'],
     });
 
@@ -286,7 +286,7 @@ export class UsuarioAmigosService {
     const { usuario1Id, usuario2Id, estadoId } = updateUsuarioAmigoDto;
 
     if (usuario1Id) {
-      const usuario1 = await this.usuarioRepository.findOne({ where: { id: usuario1Id } });
+      const usuario1 = await this.usuarioRepository.findOne({ where: { id: +usuario1Id } });
       if (!usuario1) {
         throw new NotFoundException(`Usuario con ID ${usuario1Id} no encontrado`);
       }
@@ -294,7 +294,7 @@ export class UsuarioAmigosService {
     }
 
     if (usuario2Id) {
-      const usuario2 = await this.usuarioRepository.findOne({ where: { id: usuario2Id } });
+      const usuario2 = await this.usuarioRepository.findOne({ where: { id: +usuario2Id } });
       if (!usuario2) {
         throw new NotFoundException(`Usuario con ID ${usuario2Id} no encontrado`);
       }
@@ -302,7 +302,7 @@ export class UsuarioAmigosService {
     }
 
     if (estadoId) {
-      const estado = await this.catalogoEstadoAmistadRepository.findOne({ where: { id: estadoId } });
+      const estado = await this.catalogoEstadoAmistadRepository.findOne({ where: { id: +estadoId } });
       if (!estado) {
         throw new NotFoundException(`Estado de amistad con ID ${estadoId} no encontrado`);
       }

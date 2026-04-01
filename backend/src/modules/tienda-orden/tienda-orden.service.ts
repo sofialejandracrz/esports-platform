@@ -19,6 +19,7 @@ import {
   NicknameResponse,
   ConfirmarCompraResponse,
 } from '../tienda/types';
+import { OracleFunctionHelper } from '../../common/helpers/oracle-function.helper';
 
 @Injectable()
 export class TiendaOrdenService {
@@ -34,31 +35,34 @@ export class TiendaOrdenService {
 
   /**
    * 1. Obtener catálogo de tienda
-   * Llama al procedimiento: tienda_obtener_catalogo
+   * PG: tienda_obtener_catalogo
+   * Oracle: PKG_TIENDA.FN_OBTENER_CATALOGO
    */
   async obtenerCatalogo(usuarioId?: string): Promise<CatalogoResponse> {
-    const result = await this.dataSource.query(
-      `SELECT tienda_obtener_catalogo($1) as resultado`,
-      [usuarioId || null]
+    const result = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_obtener_catalogo',
+      'PKG_TIENDA.FN_OBTENER_CATALOGO',
+      [usuarioId || null],
     );
     
-    return result[0]?.resultado as CatalogoResponse;
+    return result as CatalogoResponse;
   }
 
   /**
    * 2. Crear orden de compra
-   * Llama al procedimiento: tienda_crear_orden
+   * PG: tienda_crear_orden
+   * Oracle: PKG_TIENDA.FN_CREAR_ORDEN
    */
   async crearOrden(usuarioId: string, dto: CrearOrdenDto): Promise<OrdenResponse> {
-    // Preparar metadata
     const metadata: any = dto.metadata || {};
     
-    const result = await this.dataSource.query(
-      `SELECT tienda_crear_orden($1, $2, $3) as resultado`,
-      [usuarioId, dto.itemId, JSON.stringify(metadata)]
-    );
-    
-    const response = result[0]?.resultado as OrdenResponse;
+    const response = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_crear_orden',
+      'PKG_TIENDA.FN_CREAR_ORDEN',
+      [usuarioId, dto.itemId, JSON.stringify(metadata)],
+    ) as OrdenResponse;
     
     if (!response.success) {
       throw new BadRequestException(response.error || 'Error al crear la orden');
@@ -69,21 +73,22 @@ export class TiendaOrdenService {
 
   /**
    * 3. Registrar pago PayPal
-   * Llama al procedimiento: tienda_registrar_pago_paypal
+   * PG: tienda_registrar_pago_paypal
+   * Oracle: PKG_TIENDA.FN_REGISTRAR_PAGO_PAYPAL
    */
   async registrarPagoPaypal(dto: RegistrarPagoPaypalDto): Promise<ProcedureResult> {
-    const result = await this.dataSource.query(
-      `SELECT tienda_registrar_pago_paypal($1, $2, $3, $4, $5) as resultado`,
+    const response = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_registrar_pago_paypal',
+      'PKG_TIENDA.FN_REGISTRAR_PAGO_PAYPAL',
       [
         dto.ordenId,
         dto.paypalOrderId,
         dto.paypalCaptureId || null,
         dto.paypalPayerId || null,
         dto.paypalPayerEmail || null
-      ]
-    );
-    
-    const response = result[0]?.resultado as ProcedureResult;
+      ],
+    ) as ProcedureResult;
     
     if (!response.success) {
       throw new BadRequestException(response.error || 'Error al registrar pago PayPal');
@@ -94,15 +99,16 @@ export class TiendaOrdenService {
 
   /**
    * 4. Confirmar compra (después de pago exitoso)
-   * Llama al procedimiento: tienda_confirmar_compra
+   * PG: tienda_confirmar_compra
+   * Oracle: PKG_TIENDA.FN_CONFIRMAR_COMPRA
    */
   async confirmarCompra(dto: ConfirmarCompraDto): Promise<ProcedureResult> {
-    const result = await this.dataSource.query(
-      `SELECT tienda_confirmar_compra($1, $2) as resultado`,
-      [dto.ordenId, dto.paypalCaptureId || null]
-    );
-    
-    const response = result[0]?.resultado as ProcedureResult;
+    const response = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_confirmar_compra',
+      'PKG_TIENDA.FN_CONFIRMAR_COMPRA',
+      [dto.ordenId, dto.paypalCaptureId || null],
+    ) as ProcedureResult;
     
     if (!response.success) {
       throw new BadRequestException(response.error || 'Error al confirmar la compra');
@@ -113,15 +119,16 @@ export class TiendaOrdenService {
 
   /**
    * 5. Cancelar orden
-   * Llama al procedimiento: tienda_cancelar_orden
+   * PG: tienda_cancelar_orden
+   * Oracle: PKG_TIENDA.FN_CANCELAR_ORDEN
    */
   async cancelarOrden(ordenId: string, usuarioId: string): Promise<ProcedureResult> {
-    const result = await this.dataSource.query(
-      `SELECT tienda_cancelar_orden($1, $2) as resultado`,
-      [ordenId, usuarioId]
-    );
-    
-    const response = result[0]?.resultado as ProcedureResult;
+    const response = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_cancelar_orden',
+      'PKG_TIENDA.FN_CANCELAR_ORDEN',
+      [ordenId, usuarioId],
+    ) as ProcedureResult;
     
     if (!response.success) {
       throw new BadRequestException(response.error || 'Error al cancelar la orden');
@@ -132,47 +139,54 @@ export class TiendaOrdenService {
 
   /**
    * 6. Obtener historial de compras
-   * Llama al procedimiento: tienda_historial_compras
+   * PG: tienda_historial_compras
+   * Oracle: PKG_TIENDA.FN_HISTORIAL_COMPRAS
    */
   async obtenerHistorial(
     usuarioId: string, 
     limit: number = 20, 
     offset: number = 0
   ): Promise<HistorialResponse> {
-    const result = await this.dataSource.query(
-      `SELECT tienda_historial_compras($1, $2, $3) as resultado`,
-      [usuarioId, limit, offset]
+    const result = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_historial_compras',
+      'PKG_TIENDA.FN_HISTORIAL_COMPRAS',
+      [usuarioId, limit, offset],
     );
     
-    return result[0]?.resultado as HistorialResponse;
+    return result as HistorialResponse;
   }
 
   /**
    * 7. Verificar disponibilidad de nickname
-   * Llama al procedimiento: tienda_verificar_nickname
+   * PG: tienda_verificar_nickname
+   * Oracle: PKG_TIENDA.FN_VERIFICAR_NICKNAME
    */
   async verificarNickname(nickname: string): Promise<NicknameResponse> {
-    const result = await this.dataSource.query(
-      `SELECT tienda_verificar_nickname($1) as resultado`,
-      [nickname]
+    const result = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_verificar_nickname',
+      'PKG_TIENDA.FN_VERIFICAR_NICKNAME',
+      [nickname],
     );
     
-    return result[0]?.resultado as NicknameResponse;
+    return result as NicknameResponse;
   }
 
   /**
    * 10. Comprar con saldo (sin PayPal)
-   * Llama al procedimiento: tienda_comprar_con_saldo
+   * PG: tienda_comprar_con_saldo
+   * Oracle: PKG_TIENDA.FN_COMPRAR_CON_SALDO
    */
   async comprarConSaldo(usuarioId: string, dto: ComprarConSaldoDto): Promise<ConfirmarCompraResponse> {
     const metadata: any = dto.metadata || {};
     
-    const result = await this.dataSource.query(
-      `SELECT tienda_comprar_con_saldo($1, $2, $3) as resultado`,
-      [usuarioId, dto.itemId, JSON.stringify(metadata)]
-    );
-    
-    const response = result[0]?.resultado as ConfirmarCompraResponse;
+    const response = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_comprar_con_saldo',
+      'PKG_TIENDA.FN_COMPRAR_CON_SALDO',
+      [usuarioId, dto.itemId, JSON.stringify(metadata)],
+    ) as ConfirmarCompraResponse;
     
     if (!response.success) {
       throw new BadRequestException(response.error || 'Error al procesar la compra con saldo');
@@ -186,7 +200,7 @@ export class TiendaOrdenService {
    */
   async obtenerOrdenPorId(ordenId: string, usuarioId: string): Promise<TiendaOrden> {
     const orden = await this.tiendaOrdenRepository.findOne({
-      where: { id: ordenId },
+      where: { id: +ordenId },
       relations: ['usuario', 'item', 'item.tipo'],
     });
 
@@ -207,7 +221,7 @@ export class TiendaOrdenService {
    */
   async obtenerOrdenesPorUsuario(usuarioId: string): Promise<TiendaOrden[]> {
     return this.tiendaOrdenRepository.find({
-      where: { usuario: { id: usuarioId } },
+      where: { usuario: { id: +usuarioId } },
       relations: ['item', 'item.tipo'],
       order: { creadoEn: 'DESC' },
     });

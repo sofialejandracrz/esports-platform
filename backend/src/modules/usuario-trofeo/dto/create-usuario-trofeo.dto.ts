@@ -1,12 +1,12 @@
-import { IsDateString, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsNumber,  IsDateString, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateUsuarioTrofeoDto {
   @IsNotEmpty({ message: 'El ID del usuario es requerido' })
-  @IsUUID('4', { message: 'El ID del usuario debe ser un UUID válido' })
+  @IsNumber()
   usuarioId: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El ID del torneo debe ser un UUID válido' })
+  @IsNumber()
   torneoId?: string;
 
   @IsNotEmpty({ message: 'El tipo de trofeo es requerido' })

@@ -45,7 +45,15 @@ import { UsuarioMembresiaModule } from './modules/usuario-membresia/usuario-memb
 import { UsuarioSeguidoresModule } from './modules/usuario-seguidores/usuario-seguidores.module';
 import { UsuarioRedSocialModule } from './modules/usuario-red-social/usuario-red-social.module';
 import { UsuarioTrofeoModule } from './modules/usuario-trofeo/usuario-trofeo.module';
-import { SeederModule } from './database/seeds/seeder.module';
+// SeederModule solo se importa cuando NO es Oracle
+// Con Oracle, los datos se manejan con el Script Maestro (DML/01_CATALOGOS.sql, DML/02_DATOS_MASIVOS.sql)
+const isOracle = process.env.DB_TYPE === 'oracle';
+const optionalModules = [];
+if (!isOracle) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { SeederModule } = require('./database/seeds/seeder.module');
+  optionalModules.push(SeederModule);
+}
 
 @Module({
   imports: [
@@ -151,7 +159,7 @@ import { SeederModule } from './database/seeds/seeder.module';
     UsuarioSeguidoresModule,
     UsuarioRedSocialModule,
     UsuarioTrofeoModule,
-    SeederModule,
+    ...optionalModules,
   ],
   controllers: [AppController],
   providers: [

@@ -1,4 +1,4 @@
-import {
+import { 
   IsArray,
   IsBoolean,
   IsInt,
@@ -6,16 +6,10 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   Min,
-  ValidateNested,
-} from 'class-validator';
+  ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-
-// ============================================================================
-// DTOs para CREAR TORNEO (torneo_crear)
-// ============================================================================
 
 /**
  * Red social para el torneo
@@ -57,23 +51,23 @@ export class CrearTorneoFuncionDto {
 
   // === Paso 2: Detalles del torneo ===
   @IsOptional()
-  @IsUUID('4', { message: 'El juego_id debe ser un UUID válido' })
+  @IsNumber()
   juego_id?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'La plataforma_id debe ser un UUID válido' })
+  @IsNumber()
   plataforma_id?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El modo_juego_id debe ser un UUID válido' })
+  @IsNumber()
   modo_juego_id?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'La region_id debe ser un UUID válido' })
+  @IsNumber()
   region_id?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El tipo_torneo_id debe ser un UUID válido' })
+  @IsNumber()
   tipo_torneo_id?: string;
 
   @IsOptional()
@@ -107,7 +101,7 @@ export class CrearTorneoFuncionDto {
   requiere_camara?: boolean;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El tipo_entrada_id debe ser un UUID válido' })
+  @IsNumber()
   tipo_entrada_id?: string;
 
   @IsOptional()
@@ -195,23 +189,23 @@ export class ActualizarTorneoFuncionDto {
 
   // === Detalles del torneo ===
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   juego_id?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   plataforma_id?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   modo_juego_id?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   region_id?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   tipo_torneo_id?: string;
 
   @IsOptional()
@@ -245,7 +239,7 @@ export class ActualizarTorneoFuncionDto {
   requiere_camara?: boolean;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   tipo_entrada_id?: string;
 
   @IsOptional()
@@ -320,7 +314,7 @@ export class UpsertRedSocialTorneoDto {
   url: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   red_id?: string; // Para actualizar existente
 }
 
@@ -334,15 +328,15 @@ export class ListarTorneosQueryDto {
   estado?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   juego_id?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   region_id?: string;
 
   @IsOptional()
-  @IsUUID('4')
+  @IsNumber()
   anfitrion_id?: string;
 
   @IsOptional()
@@ -369,7 +363,7 @@ export class ListarTorneosQueryDto {
 
 export class ResultadoTorneoDto {
   @IsNotEmpty()
-  @IsUUID('4')
+  @IsNumber()
   usuario_id: string;
 
   @IsNotEmpty()

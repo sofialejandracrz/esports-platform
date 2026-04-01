@@ -49,7 +49,7 @@ export class JuegoService {
 
   async findOne(id: string): Promise<Juego> {
     const juego = await this.juegoRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['plataformas', 'modos'],
     });
 

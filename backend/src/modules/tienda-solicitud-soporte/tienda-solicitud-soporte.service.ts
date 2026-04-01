@@ -9,6 +9,7 @@ import {
   SolicitudesResponse,
   ResolverSolicitudResponse,
 } from '../tienda/types';
+import { OracleFunctionHelper } from '../../common/helpers/oracle-function.helper';
 
 @Injectable()
 export class TiendaSolicitudSoporteService {
@@ -22,28 +23,32 @@ export class TiendaSolicitudSoporteService {
 
   /**
    * 8. Obtener solicitudes de soporte (ADMIN)
-   * Llama al procedimiento: tienda_obtener_solicitudes_soporte
+   * PG: tienda_obtener_solicitudes_soporte
+   * Oracle: PKG_TIENDA.FN_OBTENER_SOLICITUDES_SOPORTE
    */
   async obtenerSolicitudes(dto: ObtenerSolicitudesDto): Promise<SolicitudesResponse> {
-    const result = await this.dataSource.query(
-      `SELECT tienda_obtener_solicitudes_soporte($1, $2, $3) as resultado`,
-      [dto.estado || null, dto.limit || 20, dto.offset || 0]
+    const result = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_obtener_solicitudes_soporte',
+      'PKG_TIENDA.FN_OBTENER_SOLICITUDES_SOPORTE',
+      [dto.estado || null, dto.limit || 20, dto.offset || 0],
     );
     
-    return result[0]?.resultado as SolicitudesResponse;
+    return result as SolicitudesResponse;
   }
 
   /**
    * 9. Resolver solicitud de soporte (ADMIN)
-   * Llama al procedimiento: tienda_resolver_solicitud_soporte
+   * PG: tienda_resolver_solicitud_soporte
+   * Oracle: PKG_TIENDA.FN_RESOLVER_SOLICITUD_SOPORTE
    */
   async resolverSolicitud(adminId: string, dto: ResolverSolicitudDto): Promise<ResolverSolicitudResponse> {
-    const result = await this.dataSource.query(
-      `SELECT tienda_resolver_solicitud_soporte($1, $2, $3, $4) as resultado`,
-      [dto.solicitudId, adminId, dto.aprobar, dto.notas || null]
-    );
-    
-    const response = result[0]?.resultado as ResolverSolicitudResponse;
+    const response = await OracleFunctionHelper.callFunction(
+      this.dataSource,
+      'tienda_resolver_solicitud_soporte',
+      'PKG_TIENDA.FN_RESOLVER_SOLICITUD_SOPORTE',
+      [dto.solicitudId, adminId, dto.aprobar, dto.notas || null],
+    ) as ResolverSolicitudResponse;
     
     if (!response.success) {
       if (response.error?.includes('administrador')) {
@@ -60,7 +65,7 @@ export class TiendaSolicitudSoporteService {
    */
   async obtenerMisSolicitudes(usuarioId: string): Promise<TiendaSolicitudSoporte[]> {
     return this.solicitudRepository.find({
-      where: { usuario: { id: usuarioId } },
+      where: { usuario: { id: +usuarioId } },
       relations: ['orden', 'resueltoPor'],
       order: { creadoEn: 'DESC' },
     });
@@ -71,7 +76,7 @@ export class TiendaSolicitudSoporteService {
    */
   async obtenerSolicitudPorId(solicitudId: string): Promise<TiendaSolicitudSoporte> {
     return this.solicitudRepository.findOne({
-      where: { id: solicitudId },
+      where: { id: +solicitudId },
       relations: ['usuario', 'orden', 'resueltoPor'],
     });
   }

@@ -18,7 +18,7 @@ export class TorneoRedService {
   async create(createTorneoRedDto: CreateTorneoRedDto): Promise<TorneoRed> {
     const { torneoId, ...rest } = createTorneoRedDto;
 
-    const torneo = await this.torneoRepository.findOne({ where: { id: torneoId } });
+    const torneo = await this.torneoRepository.findOne({ where: { id: +torneoId } });
     if (!torneo) {
       throw new NotFoundException(`Torneo con ID ${torneoId} no encontrado`);
     }
@@ -40,7 +40,7 @@ export class TorneoRedService {
 
   async findOne(id: string): Promise<TorneoRed> {
     const torneoRed = await this.torneoRedRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['torneo'],
     });
 
@@ -57,7 +57,7 @@ export class TorneoRedService {
     const { torneoId, ...rest } = updateTorneoRedDto;
 
     if (torneoId) {
-      const torneo = await this.torneoRepository.findOne({ where: { id: torneoId } });
+      const torneo = await this.torneoRepository.findOne({ where: { id: +torneoId } });
       if (!torneo) {
         throw new NotFoundException(`Torneo con ID ${torneoId} no encontrado`);
       }

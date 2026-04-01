@@ -4,8 +4,7 @@ import {
   IsNotEmpty,
   MinLength,
   IsDateString,
-  IsOptional,
-} from 'class-validator';
+  IsOptional } from 'class-validator';
 
 export class RegisterDto {
   @IsString()

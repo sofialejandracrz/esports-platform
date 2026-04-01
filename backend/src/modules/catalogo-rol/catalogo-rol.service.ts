@@ -33,7 +33,7 @@ export class CatalogoRolService {
 
   async findOne(id: string): Promise<CatalogoRol> {
     const catalogoRol = await this.catalogoRolRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!catalogoRol) {
@@ -51,7 +51,7 @@ export class CatalogoRolService {
         where: { valor: updateCatalogoRolDto.valor },
       });
 
-      if (existing && existing.id !== id) {
+      if (existing && existing.id !== +id) {
         throw new ConflictException('Ya existe un rol con ese valor');
       }
     }

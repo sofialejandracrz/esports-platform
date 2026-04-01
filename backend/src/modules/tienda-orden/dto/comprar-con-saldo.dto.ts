@@ -1,8 +1,9 @@
-import { IsUUID, IsOptional, IsString, MinLength, MaxLength, IsObject } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, IsObject } from 'class-validator';
 
 export class ComprarConSaldoDto {
-  @IsUUID()
-  itemId: string;
+  @IsNotEmpty()
+  @IsNumber()
+  itemId: number;
 
   @IsOptional()
   @IsObject()

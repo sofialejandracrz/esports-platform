@@ -12,8 +12,8 @@ import { Column, CreateDateColumn, DeleteDateColumn, Entity, Index, JoinColumn, 
 
 @Entity({ name: 'usuario' })
 export class Usuario {
-@PrimaryGeneratedColumn('uuid', { name: 'id' })
-id: string;
+@PrimaryGeneratedColumn('increment')
+id: number;
 
 
 @OneToOne(() => Persona, { cascade: true })
