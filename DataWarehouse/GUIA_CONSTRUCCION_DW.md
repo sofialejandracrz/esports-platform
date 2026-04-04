@@ -583,7 +583,7 @@ En la parte **inferior** del diseñador hay un panel que dice **"Connection Mana
 3. **Provider:** seleccionar `Oracle Provider for OLE DB`
    - Si no aparece, usar `Microsoft OLE DB Provider for Oracle`
    - Si tampoco aparece, necesitas instalar **Oracle Data Access Components (ODAC)**
-4. **Server name (Data Source):** `localhost:1521/XEPDB1`
+4. **Server name (Data Source):** `localhost:1521/xe`
 5. **User name:** `ESPORTS_APP`
 6. **Password:** `Esports2026`
 7. Click en **Test Connection** → debe decir "Test connection succeeded"

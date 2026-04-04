@@ -115,6 +115,9 @@ postgres-data/
 pgdata/
 Script Maestro (RUN)/
 Recursos para Proyecto-20260401/
+DataWarehouse/Excel/package-lock.json
+DataWarehouse/Excel/package.json
+DataWarehouse/SSIS_DW_ESPORTS
 
 # ===================================
 # Temporales y Cache

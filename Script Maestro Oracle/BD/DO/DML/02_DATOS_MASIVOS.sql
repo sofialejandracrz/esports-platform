@@ -31,11 +31,21 @@ DECLARE
     v_idx_nombre NUMBER;
     v_idx_ap1 NUMBER;
     v_idx_ap2 NUMBER;
+    v_idx_snombre NUMBER;
+    v_segundo_nombre VARCHAR2(50);
 BEGIN
     FOR i IN 1..60 LOOP
         v_idx_nombre := MOD(i - 1, v_nombres.COUNT) + 1;
         v_idx_ap1 := MOD(i - 1, v_apellidos.COUNT) + 1;
         v_idx_ap2 := MOD(i + 4, v_apellidos.COUNT) + 1;
+        
+        -- Calcular segundo nombre fuera del INSERT para evitar error PLS-00425
+        IF MOD(i, 3) = 0 THEN
+            v_idx_snombre := MOD(i + 5, v_nombres.COUNT) + 1;
+            v_segundo_nombre := v_nombres(v_idx_snombre);
+        ELSE
+            v_segundo_nombre := NULL;
+        END IF;
         
         -- Asignar genero ciclicamente (1=Masculino, 2=Femenino, 3=Otro, 4=Prefiero no decir)
         v_genero_id := MOD(i - 1, 4) + 1;
@@ -47,7 +57,7 @@ BEGIN
         ) VALUES (
             SEQ_PERSONA.NEXTVAL,
             v_nombres(v_idx_nombre),
-            CASE WHEN MOD(i, 3) = 0 THEN v_nombres(MOD(i + 5, v_nombres.COUNT) + 1) ELSE NULL END,
+            v_segundo_nombre,
             v_apellidos(v_idx_ap1),
             v_apellidos(v_idx_ap2),
             LOWER(v_nombres(v_idx_nombre)) || '.' || LOWER(v_apellidos(v_idx_ap1)) || i || '@esports.com',

@@ -105,12 +105,12 @@ Construcción de un **Data Warehouse multidimensional** en **SQL Server** que:
 
 El DW se alimenta de **4 fuentes heterogéneas**:
 
-| #   | Fuente                        | Motor         | Estado           | Uso en Datamarts                                                                                       |
-| --- | ----------------------------- | ------------- | ---------------- | ------------------------------------------------------------------------------------------------------ |
+| #   | Fuente                        | Motor         | Estado           | Uso en Datamarts                                                                                                  |
+| --- | ----------------------------- | ------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------- |
 | 1   | **eSports Platform (Oracle)** | Oracle 21c XE | ✅ Completa      | Fuente principal: transacciones, torneos, usuarios, tienda, estadísticas, auditoría. 40 tablas, ~1,800 registros. |
-| 2   | **RRHH Transaccional**        | SQL Server    | ✅ Script listo  | Empleados responsables de regiones (DM1), personal de soporte/seguridad (DM4). 11 tablas.              |
-| 3   | **MongoDB**                   | MongoDB       | ❌ Por construir | Logs de actividad de usuarios (DM2), feedback/reseñas de torneos (DM3).                                |
-| 4   | **Archivo Excel**             | Excel (.xlsx) | ❌ Por crear     | Metas de venta/presupuestos (DM1), lista negra de países/dominios (DM4).                               |
+| 2   | **RRHH Transaccional**        | SQL Server    | ✅ Script listo  | Empleados responsables de regiones (DM1), personal de soporte/seguridad (DM4). 11 tablas.                         |
+| 3   | **MongoDB**                   | MongoDB       | ❌ Por construir | Logs de actividad de usuarios (DM2), feedback/reseñas de torneos (DM3).                                           |
+| 4   | **Archivo Excel**             | Excel (.xlsx) | ❌ Por crear     | Metas de venta/presupuestos (DM1), lista negra de países/dominios (DM4).                                          |
 
 ### 3.1 Detalle: Base de Datos Oracle (eSports Platform)
 
@@ -266,15 +266,15 @@ Dos hojas alineadas a los datamarts 1 y 4:
 
 Metas mensuales de venta por región y categoría de producto.
 
-| Columna              | Tipo       | Ejemplo                |
-| -------------------- | ---------- | ---------------------- |
-| `anio`               | INT        | 2026                   |
-| `mes`                | INT        | 3                      |
-| `region`             | VARCHAR    | LATAM                  |
-| `categoria_producto` | VARCHAR    | creditos / membresia / servicio |
-| `meta_ingresos_usd`  | DECIMAL    | 5000.00                |
-| `meta_transacciones` | INT        | 200                    |
-| `responsable_rrhh_id`| INT        | 3 (FK → Empleado.idEmpleado en RRHH) |
+| Columna               | Tipo    | Ejemplo                              |
+| --------------------- | ------- | ------------------------------------ |
+| `anio`                | INT     | 2026                                 |
+| `mes`                 | INT     | 3                                    |
+| `region`              | VARCHAR | LATAM                                |
+| `categoria_producto`  | VARCHAR | creditos / membresia / servicio      |
+| `meta_ingresos_usd`   | DECIMAL | 5000.00                              |
+| `meta_transacciones`  | INT     | 200                                  |
+| `responsable_rrhh_id` | INT     | 3 (FK → Empleado.idEmpleado en RRHH) |
 
 **Relación con RRHH:** `responsable_rrhh_id` → `Empleado.idEmpleado` en SQL Server.  
 **Relación con Oracle:** `region` se mapea a `CATALOGO_REGION.VALOR`, `categoria_producto` a `CATALOGO_TIPO_ITEM.VALOR`.
@@ -283,13 +283,13 @@ Metas mensuales de venta por región y categoría de producto.
 
 Países restringidos y dominios de correo prohibidos.
 
-| Columna            | Tipo    | Ejemplo           |
-| ------------------ | ------- | ----------------- |
-| `tipo`             | VARCHAR | pais / dominio    |
-| `valor`            | VARCHAR | Corea del Norte / tempmail.com |
-| `motivo`           | VARCHAR | Sanciones internacionales / Correo temporal |
-| `fecha_agregado`   | DATE    | 2026-01-15        |
-| `activo`           | INT     | 1                 |
+| Columna          | Tipo    | Ejemplo                                     |
+| ---------------- | ------- | ------------------------------------------- |
+| `tipo`           | VARCHAR | pais / dominio                              |
+| `valor`          | VARCHAR | Corea del Norte / tempmail.com              |
+| `motivo`         | VARCHAR | Sanciones internacionales / Correo temporal |
+| `fecha_agregado` | DATE    | 2026-01-15                                  |
+| `activo`         | INT     | 1                                           |
 
 ### 3.5 Mapa de Relaciones entre Fuentes
 
@@ -476,6 +476,7 @@ Empleado_has_Planilla (Empleado FK, Planilla FK) — PK compuesta
 **Fuentes involucradas:** Oracle (principal) + Excel (metas) + SQL Server RRHH (responsable de región)
 
 **Tablas Oracle usadas:**
+
 - `TRANSACCION` → monto, tipo_id, origen_id, usuario_id, creado_en
 - `TIENDA_ORDEN` → monto, estado, item_id, usuario_id, divisa, creado_en, completado_en
 - `TIENDA_ITEM` → nombre, precio, tipo_id, creditos_otorgados
@@ -494,6 +495,7 @@ Empleado_has_Planilla (Empleado FK, Planilla FK) — PK compuesta
 **RRHH usado:** `Empleado` + `Departamento` → responsable de la región de venta
 
 **Tabla de hechos:** `FACT_INGRESOS`
+
 - Métricas: monto_real, meta_ingresos, variacion_meta, cantidad_transacciones, creditos_otorgados
 - Granularidad: por transacción/orden individual
 
@@ -510,6 +512,7 @@ Empleado_has_Planilla (Empleado FK, Planilla FK) — PK compuesta
 **Fuentes involucradas:** Oracle (principal) + MongoDB (logs de actividad)
 
 **Tablas Oracle usadas:**
+
 - `USUARIO` → xp, saldo, creditos, estado, creado_en, ultima_conexion
 - `USUARIO_AMIGOS` → usuario1_id, usuario2_id, estado_id, creado_en
 - `USUARIO_SEGUIDORES` → seguidor_id, seguido_id, creado_en
@@ -524,6 +527,7 @@ Empleado_has_Planilla (Empleado FK, Planilla FK) — PK compuesta
 **MongoDB usado:** Colección `logs_actividad` → tipo_evento, tiempo_visualizacion, pais_origen, timestamp
 
 **Tabla de hechos:** `FACT_ACTIVIDAD_USUARIO`
+
 - Métricas: total_amigos, total_seguidores, xp_acumulado, logins_periodo, eventos_periodo, tiempo_en_plataforma, torneos_participados, victorias
 
 **Dimensiones:** DIM_TIEMPO, DIM_USUARIO, DIM_JUEGO, DIM_TIPO_EVENTO, DIM_PAIS
@@ -539,6 +543,7 @@ Empleado_has_Planilla (Empleado FK, Planilla FK) — PK compuesta
 **Fuentes involucradas:** Oracle (principal) + MongoDB (feedback/reseñas)
 
 **Tablas Oracle usadas:**
+
 - `TORNEO` → titulo, capacidad, cerrado, fecha_inicio_torneo, juego_id, modo_juego_id, region_id, tipo_entrada_id, tipo_torneo_id, estado_id
 - `TORNEO_INSCRIPCION` → estado_id (confirmada, cancelada, etc.)
 - `TORNEO_PREMIOS` → cuota, fondo_total, comision_porcentaje, fondo_despues_comision
@@ -554,6 +559,7 @@ Empleado_has_Planilla (Empleado FK, Planilla FK) — PK compuesta
 **MongoDB usado:** Colección `feedback_torneos` → calificacion, tags, recomendaria, comentario
 
 **Tabla de hechos:** `FACT_TORNEOS`
+
 - Métricas: total_inscritos, inscritos_confirmados, fondo_premios, comision, calificacion_promedio, pct_recomendacion, tasa_llenado (inscritos/capacidad)
 
 **Dimensiones:** DIM_TIEMPO, DIM_JUEGO, DIM_MODO_JUEGO, DIM_REGION, DIM_TIPO_TORNEO, DIM_PLATAFORMA, DIM_TIPO_ENTRADA
@@ -569,6 +575,7 @@ Empleado_has_Planilla (Empleado FK, Planilla FK) — PK compuesta
 **Fuentes involucradas:** Oracle (principal) + SQL Server RRHH (personal de soporte) + Excel (lista negra)
 
 **Tablas Oracle usadas:**
+
 - `AUDITORIA_LOG` → tabla, operacion, registro_id, usuario_bd, detalle, fecha
 - `USUARIO` → nickname, estado (activo/suspendido/baneado), creado_en
 - `PERSONA` → correo, pais, ciudad
@@ -579,6 +586,7 @@ Empleado_has_Planilla (Empleado FK, Planilla FK) — PK compuesta
 **Excel usado:** Hoja `Lista_Negra` → países restringidos y dominios de correo prohibidos
 
 **Tabla de hechos:** `FACT_AUDITORIA`
+
 - Métricas: total_eventos, registros_nuevos, intentos_login, solicitudes_soporte, tickets_resueltos, registros_pais_restringido
 
 **Dimensiones:** DIM_TIEMPO, DIM_OPERACION, DIM_TABLA_AUDITADA, DIM_EMPLEADO_SOPORTE, DIM_PAIS, DIM_ROL_USUARIO
@@ -589,12 +597,12 @@ Empleado_has_Planilla (Empleado FK, Planilla FK) — PK compuesta
 
 ### Paso 2: ETL con SSIS (Integration Services)
 
-| Fuente            | Conexión en SSIS                        | Datamarts que alimenta |
-| ----------------- | --------------------------------------- | ---------------------- |
-| Oracle 21c XE     | ODP.NET o Oracle OLE DB Provider        | DM1, DM2, DM3, DM4    |
-| SQL Server (RRHH) | ADO.NET nativo (misma instancia)        | DM1, DM4               |
-| MongoDB           | MongoDB ODBC Driver o export JSON→CSV   | DM2, DM3               |
-| Excel (.xlsx)     | Excel Source nativo en SSIS             | DM1, DM4               |
+| Fuente            | Conexión en SSIS                      | Datamarts que alimenta |
+| ----------------- | ------------------------------------- | ---------------------- |
+| Oracle 21c XE     | ODP.NET o Oracle OLE DB Provider      | DM1, DM2, DM3, DM4     |
+| SQL Server (RRHH) | ADO.NET nativo (misma instancia)      | DM1, DM4               |
+| MongoDB           | MongoDB ODBC Driver o export JSON→CSV | DM2, DM3               |
+| Excel (.xlsx)     | Excel Source nativo en SSIS           | DM1, DM4               |
 
 **Paquetes SSIS sugeridos:**
 
@@ -692,7 +700,6 @@ esports-platform/
 │       └── UNDO/
 │           └── DDL/DROP_ALL.sql           ← Limpieza completa
 │
-├── Script Maestro (RUN)/                   ← Scripts PostgreSQL originales
 │
 ├── DataWarehouse/                          ← ⭐ POR CREAR - Proyecto DW
 │   ├── SQL/                               ← Scripts DDL del DW (staging, dimensiones, hechos)

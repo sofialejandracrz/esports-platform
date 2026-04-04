@@ -1,0 +1,13 @@
+services:
+  mongo:
+    image: mongo:8
+    container_name: esports_mongo_dw
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./DataWarehouse/MongoDB/init_esports_analytics.js:/docker-entrypoint-initdb.d/init_esports_analytics.js:ro
+
+volumes:
+  mongo_data:

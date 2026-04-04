@@ -32,25 +32,29 @@ FOR EACH ROW
 DECLARE
     v_operacion VARCHAR2(20);
     v_detalle   VARCHAR2(4000);
+    v_registro_id NUMBER;
 BEGIN
     IF INSERTING THEN
         v_operacion := 'INSERT';
         v_detalle := 'Nuevo usuario: ' || :NEW.NICKNAME || ' (ID: ' || :NEW.ID || ')';
+        v_registro_id := :NEW.ID;
     ELSIF UPDATING THEN
         v_operacion := 'UPDATE';
         v_detalle := 'Usuario actualizado: ' || :NEW.NICKNAME || 
                      ' | Estado: ' || NVL(:OLD.ESTADO, 'N/A') || ' -> ' || NVL(:NEW.ESTADO, 'N/A') ||
                      ' | XP: ' || :OLD.XP || ' -> ' || :NEW.XP ||
                      ' | Saldo: ' || :OLD.SALDO || ' -> ' || :NEW.SALDO;
+        v_registro_id := :NEW.ID;
     ELSIF DELETING THEN
         v_operacion := 'DELETE';
         v_detalle := 'Usuario eliminado: ' || :OLD.NICKNAME || ' (ID: ' || :OLD.ID || ')';
+        v_registro_id := :OLD.ID;
     END IF;
     
     INSERT INTO AUDITORIA_LOG (ID, TABLA, OPERACION, REGISTRO_ID, DETALLE)
     VALUES (
         SEQ_AUDITORIA_LOG.NEXTVAL, 'USUARIO', v_operacion,
-        CASE WHEN DELETING THEN :OLD.ID ELSE :NEW.ID END,
+        v_registro_id,
         v_detalle
     );
 END;

@@ -56,88 +56,88 @@ Prompt ./DDL/03_TABLAS.sql
 @ ./DDL/03_TABLAS.sql
 
 Prompt ============================================================
-Prompt   FASE 4: DML - Datos de Catalogos
+Prompt   FASE 4: Triggers (necesarios antes de DML)
+Prompt ============================================================
+Prompt ./TRIGGER/01_TRIGGERS.sql
+@ ./TRIGGER/01_TRIGGERS.sql
+
+Prompt ============================================================
+Prompt   FASE 5: DML - Datos de Catalogos
 Prompt ============================================================
 Prompt ./DML/01_CATALOGOS.sql
 @ ./DML/01_CATALOGOS.sql
 
 Prompt ============================================================
-Prompt   FASE 5: DML - Datos Masivos (bloques anonimos)
+Prompt   FASE 6: DML - Datos Masivos (bloques anonimos)
 Prompt ============================================================
 Prompt ./DML/02_DATOS_MASIVOS.sql
 @ ./DML/02_DATOS_MASIVOS.sql
 
 Prompt ============================================================
-Prompt   FASE 6: Vistas
+Prompt   FASE 7: Vistas
 Prompt ============================================================
 Prompt ./VIEW/01_VISTAS.sql
 @ ./VIEW/01_VISTAS.sql
 
 Prompt ============================================================
-Prompt   FASE 7: Paquete PKG_ESPORTS - Especificacion
+Prompt   FASE 8: Paquete PKG_ESPORTS - Especificacion
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_ESPORTS_SPEC.sql
 @ ./PACKAGE/PKG_ESPORTS_SPEC.sql
 
 Prompt ============================================================
-Prompt   FASE 8: Paquete PKG_ESPORTS - Cuerpo
+Prompt   FASE 9: Paquete PKG_ESPORTS - Cuerpo
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_ESPORTS_BODY.sql
 @ ./PACKAGE/PKG_ESPORTS_BODY.sql
 
 Prompt ============================================================
-Prompt   FASE 9: Paquete PKG_TIENDA - Especificacion (Migracion)
+Prompt   FASE 10: Paquete PKG_TIENDA - Especificacion (Migracion)
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_TIENDA_SPEC.sql
 @ ./PACKAGE/PKG_TIENDA_SPEC.sql
 
 Prompt ============================================================
-Prompt   FASE 10: Paquete PKG_TIENDA - Cuerpo (Migracion)
+Prompt   FASE 11: Paquete PKG_TIENDA - Cuerpo (Migracion)
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_TIENDA_BODY.sql
 @ ./PACKAGE/PKG_TIENDA_BODY.sql
 
 Prompt ============================================================
-Prompt   FASE 11: Paquete PKG_PERFIL - Especificacion (Migracion)
+Prompt   FASE 12: Paquete PKG_PERFIL - Especificacion (Migracion)
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_PERFIL_SPEC.sql
 @ ./PACKAGE/PKG_PERFIL_SPEC.sql
 
 Prompt ============================================================
-Prompt   FASE 12: Paquete PKG_PERFIL - Cuerpo (Migracion)
+Prompt   FASE 13: Paquete PKG_PERFIL - Cuerpo (Migracion)
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_PERFIL_BODY.sql
 @ ./PACKAGE/PKG_PERFIL_BODY.sql
 
 Prompt ============================================================
-Prompt   FASE 13: Paquete PKG_TORNEO - Especificacion (Migracion)
+Prompt   FASE 14: Paquete PKG_TORNEO - Especificacion (Migracion)
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_TORNEO_SPEC.sql
 @ ./PACKAGE/PKG_TORNEO_SPEC.sql
 
 Prompt ============================================================
-Prompt   FASE 14: Paquete PKG_TORNEO - Cuerpo (Migracion)
+Prompt   FASE 15: Paquete PKG_TORNEO - Cuerpo (Migracion)
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_TORNEO_BODY.sql
 @ ./PACKAGE/PKG_TORNEO_BODY.sql
 
 Prompt ============================================================
-Prompt   FASE 15: Paquete PKG_CONFIG - Especificacion (Migracion)
+Prompt   FASE 16: Paquete PKG_CONFIG - Especificacion (Migracion)
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_CONFIG_SPEC.sql
 @ ./PACKAGE/PKG_CONFIG_SPEC.sql
 
 Prompt ============================================================
-Prompt   FASE 16: Paquete PKG_CONFIG - Cuerpo (Migracion)
+Prompt   FASE 17: Paquete PKG_CONFIG - Cuerpo (Migracion)
 Prompt ============================================================
 Prompt ./PACKAGE/PKG_CONFIG_BODY.sql
 @ ./PACKAGE/PKG_CONFIG_BODY.sql
-
-Prompt ============================================================
-Prompt   FASE 17: Triggers
-Prompt ============================================================
-Prompt ./TRIGGER/01_TRIGGERS.sql
-@ ./TRIGGER/01_TRIGGERS.sql
 
 COMMIT;
 
