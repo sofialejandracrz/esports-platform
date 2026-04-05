@@ -1,498 +1,602 @@
-# 🏗️ Guía Completa de Construcción del Data Warehouse — eSports Platform
+# Guia Secuencial Exacta de Construccion del Data Warehouse - eSports Platform
 
-> **Esta guía es el complemento detallado de `CONTEXTO_DATAWAREHOUSE.md` (Sección 8).**
-> Contiene la DDL de los 4 datamarts con esquema estrella y los pasos click-por-click de Visual Studio.
+> Esta guia reemplaza el flujo anterior por una ejecucion unica, lineal y verificable.
+> Se basa en las estructuras reales de:
+> - Oracle: Script Maestro Oracle/BD/DO/DDL/03_TABLAS.sql
+> - Oracle auditoria: Script Maestro Oracle/BD/DO/TRIGGER/01_TRIGGERS.sql
+> - RRHH SQL Server: backend/src/database/scripts/base-rrhh.sql
+> - Excel: DataWarehouse/Excel/generar_excel_dw.js
+> - MongoDB: DataWarehouse/MongoDB/init_esports_analytics.js
+> - CSV Mongo exportados: DataWarehouse/MongoDB/exports/*.csv
+
+## Indice
+
+1. Fase 0 - Preparacion de fuentes
+2. Fase 1 - Creacion de DW_ESPORTS y DIM_TIEMPO
+3. Fase 2 - Creacion de tablas de staging normalizado y esquema estrella
+4. Fase 3 - Configuracion del proyecto SSIS
+5. Fase 4 - Carga de staging desde Oracle, RRHH, Excel y Mongo CSV
+6. Fase 5 - Normalizacion de staging Mongo
+7. Fase 6 - Carga de dimensiones
+8. Fase 7 - Carga de hechos (DM1, DM2, DM3, DM4)
+9. Fase 8 - Ejecucion secuencial de paquetes SSIS
+10. Fase 9 - Cubos SSAS
+11. Fase 10 - Dashboards Power BI y verificacion final
+
+## Reglas de ejecucion
+
+1. Ejecutar las fases en el orden exacto del indice.
+2. No saltar fases.
+3. No ejecutar cargas de hechos antes de completar staging y dimensiones.
+4. Oracle en SSIS se configura con servidor: localhost:1521/xe
+5. MongoDB se integra mediante CSV exportado con mongoexport.
 
 ---
 
-## Índice
+## Fase 0 - Preparacion de fuentes
 
-1. [Fase 0: Preparación — Crear Base DW y DIM_TIEMPO](#fase-0)
-2. [Datamart 1: Ingresos y Monetización (DDL Estrella)](#dm1)
-3. [Datamart 2: Comportamiento del Usuario (DDL Estrella)](#dm2)
-4. [Datamart 3: Calidad de Torneos (DDL Estrella)](#dm3)
-5. [Datamart 4: Seguridad y Auditoría (DDL Estrella)](#dm4)
-6. [Fase 1-3: Crear Proyecto SSIS en Visual Studio](#ssis)
-7. [Fase 4-5: Crear Proyecto SSAS en Visual Studio](#ssas)
-8. [Fase 6: Dashboards en Power BI](#powerbi)
-9. [Fase 7: Exportar Excel desde SSAS](#export)
+### 0.1 Levantar contenedores
 
----
+Desde la raiz del repositorio:
 
-<a id="fase-0"></a>
-## Fase 0: Preparación — Crear Base DW y DIM_TIEMPO
-
-### 0.1 Crear la Base de Datos del DW en SQL Server
-
-1. Abrir **SSMS** → Conectar al **Database Engine**
-2. Click derecho en **Databases** → **New Database…**
-3. Database name: `DW_ESPORTS` → **OK**
-
-### 0.2 Crear DIM_TIEMPO (estructura exacta del profesor)
-
-Abrir **New Query** contra `DW_ESPORTS` y ejecutar:
-
-```sql
--- =============================================
--- DIM_TIEMPO — Dimensión compartida (todos los datamarts)
--- Estructura del profesor: id_tiempo = YYYYMMDD (INT)
--- =============================================
-CREATE TABLE dim_tiempo (
-    id_tiempo    INT          NOT NULL PRIMARY KEY,  -- YYYYMMDD (ej: 20260401)
-    fecha        DATETIME     NULL,
-    anio         INT          NULL,
-    trimestre    INT          NULL,
-    mes_nombre   VARCHAR(30)  NULL,
-    mes_numero   INT          NULL,
-    semestre     INT          NULL
-);
-GO
+```powershell
+docker compose up -d
+docker compose -f docker-compose.mongo.yml up -d
 ```
 
-### 0.3 Crear y ejecutar los Stored Procedures del profesor
+### 0.2 Generar archivo Excel oficial de fuentes
+
+```powershell
+node .\DataWarehouse\Excel\generar_excel_dw.js
+```
+
+Esto genera:
+
+- DataWarehouse/Excel/DW_Fuentes_Excel.xlsx
+  - Hoja Presupuestos_Ventas con columnas:
+    - anio
+    - mes
+    - region
+    - categoria_producto
+    - meta_ingresos_usd
+    - meta_transacciones
+    - responsable_rrhh_id
+  - Hoja Lista_Negra con columnas:
+    - tipo
+    - valor
+    - motivo
+    - fecha_agregado
+    - activo
+
+### 0.3 Exportar MongoDB a CSV
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\DataWarehouse\MongoDB\export_mongo_dw.ps1
+```
+
+Esto genera:
+
+- DataWarehouse/MongoDB/exports/logs_actividad_dw.csv
+- DataWarehouse/MongoDB/exports/feedback_torneos_dw.csv
+
+---
+
+## Fase 1 - Creacion de DW_ESPORTS y DIM_TIEMPO
+
+Ejecutar en SQL Server:
 
 ```sql
--- SP que inserta una fecha individual
-CREATE PROCEDURE [dbo].[InsertarFecha]
-   @CurrentDate datetime
-AS
-INSERT INTO dim_tiempo(id_tiempo, fecha, anio, trimestre, mes_nombre, mes_numero, semestre)
-VALUES(
-    (DATEPART(year, @CurrentDate) * 10000) + (DATEPART(month, @CurrentDate) * 100)
-    + DATEPART(day, @CurrentDate)
-    , @CurrentDate
-    , DATEPART(year, @CurrentDate)
-    , DATEPART(QUARTER, @CurrentDate)
-    , DATENAME(month, @CurrentDate)
-    , DATEPART(month, @CurrentDate)
-    , CASE WHEN DATEPART(quarter, @CurrentDate) < 3 THEN 1 ELSE 2 END
-);
+USE master;
 GO
 
--- SP que llena DIM_TIEMPO desde 2000-01-30 hasta año actual + 5
-CREATE PROCEDURE [dbo].[CargarDimTiempo]
-AS
-DECLARE @StartDate datetime, @EndDate datetime
-SET @StartDate = '20000130'
-SET @EndDate = CAST(CAST(YEAR(GETDATE()) + 5 AS CHAR(4)) + '1231' AS DATETIME)
-
-WHILE @StartDate <= @EndDate BEGIN
-    EXEC InsertarFecha @StartDate
-    SET @StartDate = DATEADD(day, 1, @StartDate)
+IF DB_ID('DW_ESPORTS') IS NULL
+BEGIN
+    CREATE DATABASE DW_ESPORTS;
 END
 GO
-```
 
-### 0.4 Ejecutar la carga
+USE DW_ESPORTS;
+GO
 
-```sql
-EXEC CargarDimTiempo;
--- Tardará unos segundos. Genera ~11,000+ registros (2000-2031).
--- Verificar: SELECT COUNT(*) FROM dim_tiempo; SELECT TOP 5 * FROM dim_tiempo;
+CREATE TABLE dim_tiempo (
+    id_tiempo    INT         NOT NULL PRIMARY KEY,
+    fecha        DATETIME    NULL,
+    anio         INT         NULL,
+    trimestre    INT         NULL,
+    mes_nombre   VARCHAR(30) NULL,
+    mes_numero   INT         NULL,
+    semestre     INT         NULL
+);
+GO
+
+CREATE OR ALTER PROCEDURE dbo.InsertarFecha
+    @CurrentDate DATETIME
+AS
+BEGIN
+    INSERT INTO dim_tiempo (id_tiempo, fecha, anio, trimestre, mes_nombre, mes_numero, semestre)
+    VALUES (
+        (DATEPART(YEAR, @CurrentDate) * 10000)
+        + (DATEPART(MONTH, @CurrentDate) * 100)
+        + DATEPART(DAY, @CurrentDate),
+        @CurrentDate,
+        DATEPART(YEAR, @CurrentDate),
+        DATEPART(QUARTER, @CurrentDate),
+        DATENAME(MONTH, @CurrentDate),
+        DATEPART(MONTH, @CurrentDate),
+        CASE WHEN DATEPART(QUARTER, @CurrentDate) < 3 THEN 1 ELSE 2 END
+    );
+END
+GO
+
+CREATE OR ALTER PROCEDURE dbo.CargarDimTiempo
+AS
+BEGIN
+    DECLARE @StartDate DATETIME = '20000130';
+    DECLARE @EndDate DATETIME = CAST(CAST(YEAR(GETDATE()) + 5 AS CHAR(4)) + '1231' AS DATETIME);
+
+    WHILE @StartDate <= @EndDate
+    BEGIN
+        EXEC dbo.InsertarFecha @StartDate;
+        SET @StartDate = DATEADD(DAY, 1, @StartDate);
+    END
+END
+GO
+
+EXEC dbo.CargarDimTiempo;
+GO
 ```
 
 ---
 
-<a id="dm1"></a>
-## Datamart 1: Ingresos y Monetización — DDL Esquema Estrella
+## Fase 2 - Creacion de tablas de staging normalizado y esquema estrella
 
-> **Fuentes:** Oracle (transacciones, órdenes, items) + Excel (presupuestos) + RRHH (responsable)
+Ejecutar en SQL Server sobre DW_ESPORTS.
 
-```
-                    ┌──────────────────────┐
-                    │    dim_tiempo         │
-                    │ PK id_tiempo (INT)   │
-                    │    fecha, anio,       │
-                    │    trimestre, mes_*,  │
-                    │    semestre           │
-                    └──────────┬───────────┘
-                               │
-┌──────────────────┐           │           ┌──────────────────────┐
-│ dim_region       │           │           │ dim_tipo_item        │
-│ PK id_region     │───┐       │       ┌───│ PK id_tipo_item      │
-│    nombre_region │   │       │       │   │    nombre_tipo       │
-└──────────────────┘   │       │       │   └──────────────────────┘
-                       │       │       │
-                  ┌────▼───────▼───────▼────────────────────┐
-                  │           fact_ingresos                  │
-                  │ FK id_dim_tiempo                        │
-                  │ FK id_dim_region                        │
-                  │ FK id_dim_tipo_item                     │
-                  │ FK id_dim_origen                        │
-                  │ FK id_dim_usuario                       │
-                  │ FK id_dim_responsable_rrhh              │
-                  │    monto_real, meta_ingresos,           │
-                  │    creditos_otorgados, cantidad         │
-                  └────┬───────────────────────┬────────────┘
-                       │                       │
-┌──────────────────────▼──┐    ┌───────────────▼────────────┐
-│ dim_origen_transaccion  │    │ dim_usuario_comprador      │
-│ PK id_origen            │    │ PK id_usuario              │
-│    nombre_origen        │    │    nickname, pais, divisa,  │
-└─────────────────────────┘    │    fecha_registro           │
-                               └────────────────────────────┘
-                 ┌─────────────────────────────────┐
-                 │ dim_responsable_rrhh             │
-                 │ PK id_empleado                   │
-                 │    nombre_completo, cargo,       │
-                 │    departamento, version,        │
-                 │    version_actual                │
-                 └─────────────────────────────────┘
-```
-
-### DDL:
+### 2.1 Staging normalizado
 
 ```sql
 USE DW_ESPORTS;
 GO
 
--- ========== DIMENSIONES DM1 ==========
-
-CREATE TABLE dim_region (
-    id_region       INT          NOT NULL PRIMARY KEY,
-    nombre_region   VARCHAR(200) NOT NULL
+CREATE TABLE stg_oracle_catalogo_region (
+    id_region      INT          NOT NULL PRIMARY KEY,
+    nombre_region  VARCHAR(200) NOT NULL
 );
 
-CREATE TABLE dim_tipo_item (
-    id_tipo_item    INT          NOT NULL PRIMARY KEY,
-    nombre_tipo     VARCHAR(100) NOT NULL
+CREATE TABLE stg_oracle_catalogo_tipo_item (
+    id_tipo_item   INT          NOT NULL PRIMARY KEY,
+    nombre_tipo    VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE dim_origen_transaccion (
-    id_origen       INT          NOT NULL PRIMARY KEY,
-    nombre_origen   VARCHAR(100) NOT NULL
+CREATE TABLE stg_oracle_catalogo_origen_transaccion (
+    id_origen      INT          NOT NULL PRIMARY KEY,
+    nombre_origen  VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE dim_usuario_comprador (
-    id_usuario      INT          NOT NULL PRIMARY KEY,
-    nickname        VARCHAR(100) NULL,
-    pais            VARCHAR(100) NULL,
-    divisa          VARCHAR(10)  NULL,
-    fecha_registro  DATETIME     NULL
+CREATE TABLE stg_oracle_catalogo_tipo_torneo (
+    id_tipo_torneo INT          NOT NULL PRIMARY KEY,
+    nombre_tipo    VARCHAR(100) NOT NULL,
+    tipo_trofeo    VARCHAR(100) NOT NULL
 );
 
--- Patrón SCD del profesor (VERSION + VERSION_ACTUAL)
-CREATE TABLE dim_responsable_rrhh (
-    id_empleado     INT          NOT NULL,
-    nombre_completo VARCHAR(150) NULL,
-    cargo           VARCHAR(45)  NULL,
-    departamento    VARCHAR(45)  NULL,
-    version         INT          NOT NULL,
-    version_actual  INT          NOT NULL,  -- 1=actual, 0=histórico
+CREATE TABLE stg_oracle_catalogo_plataforma (
+    id_plataforma       INT          NOT NULL PRIMARY KEY,
+    nombre_plataforma   VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE stg_oracle_catalogo_rol (
+    id_rol       INT          NOT NULL PRIMARY KEY,
+    nombre_rol   VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE stg_oracle_catalogo_estado_inscripcion (
+    id_estado      INT          NOT NULL PRIMARY KEY,
+    valor_estado   VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE stg_oracle_usuario (
+    usuario_id   INT          NOT NULL PRIMARY KEY,
+    nickname     VARCHAR(100) NOT NULL,
+    estado       VARCHAR(50)  NOT NULL,
+    xp           INT          NOT NULL,
+    creado_en    DATETIME2    NULL,
+    persona_id   INT          NULL,
+    rol_id       INT          NOT NULL
+);
+
+CREATE TABLE stg_oracle_persona (
+    persona_id   INT          NOT NULL PRIMARY KEY,
+    pais         VARCHAR(100) NULL,
+    divisa       VARCHAR(10)  NULL,
+    correo       VARCHAR(200) NULL
+);
+
+CREATE TABLE stg_oracle_transaccion (
+    transaccion_id   INT            NOT NULL PRIMARY KEY,
+    monto            DECIMAL(12,2)  NOT NULL,
+    descripcion      VARCHAR(500)   NULL,
+    creado_en        DATETIME2      NOT NULL,
+    usuario_id       INT            NULL,
+    tipo_id          INT            NOT NULL,
+    origen_id        INT            NOT NULL
+);
+
+CREATE TABLE stg_oracle_tienda_item (
+    item_id             INT            NOT NULL PRIMARY KEY,
+    nombre_item         VARCHAR(200)   NOT NULL,
+    precio              DECIMAL(12,2)  NOT NULL,
+    creditos_otorgados  INT            NULL,
+    tipo_id             INT            NOT NULL
+);
+
+CREATE TABLE stg_oracle_tienda_orden (
+    orden_id        INT            NOT NULL PRIMARY KEY,
+    monto           DECIMAL(12,2)  NOT NULL,
+    estado          VARCHAR(50)    NOT NULL,
+    creado_en       DATETIME2      NOT NULL,
+    completado_en   DATETIME2      NULL,
+    usuario_id      INT            NOT NULL,
+    item_id         INT            NOT NULL,
+    divisa          VARCHAR(3)     NOT NULL
+);
+
+CREATE TABLE stg_oracle_juego (
+    juego_id       INT          NOT NULL PRIMARY KEY,
+    nombre_juego   VARCHAR(200) NOT NULL
+);
+
+CREATE TABLE stg_oracle_modo_juego (
+    modo_juego_id   INT          NOT NULL PRIMARY KEY,
+    nombre_modo     VARCHAR(200) NOT NULL,
+    juego_id        INT          NULL
+);
+
+CREATE TABLE stg_oracle_torneo (
+    torneo_id            INT         NOT NULL PRIMARY KEY,
+    fecha_inicio_torneo  DATETIME2   NULL,
+    juego_id             INT         NULL,
+    modo_juego_id        INT         NULL,
+    tipo_torneo_id       INT         NULL,
+    plataforma_id        INT         NULL,
+    region_id            INT         NOT NULL,
+    capacidad            INT         NULL
+);
+
+CREATE TABLE stg_oracle_torneo_inscripcion (
+    inscripcion_id   INT        NOT NULL PRIMARY KEY,
+    fecha            DATETIME2  NOT NULL,
+    torneo_id        INT        NULL,
+    usuario_id       INT        NOT NULL,
+    estado_id        INT        NOT NULL
+);
+
+CREATE TABLE stg_oracle_torneo_premios (
+    torneo_id       INT            NOT NULL PRIMARY KEY,
+    fondo_total     DECIMAL(12,2)  NOT NULL,
+    comision_total  DECIMAL(12,2)  NOT NULL
+);
+
+CREATE TABLE stg_oracle_usuario_amigos (
+    amistad_id     INT        NOT NULL PRIMARY KEY,
+    creado_en      DATETIME2  NOT NULL,
+    usuario1_id    INT        NULL,
+    usuario2_id    INT        NULL,
+    estado_id      INT        NOT NULL
+);
+
+CREATE TABLE stg_oracle_usuario_seguidores (
+    seguimiento_id  INT        NOT NULL PRIMARY KEY,
+    creado_en       DATETIME2  NOT NULL,
+    seguidor_id     INT        NULL,
+    seguido_id      INT        NULL
+);
+
+CREATE TABLE stg_oracle_usuario_estadisticas_juego (
+    usuario_id     INT NOT NULL,
+    juego_id       INT NULL,
+    victorias      INT NOT NULL,
+    horas_jugadas  INT NOT NULL
+);
+
+CREATE TABLE stg_oracle_auditoria_log (
+    auditoria_id     INT           NOT NULL PRIMARY KEY,
+    tabla_auditada   VARCHAR(100)  NOT NULL,
+    operacion        VARCHAR(20)   NOT NULL,
+    registro_id      INT           NULL,
+    usuario_bd       VARCHAR(100)  NULL,
+    detalle          VARCHAR(4000) NULL,
+    fecha            DATETIME2     NOT NULL
+);
+
+CREATE TABLE stg_oracle_tienda_solicitud_soporte (
+    solicitud_id   INT          NOT NULL PRIMARY KEY,
+    tipo           VARCHAR(50)  NOT NULL,
+    estado         VARCHAR(50)  NOT NULL,
+    creado_en      DATETIME2    NOT NULL,
+    resuelto_en    DATETIME2    NULL,
+    usuario_id     INT          NOT NULL,
+    resuelto_por   INT          NULL
+);
+
+CREATE TABLE stg_rrhh_empleado_historial (
+    id_empleado      INT           NOT NULL,
+    nombre_completo  VARCHAR(150)  NULL,
+    cargo            VARCHAR(45)   NULL,
+    departamento     VARCHAR(45)   NULL,
+    version          INT           NOT NULL,
+    version_actual   INT           NOT NULL,
     PRIMARY KEY (id_empleado, version)
 );
 
--- ========== TABLA DE HECHOS DM1 ==========
+CREATE TABLE stg_excel_presupuestos_ventas (
+    anio                 INT            NOT NULL,
+    mes                  INT            NOT NULL,
+    region               VARCHAR(200)   NOT NULL,
+    categoria_producto   VARCHAR(100)   NOT NULL,
+    meta_ingresos_usd    DECIMAL(12,2)  NOT NULL,
+    meta_transacciones   INT            NOT NULL,
+    responsable_rrhh_id  INT            NOT NULL
+);
 
-CREATE TABLE fact_ingresos (
-    id_dim_tiempo           INT          NOT NULL,
-    id_dim_region           INT          NOT NULL,
-    id_dim_tipo_item        INT          NOT NULL,
-    id_dim_origen           INT          NOT NULL,
-    id_dim_usuario          INT          NOT NULL,
-    id_dim_responsable      INT          NULL,
-    version_responsable     INT          NULL,
-    monto_real              DECIMAL(12,2) NULL,
-    meta_ingresos           DECIMAL(12,2) NULL,
-    creditos_otorgados      INT          NULL,
-    cantidad                INT          DEFAULT 1,
-    FOREIGN KEY (id_dim_tiempo) REFERENCES dim_tiempo(id_tiempo),
-    FOREIGN KEY (id_dim_region) REFERENCES dim_region(id_region),
-    FOREIGN KEY (id_dim_tipo_item) REFERENCES dim_tipo_item(id_tipo_item),
-    FOREIGN KEY (id_dim_origen) REFERENCES dim_origen_transaccion(id_origen),
-    FOREIGN KEY (id_dim_usuario) REFERENCES dim_usuario_comprador(id_usuario)
+CREATE TABLE stg_excel_lista_negra (
+    tipo            VARCHAR(20)   NOT NULL,
+    valor           VARCHAR(200)  NOT NULL,
+    motivo          VARCHAR(500)  NULL,
+    fecha_agregado  DATE          NULL,
+    activo          INT           NOT NULL
+);
+
+CREATE TABLE stg_mongo_logs_actividad_raw (
+    oracle_usuario_id                VARCHAR(50)   NULL,
+    tipo_evento                      VARCHAR(100)  NULL,
+    ip                               VARCHAR(50)   NULL,
+    user_agent                       VARCHAR(500)  NULL,
+    pais_origen                      VARCHAR(100)  NULL,
+    timestamp_raw                    VARCHAR(100)  NULL,
+    detalle_metodo                   VARCHAR(50)   NULL,
+    detalle_exitoso                  VARCHAR(10)   NULL,
+    detalle_duracion_sesion_min      VARCHAR(20)   NULL,
+    detalle_termino                  VARCHAR(200)  NULL,
+    detalle_resultados_encontrados   VARCHAR(20)   NULL,
+    detalle_perfil_visitado_id       VARCHAR(20)   NULL,
+    detalle_tiempo_visualizacion_seg VARCHAR(20)   NULL,
+    detalle_desde_seccion            VARCHAR(100)  NULL,
+    detalle_torneo_id                VARCHAR(20)   NULL,
+    detalle_accion                   VARCHAR(100)  NULL,
+    detalle_item_id                  VARCHAR(20)   NULL,
+    detalle_categoria                VARCHAR(100)  NULL,
+    detalle_seccion                  VARCHAR(100)  NULL,
+    detalle_campo_modificado         VARCHAR(100)  NULL,
+    detalle_destinatario_id          VARCHAR(20)   NULL
+);
+
+CREATE TABLE stg_mongo_feedback_torneos_raw (
+    oracle_torneo_id    VARCHAR(20)   NULL,
+    oracle_usuario_id   VARCHAR(20)   NULL,
+    calificacion        VARCHAR(20)   NULL,
+    comentario          VARCHAR(500)  NULL,
+    tags                VARCHAR(1000) NULL,
+    recomendaria        VARCHAR(10)   NULL,
+    timestamp_raw       VARCHAR(100)  NULL
+);
+
+CREATE TABLE stg_mongo_logs_actividad_evento (
+    oracle_usuario_id                INT          NULL,
+    tipo_evento                      VARCHAR(100) NULL,
+    ip                               VARCHAR(50)  NULL,
+    user_agent                       VARCHAR(500) NULL,
+    pais_origen                      VARCHAR(100) NULL,
+    timestamp_evento                 DATETIME2    NULL,
+    detalle_metodo                   VARCHAR(50)  NULL,
+    detalle_exitoso                  INT          NULL,
+    detalle_duracion_sesion_min      INT          NULL,
+    detalle_termino                  VARCHAR(200) NULL,
+    detalle_resultados_encontrados   INT          NULL,
+    detalle_perfil_visitado_id       INT          NULL,
+    detalle_tiempo_visualizacion_seg INT          NULL,
+    detalle_desde_seccion            VARCHAR(100) NULL,
+    detalle_torneo_id                INT          NULL,
+    detalle_accion                   VARCHAR(100) NULL,
+    detalle_item_id                  INT          NULL,
+    detalle_categoria                VARCHAR(100) NULL,
+    detalle_seccion                  VARCHAR(100) NULL,
+    detalle_campo_modificado         VARCHAR(100) NULL,
+    detalle_destinatario_id          INT          NULL
+);
+
+CREATE TABLE stg_mongo_feedback_torneos_evento (
+    oracle_torneo_id   INT           NULL,
+    oracle_usuario_id  INT           NULL,
+    calificacion       INT           NULL,
+    comentario         VARCHAR(500)  NULL,
+    tags               VARCHAR(1000) NULL,
+    recomendaria       INT           NULL,
+    timestamp_evento   DATETIME2     NULL
 );
 GO
 ```
 
-### Query de carga (SSIS — OLE DB Source desde Oracle):
-
-```sql
--- Para dim_region (desde Oracle)
-SELECT ID AS id_region, VALOR AS nombre_region FROM CATALOGO_REGION;
-
--- Para dim_tipo_item (desde Oracle)
-SELECT ID AS id_tipo_item, VALOR AS nombre_tipo FROM CATALOGO_TIPO_ITEM;
-
--- Para dim_origen_transaccion (desde Oracle)
-SELECT ID AS id_origen, VALOR AS nombre_origen FROM CATALOGO_ORIGEN_TRANSACCION;
-
--- Para dim_usuario_comprador (desde Oracle)
-SELECT u.ID AS id_usuario, u.NICKNAME, p.PAIS, p.DIVISA,
-       u.CREADO_EN AS fecha_registro
-FROM USUARIO u
-JOIN PERSONA p ON p.ID = u.PERSONA_ID;
-
--- Para dim_responsable_rrhh (desde RRHH SQL Server — patrón del profesor)
-SELECT e.idEmpleado AS id_empleado,
-       e.pnombre + ' ' + e.snombre + ' ' + e.papellido AS nombre_completo,
-       c.nombre AS cargo,
-       d.Nombre AS departamento,
-       ROW_NUMBER() OVER (PARTITION BY e.idEmpleado ORDER BY ce.fechaNombramiento ASC) AS version,
-       CASE ROW_NUMBER() OVER (PARTITION BY e.idEmpleado ORDER BY ce.fechaNombramiento DESC)
-            WHEN 1 THEN 1 ELSE 0 END AS version_actual
-FROM Empleado e
-INNER JOIN Cargo_empleado ce ON ce.idEmpleado = e.idEmpleado
-INNER JOIN Cargo c ON c.idCargo = ce.idCargo
-INNER JOIN Departamento d ON d.idDepartamento = e.idDepartamento;
-
--- Para fact_ingresos (desde Oracle)
-SELECT
-    EXTRACT(YEAR FROM t.CREADO_EN) * 10000 +
-    EXTRACT(MONTH FROM t.CREADO_EN) * 100 +
-    EXTRACT(DAY FROM t.CREADO_EN)           AS id_dim_tiempo,
-    r.ID                                    AS id_dim_region,
-    NVL(o.ITEM_ID, 0)                      AS id_dim_tipo_item_ref,
-    t.ORIGEN_ID                             AS id_dim_origen,
-    t.USUARIO_ID                            AS id_dim_usuario,
-    t.MONTO                                 AS monto_real,
-    ti.CREDITOS_OTORGADOS                   AS creditos_otorgados
-FROM TRANSACCION t
-JOIN USUARIO u ON u.ID = t.USUARIO_ID
-JOIN PERSONA p ON p.ID = u.PERSONA_ID
-LEFT JOIN CATALOGO_REGION r ON r.VALOR = p.PAIS
-LEFT JOIN TIENDA_ORDEN o ON o.USUARIO_ID = t.USUARIO_ID
-LEFT JOIN TIENDA_ITEM ti ON ti.ID = o.ITEM_ID;
-```
-
----
-
-<a id="dm2"></a>
-## Datamart 2: Comportamiento del Usuario — DDL Esquema Estrella
-
-> **Fuentes:** Oracle (usuarios, amigos, estadísticas) + MongoDB (logs_actividad)
+### 2.2 Esquema estrella de los 4 datamarts
 
 ```sql
 USE DW_ESPORTS;
 GO
 
--- ========== DIMENSIONES DM2 ==========
+CREATE TABLE dim_region (
+    id_region      INT          NOT NULL PRIMARY KEY,
+    nombre_region  VARCHAR(200) NOT NULL
+);
 
--- dim_tiempo (compartida)
+CREATE TABLE dim_tipo_item (
+    id_tipo_item   INT          NOT NULL PRIMARY KEY,
+    nombre_tipo    VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE dim_origen_transaccion (
+    id_origen      INT          NOT NULL PRIMARY KEY,
+    nombre_origen  VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE dim_usuario_comprador (
+    id_usuario      INT           NOT NULL PRIMARY KEY,
+    nickname        VARCHAR(100)  NULL,
+    pais            VARCHAR(100)  NULL,
+    divisa          VARCHAR(10)   NULL,
+    fecha_registro  DATETIME2     NULL
+);
+
+CREATE TABLE dim_responsable_rrhh (
+    id_empleado      INT           NOT NULL,
+    nombre_completo  VARCHAR(150)  NULL,
+    cargo            VARCHAR(45)   NULL,
+    departamento     VARCHAR(45)   NULL,
+    version          INT           NOT NULL,
+    version_actual   INT           NOT NULL,
+    PRIMARY KEY (id_empleado, version)
+);
+
+CREATE TABLE fact_ingresos (
+    id_dim_tiempo        INT            NOT NULL,
+    id_dim_region        INT            NOT NULL,
+    id_dim_tipo_item     INT            NOT NULL,
+    id_dim_origen        INT            NOT NULL,
+    id_dim_usuario       INT            NOT NULL,
+    id_dim_responsable   INT            NULL,
+    version_responsable  INT            NULL,
+    monto_real           DECIMAL(12,2)  NULL,
+    meta_ingresos        DECIMAL(12,2)  NULL,
+    creditos_otorgados   INT            NULL,
+    cantidad             INT            NOT NULL DEFAULT 1,
+    CONSTRAINT FK_fact_ingresos_tiempo FOREIGN KEY (id_dim_tiempo) REFERENCES dim_tiempo(id_tiempo),
+    CONSTRAINT FK_fact_ingresos_region FOREIGN KEY (id_dim_region) REFERENCES dim_region(id_region),
+    CONSTRAINT FK_fact_ingresos_tipo_item FOREIGN KEY (id_dim_tipo_item) REFERENCES dim_tipo_item(id_tipo_item),
+    CONSTRAINT FK_fact_ingresos_origen FOREIGN KEY (id_dim_origen) REFERENCES dim_origen_transaccion(id_origen),
+    CONSTRAINT FK_fact_ingresos_usuario FOREIGN KEY (id_dim_usuario) REFERENCES dim_usuario_comprador(id_usuario),
+    CONSTRAINT FK_fact_ingresos_responsable FOREIGN KEY (id_dim_responsable, version_responsable)
+        REFERENCES dim_responsable_rrhh(id_empleado, version)
+);
 
 CREATE TABLE dim_usuario (
-    id_usuario      INT          NOT NULL PRIMARY KEY,
-    nickname        VARCHAR(100) NULL,
-    xp              INT          NULL,
-    estado          VARCHAR(50)  NULL,
-    pais            VARCHAR(100) NULL,
-    fecha_registro  DATETIME     NULL
+    id_usuario       INT           NOT NULL PRIMARY KEY,
+    nickname         VARCHAR(100)  NULL,
+    xp               INT           NULL,
+    estado           VARCHAR(50)   NULL,
+    pais             VARCHAR(100)  NULL,
+    fecha_registro   DATETIME2     NULL
 );
 
 CREATE TABLE dim_juego (
-    id_juego        INT          NOT NULL PRIMARY KEY,
-    nombre_juego    VARCHAR(200) NOT NULL
+    id_juego        INT           NOT NULL PRIMARY KEY,
+    nombre_juego    VARCHAR(200)  NOT NULL
 );
 
 CREATE TABLE dim_tipo_evento (
     id_tipo_evento  INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    nombre_evento   VARCHAR(100) NOT NULL
+    nombre_evento   VARCHAR(100)      NOT NULL
 );
 
 CREATE TABLE dim_pais (
-    id_pais         INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    nombre_pais     VARCHAR(100) NOT NULL
+    id_pais       INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    nombre_pais   VARCHAR(100)      NOT NULL
 );
-
--- ========== TABLA DE HECHOS DM2 ==========
 
 CREATE TABLE fact_actividad_usuario (
-    id_dim_tiempo       INT NOT NULL,
-    id_dim_usuario      INT NOT NULL,
-    id_dim_juego        INT NULL,
-    id_dim_tipo_evento  INT NOT NULL,
-    id_dim_pais         INT NULL,
-    total_amigos        INT NULL,
-    total_seguidores    INT NULL,
-    xp_acumulado        INT NULL,
-    cantidad_eventos    INT DEFAULT 1,
-    tiempo_sesion_seg   INT NULL,
-    victorias           INT NULL,
-    horas_jugadas       INT NULL,
-    FOREIGN KEY (id_dim_tiempo) REFERENCES dim_tiempo(id_tiempo),
-    FOREIGN KEY (id_dim_usuario) REFERENCES dim_usuario(id_usuario),
-    FOREIGN KEY (id_dim_juego) REFERENCES dim_juego(id_juego),
-    FOREIGN KEY (id_dim_tipo_evento) REFERENCES dim_tipo_evento(id_tipo_evento),
-    FOREIGN KEY (id_dim_pais) REFERENCES dim_pais(id_pais)
+    id_dim_tiempo      INT NOT NULL,
+    id_dim_usuario     INT NOT NULL,
+    id_dim_juego       INT NOT NULL,
+    id_dim_tipo_evento INT NOT NULL,
+    id_dim_pais        INT NOT NULL,
+    total_amigos       INT NULL,
+    total_seguidores   INT NULL,
+    xp_acumulado       INT NULL,
+    cantidad_eventos   INT NOT NULL DEFAULT 1,
+    tiempo_sesion_seg  INT NULL,
+    victorias          INT NULL,
+    horas_jugadas      INT NULL,
+    CONSTRAINT FK_fact_actividad_tiempo FOREIGN KEY (id_dim_tiempo) REFERENCES dim_tiempo(id_tiempo),
+    CONSTRAINT FK_fact_actividad_usuario FOREIGN KEY (id_dim_usuario) REFERENCES dim_usuario(id_usuario),
+    CONSTRAINT FK_fact_actividad_juego FOREIGN KEY (id_dim_juego) REFERENCES dim_juego(id_juego),
+    CONSTRAINT FK_fact_actividad_evento FOREIGN KEY (id_dim_tipo_evento) REFERENCES dim_tipo_evento(id_tipo_evento),
+    CONSTRAINT FK_fact_actividad_pais FOREIGN KEY (id_dim_pais) REFERENCES dim_pais(id_pais)
 );
-GO
-```
-
-### Query de carga:
-
-```sql
--- dim_juego (desde Oracle)
-SELECT ID AS id_juego, NOMBRE AS nombre_juego FROM JUEGO;
-
--- dim_usuario (desde Oracle)
-SELECT u.ID AS id_usuario, u.NICKNAME, u.XP, u.ESTADO,
-       p.PAIS, u.CREADO_EN AS fecha_registro
-FROM USUARIO u JOIN PERSONA p ON p.ID = u.PERSONA_ID;
-
--- dim_tipo_evento (se inserta manualmente o desde MongoDB distinct)
-INSERT INTO dim_tipo_evento (nombre_evento) VALUES
-('login'),('logout'),('busqueda'),('perfil_visitado'),
-('clic_torneo'),('clic_tienda'),('cambio_config'),('envio_solicitud_amistad');
-
--- dim_pais (desde MongoDB distinct + Oracle distinct)
--- Se puede poblar con: db.logs_actividad.distinct("pais_origen")
-```
-
----
-
-<a id="dm3"></a>
-## Datamart 3: Calidad de Torneos y Juegos — DDL Esquema Estrella
-
-> **Fuentes:** Oracle (torneos, inscripciones, premios) + MongoDB (feedback_torneos)
-
-```sql
-USE DW_ESPORTS;
-GO
-
--- ========== DIMENSIONES DM3 ==========
-
--- dim_tiempo (compartida)
--- dim_juego (compartida con DM2)
 
 CREATE TABLE dim_modo_juego (
-    id_modo_juego   INT          NOT NULL PRIMARY KEY,
-    nombre_modo     VARCHAR(200) NOT NULL,
-    nombre_juego    VARCHAR(200) NOT NULL   -- Desnormalizado para estrella
+    id_modo_juego  INT          NOT NULL PRIMARY KEY,
+    nombre_modo    VARCHAR(200) NOT NULL,
+    nombre_juego   VARCHAR(200) NOT NULL
 );
 
 CREATE TABLE dim_tipo_torneo (
     id_tipo_torneo  INT          NOT NULL PRIMARY KEY,
     nombre_tipo     VARCHAR(100) NOT NULL,
-    tipo_trofeo     VARCHAR(100) NULL
+    tipo_trofeo     VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE dim_plataforma (
-    id_plataforma   INT          NOT NULL PRIMARY KEY,
-    nombre_plataforma VARCHAR(100) NOT NULL
+    id_plataforma      INT          NOT NULL PRIMARY KEY,
+    nombre_plataforma  VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE dim_region_torneo (
-    id_region       INT          NOT NULL PRIMARY KEY,
-    nombre_region   VARCHAR(200) NOT NULL
+    id_region      INT          NOT NULL PRIMARY KEY,
+    nombre_region  VARCHAR(200) NOT NULL
 );
-
--- ========== TABLA DE HECHOS DM3 ==========
 
 CREATE TABLE fact_torneos (
-    id_dim_tiempo           INT          NOT NULL,
-    id_dim_juego            INT          NOT NULL,
-    id_dim_modo_juego       INT          NULL,
-    id_dim_tipo_torneo      INT          NULL,
-    id_dim_plataforma       INT          NULL,
-    id_dim_region           INT          NOT NULL,
-    total_inscritos         INT          NULL,
-    inscritos_confirmados   INT          NULL,
-    capacidad               INT          NULL,
-    fondo_premios           DECIMAL(12,2) NULL,
-    comision                DECIMAL(12,2) NULL,
-    calificacion_promedio   DECIMAL(3,2) NULL,
-    total_resenas           INT          NULL,
-    pct_recomendacion       DECIMAL(5,2) NULL,
-    cantidad_torneos        INT          DEFAULT 1,
-    FOREIGN KEY (id_dim_tiempo) REFERENCES dim_tiempo(id_tiempo),
-    FOREIGN KEY (id_dim_juego) REFERENCES dim_juego(id_juego),
-    FOREIGN KEY (id_dim_modo_juego) REFERENCES dim_modo_juego(id_modo_juego),
-    FOREIGN KEY (id_dim_tipo_torneo) REFERENCES dim_tipo_torneo(id_tipo_torneo),
-    FOREIGN KEY (id_dim_plataforma) REFERENCES dim_plataforma(id_plataforma),
-    FOREIGN KEY (id_dim_region) REFERENCES dim_region_torneo(id_region)
+    id_dim_tiempo           INT            NOT NULL,
+    id_dim_juego            INT            NOT NULL,
+    id_dim_modo_juego       INT            NOT NULL,
+    id_dim_tipo_torneo      INT            NOT NULL,
+    id_dim_plataforma       INT            NOT NULL,
+    id_dim_region           INT            NOT NULL,
+    total_inscritos         INT            NULL,
+    inscritos_confirmados   INT            NULL,
+    capacidad               INT            NULL,
+    fondo_premios           DECIMAL(12,2)  NULL,
+    comision                DECIMAL(12,2)  NULL,
+    calificacion_promedio   DECIMAL(5,2)   NULL,
+    total_resenas           INT            NULL,
+    pct_recomendacion       DECIMAL(5,2)   NULL,
+    cantidad_torneos        INT            NOT NULL DEFAULT 1,
+    CONSTRAINT FK_fact_torneos_tiempo FOREIGN KEY (id_dim_tiempo) REFERENCES dim_tiempo(id_tiempo),
+    CONSTRAINT FK_fact_torneos_juego FOREIGN KEY (id_dim_juego) REFERENCES dim_juego(id_juego),
+    CONSTRAINT FK_fact_torneos_modo FOREIGN KEY (id_dim_modo_juego) REFERENCES dim_modo_juego(id_modo_juego),
+    CONSTRAINT FK_fact_torneos_tipo FOREIGN KEY (id_dim_tipo_torneo) REFERENCES dim_tipo_torneo(id_tipo_torneo),
+    CONSTRAINT FK_fact_torneos_plataforma FOREIGN KEY (id_dim_plataforma) REFERENCES dim_plataforma(id_plataforma),
+    CONSTRAINT FK_fact_torneos_region FOREIGN KEY (id_dim_region) REFERENCES dim_region_torneo(id_region)
 );
-GO
-```
-
-### Query de carga:
-
-```sql
--- dim_modo_juego (desde Oracle)
-SELECT m.ID AS id_modo_juego, m.NOMBRE AS nombre_modo, j.NOMBRE AS nombre_juego
-FROM MODO_JUEGO m JOIN JUEGO j ON j.ID = m.JUEGO_ID;
-
--- dim_tipo_torneo (desde Oracle)
-SELECT ID AS id_tipo_torneo, VALOR AS nombre_tipo, TIPO_TROFEO AS tipo_trofeo
-FROM CATALOGO_TIPO_TORNEO;
-
--- dim_plataforma (desde Oracle)
-SELECT ID AS id_plataforma, VALOR AS nombre_plataforma FROM CATALOGO_PLATAFORMA;
-
--- dim_region_torneo (desde Oracle — puede compartir con dim_region de DM1)
-SELECT ID AS id_region, VALOR AS nombre_region FROM CATALOGO_REGION;
-
--- fact_torneos (desde Oracle — una fila por torneo)
-SELECT
-    EXTRACT(YEAR FROM t.FECHA_INICIO_TORNEO) * 10000 +
-    EXTRACT(MONTH FROM t.FECHA_INICIO_TORNEO) * 100 +
-    EXTRACT(DAY FROM t.FECHA_INICIO_TORNEO) AS id_dim_tiempo,
-    t.JUEGO_ID                              AS id_dim_juego,
-    t.MODO_JUEGO_ID                         AS id_dim_modo_juego,
-    t.TIPO_TORNEO_ID                        AS id_dim_tipo_torneo,
-    t.REGION_ID                             AS id_dim_region,
-    t.CAPACIDAD,
-    (SELECT COUNT(*) FROM TORNEO_INSCRIPCION ti WHERE ti.TORNEO_ID = t.ID) AS total_inscritos,
-    (SELECT COUNT(*) FROM TORNEO_INSCRIPCION ti
-     WHERE ti.TORNEO_ID = t.ID AND ti.ESTADO_ID = (SELECT ID FROM CATALOGO_ESTADO_INSCRIPCION WHERE VALOR='confirmada')
-    ) AS inscritos_confirmados,
-    tp.FONDO_TOTAL                          AS fondo_premios,
-    tp.COMISION_TOTAL                       AS comision
-FROM TORNEO t
-LEFT JOIN TORNEO_PREMIOS tp ON tp.TORNEO_ID = t.ID;
-
--- Las columnas calificacion_promedio, total_resenas, pct_recomendacion
--- se llenan por separado desde MongoDB (feedback_torneos agrupado por oracle_torneo_id)
-```
-
----
-
-<a id="dm4"></a>
-## Datamart 4: Seguridad y Auditoría — DDL Esquema Estrella
-
-> **Fuentes:** Oracle (AUDITORIA_LOG, soporte) + RRHH (empleados) + Excel (lista negra)
-
-```sql
-USE DW_ESPORTS;
-GO
-
--- ========== DIMENSIONES DM4 ==========
-
--- dim_tiempo (compartida)
 
 CREATE TABLE dim_operacion (
-    id_operacion    INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    nombre_operacion VARCHAR(20)  NOT NULL    -- INSERT, UPDATE, DELETE
+    id_operacion      INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    nombre_operacion  VARCHAR(20)       NOT NULL
 );
 
 CREATE TABLE dim_tabla_auditada (
-    id_tabla        INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    nombre_tabla    VARCHAR(100) NOT NULL    -- USUARIO, TIENDA_ORDEN, etc.
+    id_tabla      INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    nombre_tabla  VARCHAR(100)      NOT NULL
 );
 
--- Patrón SCD del profesor
 CREATE TABLE dim_empleado_soporte (
-    id_empleado     INT          NOT NULL,
-    nombre_completo VARCHAR(150) NULL,
-    cargo           VARCHAR(45)  NULL,
-    departamento    VARCHAR(45)  NULL,
-    version         INT          NOT NULL,
-    version_actual  INT          NOT NULL,
+    id_empleado      INT           NOT NULL,
+    nombre_completo  VARCHAR(150)  NULL,
+    cargo            VARCHAR(45)   NULL,
+    departamento     VARCHAR(45)   NULL,
+    version          INT           NOT NULL,
+    version_actual   INT           NOT NULL,
     PRIMARY KEY (id_empleado, version)
 );
 
 CREATE TABLE dim_pais_registro (
-    id_pais             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    nombre_pais         VARCHAR(100) NOT NULL,
-    es_restringido      INT          DEFAULT 0,    -- 1 si en Excel Lista_Negra
-    motivo_restriccion  VARCHAR(200) NULL
+    id_pais              INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    nombre_pais          VARCHAR(100)      NOT NULL,
+    es_restringido       INT               NOT NULL DEFAULT 0,
+    motivo_restriccion   VARCHAR(500)      NULL
 );
 
 CREATE TABLE dim_rol_usuario (
-    id_rol          INT          NOT NULL PRIMARY KEY,
-    nombre_rol      VARCHAR(100) NOT NULL    -- admin, usuario, moderador
+    id_rol      INT          NOT NULL PRIMARY KEY,
+    nombre_rol  VARCHAR(100) NOT NULL
 );
-
--- ========== TABLA DE HECHOS DM4 ==========
 
 CREATE TABLE fact_auditoria (
     id_dim_tiempo           INT NOT NULL,
@@ -500,355 +604,1286 @@ CREATE TABLE fact_auditoria (
     id_dim_tabla            INT NOT NULL,
     id_dim_empleado_soporte INT NULL,
     version_empleado        INT NULL,
-    id_dim_pais             INT NULL,
+    id_dim_pais             INT NOT NULL,
     id_dim_rol              INT NULL,
-    total_eventos           INT DEFAULT 1,
+    total_eventos           INT NOT NULL DEFAULT 1,
     tickets_soporte         INT NULL,
     tickets_resueltos       INT NULL,
     registros_restringidos  INT NULL,
-    FOREIGN KEY (id_dim_tiempo) REFERENCES dim_tiempo(id_tiempo),
-    FOREIGN KEY (id_dim_operacion) REFERENCES dim_operacion(id_operacion),
-    FOREIGN KEY (id_dim_tabla) REFERENCES dim_tabla_auditada(id_tabla),
-    FOREIGN KEY (id_dim_pais) REFERENCES dim_pais_registro(id_pais),
-    FOREIGN KEY (id_dim_rol) REFERENCES dim_rol_usuario(id_rol)
+    CONSTRAINT FK_fact_auditoria_tiempo FOREIGN KEY (id_dim_tiempo) REFERENCES dim_tiempo(id_tiempo),
+    CONSTRAINT FK_fact_auditoria_operacion FOREIGN KEY (id_dim_operacion) REFERENCES dim_operacion(id_operacion),
+    CONSTRAINT FK_fact_auditoria_tabla FOREIGN KEY (id_dim_tabla) REFERENCES dim_tabla_auditada(id_tabla),
+    CONSTRAINT FK_fact_auditoria_pais FOREIGN KEY (id_dim_pais) REFERENCES dim_pais_registro(id_pais),
+    CONSTRAINT FK_fact_auditoria_rol FOREIGN KEY (id_dim_rol) REFERENCES dim_rol_usuario(id_rol),
+    CONSTRAINT FK_fact_auditoria_empleado FOREIGN KEY (id_dim_empleado_soporte, version_empleado)
+        REFERENCES dim_empleado_soporte(id_empleado, version)
 );
 GO
 ```
 
-### Query de carga:
+---
+
+## Fase 3 - Configuracion del proyecto SSIS
+
+### 3.1 Crear proyecto
+
+1. Abrir Visual Studio.
+2. File -> New -> Project.
+3. Seleccionar Integration Services Project.
+4. Nombre: SSIS_DW_ESPORTS.
+5. Crear el proyecto.
+
+### 3.2 Crear Connection Managers
+
+Crear exactamente estos Connection Managers:
+
+1. CONN_ORACLE_ESPORTS
+   - Tipo: OLE DB
+   - Provider: Oracle Provider for OLE DB
+   - Server/Data Source: localhost:1521/xe
+   - User: ESPORTS_APP
+   - Password: Esports2026
+
+2. CONN_SQLSERVER_DW
+   - Tipo: OLE DB
+   - Server: localhost
+   - Database: DW_ESPORTS
+   - Windows Authentication
+
+3. CONN_SQLSERVER_RRHH
+   - Tipo: OLE DB
+   - Server: localhost
+   - Database: RRHH_Transaccional
+   - Windows Authentication
+
+4. CONN_EXCEL_FUENTES
+   - Tipo: EXCEL
+   - Archivo: DataWarehouse/Excel/DW_Fuentes_Excel.xlsx
+   - First row has column names: marcado
+
+5. CONN_FLAT_LOGS_ACTIVIDAD
+   - Tipo: FLATFILE
+   - Archivo: DataWarehouse/MongoDB/exports/logs_actividad_dw.csv
+   - Delimited: Comma
+   - First row has column names: marcado
+
+6. CONN_FLAT_FEEDBACK_TORNEOS
+   - Tipo: FLATFILE
+   - Archivo: DataWarehouse/MongoDB/exports/feedback_torneos_dw.csv
+   - Delimited: Comma
+   - First row has column names: marcado
+
+---
+
+## Fase 4 - Carga de staging desde Oracle, RRHH, Excel y Mongo CSV
+
+Crear paquete: ETL_00_Staging.dtsx
+
+### 4.1 Task 1 - Execute SQL Task: SQL_Truncar_Staging
+
+Usar CONN_SQLSERVER_DW y ejecutar:
 
 ```sql
--- dim_operacion (manual)
-INSERT INTO dim_operacion (nombre_operacion) VALUES ('INSERT'),('UPDATE'),('DELETE');
+TRUNCATE TABLE stg_oracle_catalogo_region;
+TRUNCATE TABLE stg_oracle_catalogo_tipo_item;
+TRUNCATE TABLE stg_oracle_catalogo_origen_transaccion;
+TRUNCATE TABLE stg_oracle_catalogo_tipo_torneo;
+TRUNCATE TABLE stg_oracle_catalogo_plataforma;
+TRUNCATE TABLE stg_oracle_catalogo_rol;
+TRUNCATE TABLE stg_oracle_catalogo_estado_inscripcion;
+TRUNCATE TABLE stg_oracle_usuario;
+TRUNCATE TABLE stg_oracle_persona;
+TRUNCATE TABLE stg_oracle_transaccion;
+TRUNCATE TABLE stg_oracle_tienda_item;
+TRUNCATE TABLE stg_oracle_tienda_orden;
+TRUNCATE TABLE stg_oracle_juego;
+TRUNCATE TABLE stg_oracle_modo_juego;
+TRUNCATE TABLE stg_oracle_torneo;
+TRUNCATE TABLE stg_oracle_torneo_inscripcion;
+TRUNCATE TABLE stg_oracle_torneo_premios;
+TRUNCATE TABLE stg_oracle_usuario_amigos;
+TRUNCATE TABLE stg_oracle_usuario_seguidores;
+TRUNCATE TABLE stg_oracle_usuario_estadisticas_juego;
+TRUNCATE TABLE stg_oracle_auditoria_log;
+TRUNCATE TABLE stg_oracle_tienda_solicitud_soporte;
+TRUNCATE TABLE stg_rrhh_empleado_historial;
+TRUNCATE TABLE stg_excel_presupuestos_ventas;
+TRUNCATE TABLE stg_excel_lista_negra;
+TRUNCATE TABLE stg_mongo_logs_actividad_raw;
+TRUNCATE TABLE stg_mongo_feedback_torneos_raw;
+TRUNCATE TABLE stg_mongo_logs_actividad_evento;
+TRUNCATE TABLE stg_mongo_feedback_torneos_evento;
+```
 
--- dim_tabla_auditada (desde Oracle AUDITORIA_LOG distinct)
--- SELECT DISTINCT TABLA FROM AUDITORIA_LOG;
-INSERT INTO dim_tabla_auditada (nombre_tabla) VALUES ('USUARIO'),('TIENDA_ORDEN');
+### 4.2 Task 2 - Data Flow: Cargar staging Oracle
 
--- dim_rol_usuario (desde Oracle)
-SELECT ID AS id_rol, VALOR AS nombre_rol FROM CATALOGO_ROL;
+Crear un OLE DB Source por cada consulta (CONN_ORACLE_ESPORTS) y dirigir cada flujo a su tabla destino en CONN_SQLSERVER_DW.
 
--- dim_empleado_soporte (desde RRHH — misma query patrón del profesor)
-SELECT e.idEmpleado AS id_empleado,
-       e.pnombre + ' ' + e.snombre + ' ' + e.papellido AS nombre_completo,
-       c.nombre AS cargo, d.Nombre AS departamento,
-       ROW_NUMBER() OVER (PARTITION BY e.idEmpleado ORDER BY ce.fechaNombramiento ASC) AS version,
-       CASE ROW_NUMBER() OVER (PARTITION BY e.idEmpleado ORDER BY ce.fechaNombramiento DESC)
-            WHEN 1 THEN 1 ELSE 0 END AS version_actual
+```sql
+SELECT ID AS id_region, VALOR AS nombre_region
+FROM CATALOGO_REGION;
+```
+Destino: stg_oracle_catalogo_region
+
+```sql
+SELECT ID AS id_tipo_item, VALOR AS nombre_tipo
+FROM CATALOGO_TIPO_ITEM;
+```
+Destino: stg_oracle_catalogo_tipo_item
+
+```sql
+SELECT ID AS id_origen, VALOR AS nombre_origen
+FROM CATALOGO_ORIGEN_TRANSACCION;
+```
+Destino: stg_oracle_catalogo_origen_transaccion
+
+```sql
+SELECT ID AS id_tipo_torneo, VALOR AS nombre_tipo, TIPO_TROFEO AS tipo_trofeo
+FROM CATALOGO_TIPO_TORNEO;
+```
+Destino: stg_oracle_catalogo_tipo_torneo
+
+```sql
+SELECT ID AS id_plataforma, VALOR AS nombre_plataforma
+FROM CATALOGO_PLATAFORMA;
+```
+Destino: stg_oracle_catalogo_plataforma
+
+```sql
+SELECT ID AS id_rol, VALOR AS nombre_rol
+FROM CATALOGO_ROL;
+```
+Destino: stg_oracle_catalogo_rol
+
+```sql
+SELECT ID AS id_estado, VALOR AS valor_estado
+FROM CATALOGO_ESTADO_INSCRIPCION;
+```
+Destino: stg_oracle_catalogo_estado_inscripcion
+
+```sql
+SELECT
+    ID AS usuario_id,
+    NICKNAME AS nickname,
+    ESTADO AS estado,
+    XP AS xp,
+    CREADO_EN AS creado_en,
+    PERSONA_ID AS persona_id,
+    ROL_ID AS rol_id
+FROM USUARIO;
+```
+Destino: stg_oracle_usuario
+
+```sql
+SELECT
+    ID AS persona_id,
+    PAIS AS pais,
+    DIVISA AS divisa,
+    CORREO AS correo
+FROM PERSONA;
+```
+Destino: stg_oracle_persona
+
+```sql
+SELECT
+    ID AS transaccion_id,
+    MONTO AS monto,
+    DESCRIPCION AS descripcion,
+    CREADO_EN AS creado_en,
+    USUARIO_ID AS usuario_id,
+    TIPO_ID AS tipo_id,
+    ORIGEN_ID AS origen_id
+FROM TRANSACCION;
+```
+Destino: stg_oracle_transaccion
+
+```sql
+SELECT
+    ID AS item_id,
+    NOMBRE AS nombre_item,
+    PRECIO AS precio,
+    CREDITOS_OTORGADOS AS creditos_otorgados,
+    TIPO_ID AS tipo_id
+FROM TIENDA_ITEM;
+```
+Destino: stg_oracle_tienda_item
+
+```sql
+SELECT
+    ID AS orden_id,
+    MONTO AS monto,
+    ESTADO AS estado,
+    CREADO_EN AS creado_en,
+    COMPLETADO_EN AS completado_en,
+    USUARIO_ID AS usuario_id,
+    ITEM_ID AS item_id,
+    DIVISA AS divisa
+FROM TIENDA_ORDEN;
+```
+Destino: stg_oracle_tienda_orden
+
+```sql
+SELECT ID AS juego_id, NOMBRE AS nombre_juego
+FROM JUEGO;
+```
+Destino: stg_oracle_juego
+
+```sql
+SELECT ID AS modo_juego_id, NOMBRE AS nombre_modo, JUEGO_ID AS juego_id
+FROM MODO_JUEGO;
+```
+Destino: stg_oracle_modo_juego
+
+```sql
+SELECT
+    ID AS torneo_id,
+    FECHA_INICIO_TORNEO AS fecha_inicio_torneo,
+    JUEGO_ID AS juego_id,
+    MODO_JUEGO_ID AS modo_juego_id,
+    TIPO_TORNEO_ID AS tipo_torneo_id,
+    PLATAFORMA_ID AS plataforma_id,
+    REGION_ID AS region_id,
+    CAPACIDAD AS capacidad
+FROM TORNEO;
+```
+Destino: stg_oracle_torneo
+
+```sql
+SELECT
+    ID AS inscripcion_id,
+    FECHA AS fecha,
+    TORNEO_ID AS torneo_id,
+    USUARIO_ID AS usuario_id,
+    ESTADO_ID AS estado_id
+FROM TORNEO_INSCRIPCION;
+```
+Destino: stg_oracle_torneo_inscripcion
+
+```sql
+SELECT
+    TORNEO_ID AS torneo_id,
+    FONDO_TOTAL AS fondo_total,
+    COMISION_TOTAL AS comision_total
+FROM TORNEO_PREMIOS;
+```
+Destino: stg_oracle_torneo_premios
+
+```sql
+SELECT
+    ID AS amistad_id,
+    CREADO_EN AS creado_en,
+    USUARIO1_ID AS usuario1_id,
+    USUARIO2_ID AS usuario2_id,
+    ESTADO_ID AS estado_id
+FROM USUARIO_AMIGOS;
+```
+Destino: stg_oracle_usuario_amigos
+
+```sql
+SELECT
+    ID AS seguimiento_id,
+    CREADO_EN AS creado_en,
+    SEGUIDOR_ID AS seguidor_id,
+    SEGUIDO_ID AS seguido_id
+FROM USUARIO_SEGUIDORES;
+```
+Destino: stg_oracle_usuario_seguidores
+
+```sql
+SELECT
+    USUARIO_ID AS usuario_id,
+    JUEGO_ID AS juego_id,
+    VICTORIAS AS victorias,
+    HORAS_JUGADAS AS horas_jugadas
+FROM USUARIO_ESTADISTICAS_JUEGO;
+```
+Destino: stg_oracle_usuario_estadisticas_juego
+
+```sql
+SELECT
+    ID AS auditoria_id,
+    TABLA AS tabla_auditada,
+    OPERACION AS operacion,
+    REGISTRO_ID AS registro_id,
+    USUARIO_BD AS usuario_bd,
+    DETALLE AS detalle,
+    FECHA AS fecha
+FROM AUDITORIA_LOG;
+```
+Destino: stg_oracle_auditoria_log
+
+```sql
+SELECT
+    ID AS solicitud_id,
+    TIPO AS tipo,
+    ESTADO AS estado,
+    CREADO_EN AS creado_en,
+    RESUELTO_EN AS resuelto_en,
+    USUARIO_ID AS usuario_id,
+    RESUELTO_POR AS resuelto_por
+FROM TIENDA_SOLICITUD_SOPORTE;
+```
+Destino: stg_oracle_tienda_solicitud_soporte
+
+### 4.3 Task 3 - Data Flow: Cargar staging RRHH
+
+OLE DB Source con CONN_SQLSERVER_RRHH:
+
+```sql
+SELECT
+    e.idEmpleado AS id_empleado,
+    CONCAT(e.pnombre, ' ', ISNULL(e.snombre, ''), ' ', e.papellido) AS nombre_completo,
+    c.nombre AS cargo,
+    d.Nombre AS departamento,
+    ROW_NUMBER() OVER (PARTITION BY e.idEmpleado ORDER BY ce.fechaNombramiento ASC) AS version,
+    CASE
+        WHEN ROW_NUMBER() OVER (PARTITION BY e.idEmpleado ORDER BY ce.fechaNombramiento DESC) = 1 THEN 1
+        ELSE 0
+    END AS version_actual
 FROM Empleado e
 INNER JOIN Cargo_empleado ce ON ce.idEmpleado = e.idEmpleado
 INNER JOIN Cargo c ON c.idCargo = ce.idCargo
 INNER JOIN Departamento d ON d.idDepartamento = e.idDepartamento;
+```
 
--- dim_pais_registro (cruce Oracle PERSONA + Excel Lista_Negra)
--- Paso 1: INSERT distintos países de Oracle
--- Paso 2: UPDATE es_restringido = 1 WHERE nombre_pais IN (SELECT valor FROM Excel Lista_Negra WHERE tipo='pais')
+Destino: stg_rrhh_empleado_historial
 
--- fact_auditoria (desde Oracle)
+### 4.4 Task 4 - Data Flow: Cargar staging Excel
+
+Usar Excel Source con CONN_EXCEL_FUENTES.
+
+1. Hoja Presupuestos_Ventas$ -> stg_excel_presupuestos_ventas
+   - anio -> anio
+   - mes -> mes
+   - region -> region
+   - categoria_producto -> categoria_producto
+   - meta_ingresos_usd -> meta_ingresos_usd
+   - meta_transacciones -> meta_transacciones
+   - responsable_rrhh_id -> responsable_rrhh_id
+
+2. Hoja Lista_Negra$ -> stg_excel_lista_negra
+   - tipo -> tipo
+   - valor -> valor
+   - motivo -> motivo
+   - fecha_agregado -> fecha_agregado
+   - activo -> activo
+
+### 4.5 Task 5 - Data Flow: Cargar staging Mongo raw
+
+1. Flat File Source CONN_FLAT_LOGS_ACTIVIDAD -> stg_mongo_logs_actividad_raw
+
+Mapeo exacto de columnas del CSV:
+
+- oracle_usuario_id -> oracle_usuario_id
+- tipo_evento -> tipo_evento
+- ip -> ip
+- user_agent -> user_agent
+- pais_origen -> pais_origen
+- timestamp -> timestamp_raw
+- detalle.metodo -> detalle_metodo
+- detalle.exitoso -> detalle_exitoso
+- detalle.duracion_sesion_min -> detalle_duracion_sesion_min
+- detalle.termino -> detalle_termino
+- detalle.resultados_encontrados -> detalle_resultados_encontrados
+- detalle.perfil_visitado_id -> detalle_perfil_visitado_id
+- detalle.tiempo_visualizacion_seg -> detalle_tiempo_visualizacion_seg
+- detalle.desde_seccion -> detalle_desde_seccion
+- detalle.torneo_id -> detalle_torneo_id
+- detalle.accion -> detalle_accion
+- detalle.item_id -> detalle_item_id
+- detalle.categoria -> detalle_categoria
+- detalle.seccion -> detalle_seccion
+- detalle.campo_modificado -> detalle_campo_modificado
+- detalle.destinatario_id -> detalle_destinatario_id
+
+2. Flat File Source CONN_FLAT_FEEDBACK_TORNEOS -> stg_mongo_feedback_torneos_raw
+
+Mapeo exacto de columnas del CSV:
+
+- oracle_torneo_id -> oracle_torneo_id
+- oracle_usuario_id -> oracle_usuario_id
+- calificacion -> calificacion
+- comentario -> comentario
+- tags -> tags
+- recomendaria -> recomendaria
+- timestamp -> timestamp_raw
+
+---
+
+## Fase 5 - Normalizacion de staging Mongo
+
+En ETL_00_Staging.dtsx agregar Execute SQL Task final: SQL_Normalizar_Mongo.
+
+Usar CONN_SQLSERVER_DW y ejecutar:
+
+```sql
+TRUNCATE TABLE stg_mongo_logs_actividad_evento;
+TRUNCATE TABLE stg_mongo_feedback_torneos_evento;
+
+INSERT INTO stg_mongo_logs_actividad_evento (
+    oracle_usuario_id,
+    tipo_evento,
+    ip,
+    user_agent,
+    pais_origen,
+    timestamp_evento,
+    detalle_metodo,
+    detalle_exitoso,
+    detalle_duracion_sesion_min,
+    detalle_termino,
+    detalle_resultados_encontrados,
+    detalle_perfil_visitado_id,
+    detalle_tiempo_visualizacion_seg,
+    detalle_desde_seccion,
+    detalle_torneo_id,
+    detalle_accion,
+    detalle_item_id,
+    detalle_categoria,
+    detalle_seccion,
+    detalle_campo_modificado,
+    detalle_destinatario_id
+)
 SELECT
-    EXTRACT(YEAR FROM a.FECHA) * 10000 +
-    EXTRACT(MONTH FROM a.FECHA) * 100 +
-    EXTRACT(DAY FROM a.FECHA)   AS id_dim_tiempo,
-    a.OPERACION                 AS nombre_operacion,   -- resolver a id_dim_operacion con lookup
-    a.TABLA                     AS nombre_tabla,        -- resolver a id_dim_tabla con lookup
-    1                           AS total_eventos
-FROM AUDITORIA_LOG a;
+    TRY_CAST(NULLIF(LTRIM(RTRIM(oracle_usuario_id)), '') AS INT) AS oracle_usuario_id,
+    NULLIF(LTRIM(RTRIM(tipo_evento)), '') AS tipo_evento,
+    NULLIF(LTRIM(RTRIM(ip)), '') AS ip,
+    NULLIF(LTRIM(RTRIM(user_agent)), '') AS user_agent,
+    NULLIF(LTRIM(RTRIM(pais_origen)), '') AS pais_origen,
+    TRY_CAST(REPLACE(REPLACE(NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 'T', ' '), 'Z', '') AS DATETIME2) AS timestamp_evento,
+    NULLIF(LTRIM(RTRIM(detalle_metodo)), '') AS detalle_metodo,
+    CASE
+        WHEN LOWER(LTRIM(RTRIM(detalle_exitoso))) IN ('true', '1') THEN 1
+        WHEN LOWER(LTRIM(RTRIM(detalle_exitoso))) IN ('false', '0') THEN 0
+        ELSE NULL
+    END AS detalle_exitoso,
+    TRY_CAST(NULLIF(LTRIM(RTRIM(detalle_duracion_sesion_min)), '') AS INT) AS detalle_duracion_sesion_min,
+    NULLIF(LTRIM(RTRIM(detalle_termino)), '') AS detalle_termino,
+    TRY_CAST(NULLIF(LTRIM(RTRIM(detalle_resultados_encontrados)), '') AS INT) AS detalle_resultados_encontrados,
+    TRY_CAST(NULLIF(LTRIM(RTRIM(detalle_perfil_visitado_id)), '') AS INT) AS detalle_perfil_visitado_id,
+    TRY_CAST(NULLIF(LTRIM(RTRIM(detalle_tiempo_visualizacion_seg)), '') AS INT) AS detalle_tiempo_visualizacion_seg,
+    NULLIF(LTRIM(RTRIM(detalle_desde_seccion)), '') AS detalle_desde_seccion,
+    TRY_CAST(NULLIF(LTRIM(RTRIM(detalle_torneo_id)), '') AS INT) AS detalle_torneo_id,
+    NULLIF(LTRIM(RTRIM(detalle_accion)), '') AS detalle_accion,
+    TRY_CAST(NULLIF(LTRIM(RTRIM(detalle_item_id)), '') AS INT) AS detalle_item_id,
+    NULLIF(LTRIM(RTRIM(detalle_categoria)), '') AS detalle_categoria,
+    NULLIF(LTRIM(RTRIM(detalle_seccion)), '') AS detalle_seccion,
+    NULLIF(LTRIM(RTRIM(detalle_campo_modificado)), '') AS detalle_campo_modificado,
+    TRY_CAST(NULLIF(LTRIM(RTRIM(detalle_destinatario_id)), '') AS INT) AS detalle_destinatario_id
+FROM stg_mongo_logs_actividad_raw;
+
+INSERT INTO stg_mongo_feedback_torneos_evento (
+    oracle_torneo_id,
+    oracle_usuario_id,
+    calificacion,
+    comentario,
+    tags,
+    recomendaria,
+    timestamp_evento
+)
+SELECT
+    TRY_CAST(NULLIF(LTRIM(RTRIM(oracle_torneo_id)), '') AS INT) AS oracle_torneo_id,
+    TRY_CAST(NULLIF(LTRIM(RTRIM(oracle_usuario_id)), '') AS INT) AS oracle_usuario_id,
+    TRY_CAST(NULLIF(LTRIM(RTRIM(calificacion)), '') AS INT) AS calificacion,
+    NULLIF(LTRIM(RTRIM(comentario)), '') AS comentario,
+    NULLIF(LTRIM(RTRIM(tags)), '') AS tags,
+    CASE
+        WHEN LOWER(LTRIM(RTRIM(recomendaria))) IN ('true', '1') THEN 1
+        WHEN LOWER(LTRIM(RTRIM(recomendaria))) IN ('false', '0') THEN 0
+        ELSE NULL
+    END AS recomendaria,
+    TRY_CAST(REPLACE(REPLACE(NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 'T', ' '), 'Z', '') AS DATETIME2) AS timestamp_evento
+FROM stg_mongo_feedback_torneos_raw;
 ```
 
 ---
 
-<a id="ssis"></a>
-## Pasos Detallados — Proyecto SSIS en Visual Studio
+## Fase 6 - Carga de dimensiones
 
-### Paso 1: Crear el proyecto
+Crear paquete ETL_01_Dimensiones.dtsx.
 
-1. Abrir **Visual Studio**
-2. Menú: **File → New → Project…**
-3. En el cuadro de búsqueda superior, escribir: `Integration Services`
-4. Seleccionar la plantilla **"Integration Services Project"**
-5. Click en **Next**
-6. **Project name:** `SSIS_DW_ESPORTS`
-7. **Location:** `c:\Users\USER\Desktop\projects\esports-platform\DataWarehouse\SSIS\`
-8. Click en **Create**
-9. Se abre el diseñador con un paquete `Package.dtsx` vacío
+Agregar un Execute SQL Task: SQL_Cargar_Dimensiones con CONN_SQLSERVER_DW.
 
-### Paso 2: Configurar Connection Managers
+```sql
+TRUNCATE TABLE fact_auditoria;
+TRUNCATE TABLE fact_torneos;
+TRUNCATE TABLE fact_actividad_usuario;
+TRUNCATE TABLE fact_ingresos;
 
-En la parte **inferior** del diseñador hay un panel que dice **"Connection Managers"**.
+TRUNCATE TABLE dim_responsable_rrhh;
+TRUNCATE TABLE dim_usuario_comprador;
+TRUNCATE TABLE dim_origen_transaccion;
+TRUNCATE TABLE dim_tipo_item;
+TRUNCATE TABLE dim_region;
 
-#### 2.1 Conexión a Oracle (Fuente OLTP)
+TRUNCATE TABLE dim_tipo_evento;
+TRUNCATE TABLE dim_pais;
+TRUNCATE TABLE dim_usuario;
+TRUNCATE TABLE dim_juego;
 
-1. Click derecho en el panel "Connection Managers" → **New OLE DB Connection…**
-2. Click en **New…** en el diálogo
-3. **Provider:** seleccionar `Oracle Provider for OLE DB`
-   - Si no aparece, usar `Microsoft OLE DB Provider for Oracle`
-   - Si tampoco aparece, necesitas instalar **Oracle Data Access Components (ODAC)**
-4. **Server name (Data Source):** `localhost:1521/xe`
-5. **User name:** `ESPORTS_APP`
-6. **Password:** `Esports2026`
-7. Click en **Test Connection** → debe decir "Test connection succeeded"
-8. **OK** → **OK**
-9. El connection manager aparece abajo. Click derecho → **Rename** → `CONN_ORACLE_ESPORTS`
+TRUNCATE TABLE dim_modo_juego;
+TRUNCATE TABLE dim_tipo_torneo;
+TRUNCATE TABLE dim_plataforma;
+TRUNCATE TABLE dim_region_torneo;
 
-#### 2.2 Conexión a SQL Server RRHH (Fuente)
+TRUNCATE TABLE dim_operacion;
+TRUNCATE TABLE dim_tabla_auditada;
+TRUNCATE TABLE dim_empleado_soporte;
+TRUNCATE TABLE dim_pais_registro;
+TRUNCATE TABLE dim_rol_usuario;
 
-1. Click derecho en "Connection Managers" → **New OLE DB Connection…** → **New…**
-2. **Provider:** `SQL Server Native Client` (o `Microsoft OLE DB Provider for SQL Server`)
-3. **Server name:** `localhost` (o `.\SQLEXPRESS` si es instancia nombrada)
-4. **Authentication:** Windows Authentication
-5. **Select or enter a database name:** `RRHH_Transaccional`
-6. **Test Connection** → **OK** → **OK**
-7. Renombrar a `CONN_SQLSERVER_RRHH`
+INSERT INTO dim_region (id_region, nombre_region)
+VALUES (0, 'DESCONOCIDA');
 
-#### 2.3 Conexión a SQL Server DW (Destino)
+INSERT INTO dim_region (id_region, nombre_region)
+SELECT id_region, nombre_region
+FROM stg_oracle_catalogo_region;
 
-1. Mismos pasos que 2.2, pero seleccionar database: `DW_ESPORTS`
-2. Renombrar a `CONN_SQLSERVER_DW`
+INSERT INTO dim_tipo_item (id_tipo_item, nombre_tipo)
+VALUES (0, 'no_aplica');
 
-#### 2.4 Conexión a Excel (Fuente)
+INSERT INTO dim_tipo_item (id_tipo_item, nombre_tipo)
+SELECT id_tipo_item, nombre_tipo
+FROM stg_oracle_catalogo_tipo_item;
 
-1. Click derecho en "Connection Managers" → **New Connection…**
-2. En "Add SSIS Connection Manager", seleccionar tipo: **EXCEL**
-3. Click **Add**
-4. **Excel file path:** navegar a `DataWarehouse\Excel\DW_Fuentes_Excel.xlsx`
-5. Marcar ☑ **"First row has column names"**
-6. **OK**
-7. Renombrar a `CONN_EXCEL_FUENTES`
+INSERT INTO dim_origen_transaccion (id_origen, nombre_origen)
+SELECT id_origen, nombre_origen
+FROM stg_oracle_catalogo_origen_transaccion;
 
-#### 2.5 Conexión a MongoDB (Fuente)
+INSERT INTO dim_usuario_comprador (id_usuario, nickname, pais, divisa, fecha_registro)
+VALUES (0, 'USUARIO_DESCONOCIDO', 'DESCONOCIDO', 'USD', '2000-01-01');
 
-**Opción A — ODBC:**
-1. Instalar **MongoDB ODBC Driver** (descargar de mongodb.com)
-2. Click derecho → **New Connection…** → **ODBC**
-3. Configurar con: `Server=localhost;Port=27017;Database=esports_analytics`
+INSERT INTO dim_usuario_comprador (id_usuario, nickname, pais, divisa, fecha_registro)
+SELECT
+    u.usuario_id,
+    u.nickname,
+    p.pais,
+    p.divisa,
+    u.creado_en
+FROM stg_oracle_usuario u
+LEFT JOIN stg_oracle_persona p ON p.persona_id = u.persona_id;
 
-**Opción B — Flat File (más simple):**
-1. Exportar desde MongoDB a CSV: `mongoexport --db esports_analytics --collection logs_actividad --type=csv --out logs.csv`
-2. Click derecho → **New Connection…** → **FLATFILE**
-3. Seleccionar `logs.csv`
+INSERT INTO dim_responsable_rrhh (
+    id_empleado,
+    nombre_completo,
+    cargo,
+    departamento,
+    version,
+    version_actual
+)
+SELECT
+    id_empleado,
+    nombre_completo,
+    cargo,
+    departamento,
+    version,
+    version_actual
+FROM stg_rrhh_empleado_historial;
 
-### Paso 3: Crear Paquetes ETL
+INSERT INTO dim_usuario (id_usuario, nickname, xp, estado, pais, fecha_registro)
+VALUES (0, 'USUARIO_DESCONOCIDO', 0, 'desconocido', 'DESCONOCIDO', '2000-01-01');
 
-#### 3.1 Renombrar y crear paquetes
+INSERT INTO dim_usuario (id_usuario, nickname, xp, estado, pais, fecha_registro)
+SELECT
+    u.usuario_id,
+    u.nickname,
+    u.xp,
+    u.estado,
+    p.pais,
+    u.creado_en
+FROM stg_oracle_usuario u
+LEFT JOIN stg_oracle_persona p ON p.persona_id = u.persona_id;
 
-1. En **Solution Explorer** (panel derecho): Expandir **SSIS Packages**
-2. Click derecho sobre `Package.dtsx` → **Rename** → `ETL_DIM_Compartidas.dtsx`
-3. Click derecho sobre **SSIS Packages** → **New SSIS Package** → renombrar a `ETL_DM1_Ingresos.dtsx`
-4. Repetir para: `ETL_DM2_Comportamiento.dtsx`, `ETL_DM3_Torneos.dtsx`, `ETL_DM4_Auditoria.dtsx`
+INSERT INTO dim_juego (id_juego, nombre_juego)
+VALUES (0, 'NO_APLICA');
 
-#### 3.2 Diseñar un paquete (ejemplo: ETL_DIM_Compartidas.dtsx)
+INSERT INTO dim_juego (id_juego, nombre_juego)
+SELECT juego_id, nombre_juego
+FROM stg_oracle_juego;
 
-**En la pestaña "Control Flow":**
+INSERT INTO dim_tipo_evento (nombre_evento)
+SELECT DISTINCT LTRIM(RTRIM(tipo_evento))
+FROM stg_mongo_logs_actividad_evento
+WHERE tipo_evento IS NOT NULL
+  AND LTRIM(RTRIM(tipo_evento)) <> '';
 
-1. Desde el **Toolbox** (panel izquierdo), arrastrar un **"Data Flow Task"** al canvas
-2. Doble click en el nombre del Data Flow Task → renombrarlo a `DFT_Cargar_dim_region`
-3. Arrastrar otro **"Data Flow Task"** debajo → renombrar a `DFT_Cargar_dim_tipo_item`
-4. Arrastrar otro → `DFT_Cargar_dim_origen_transaccion`
-5. Arrastrar otro → `DFT_Cargar_dim_juego`
-6. Arrastrar otro → `DFT_Cargar_dim_plataforma`
-7. Arrastrar otro → `DFT_Cargar_dim_tipo_torneo`
-8. etc.
-9. **Conectar en secuencia**: click en el primer DFT, arrastrar la flecha verde al siguiente
+INSERT INTO dim_pais (nombre_pais)
+VALUES ('DESCONOCIDO');
 
-**En cada Data Flow Task (doble click para entrar):**
+INSERT INTO dim_pais (nombre_pais)
+SELECT DISTINCT LTRIM(RTRIM(pais_origen))
+FROM stg_mongo_logs_actividad_evento
+WHERE pais_origen IS NOT NULL
+  AND LTRIM(RTRIM(pais_origen)) <> '';
 
-1. Desde el Toolbox arrastrar un **"OLE DB Source"** al canvas
-2. Doble click en el OLE DB Source:
-   - **OLE DB connection manager:** seleccionar `CONN_ORACLE_ESPORTS`
-   - **Data access mode:** "SQL command"
-   - **SQL command text:** pegar la query de carga correspondiente (ej: `SELECT ID AS id_region, VALOR AS nombre_region FROM CATALOGO_REGION`)
-   - OK
-3. Desde el Toolbox arrastrar un **"OLE DB Destination"** debajo del Source
-4. **Conectar:** click en el Source, arrastrar flecha azul al Destination
-5. Doble click en el OLE DB Destination:
-   - **OLE DB connection manager:** `CONN_SQLSERVER_DW`
-   - **Name of the table or the view:** seleccionar `dim_region`
-   - Click en **Mappings** (panel izquierdo)
-   - Verificar que las columnas se mapean correctamente: `id_region → id_region`, `nombre_region → nombre_region`
-   - **OK**
+INSERT INTO dim_modo_juego (id_modo_juego, nombre_modo, nombre_juego)
+VALUES (0, 'NO_APLICA', 'NO_APLICA');
 
-#### 3.3 Para paquetes que combinan fuentes (ej: ETL_DM1_Ingresos.dtsx)
+INSERT INTO dim_modo_juego (id_modo_juego, nombre_modo, nombre_juego)
+SELECT
+    m.modo_juego_id,
+    m.nombre_modo,
+    j.nombre_juego
+FROM stg_oracle_modo_juego m
+INNER JOIN stg_oracle_juego j ON j.juego_id = m.juego_id;
 
-Dentro del Data Flow de `fact_ingresos`:
+INSERT INTO dim_tipo_torneo (id_tipo_torneo, nombre_tipo, tipo_trofeo)
+VALUES (0, 'no_aplica', 'no_aplica');
 
-1. Arrastrar **OLE DB Source** (Oracle — query de fact_ingresos)
-2. Arrastrar **Excel Source** (Excel — Presupuestos_Ventas)
-3. Arrastrar un **Lookup Transformation** debajo del Oracle Source
-4. Conectar Oracle Source → Lookup con flecha azul
-5. Doble click en Lookup:
-   - **Connection:** `CONN_EXCEL_FUENTES`
-   - **Reference table:** `Presupuestos_Ventas$`
-   - **Columns:** mapear `id_dim_region` ↔ `region` para agregar `meta_ingresos_usd`
-   - **OK**
-6. Arrastrar **OLE DB Destination** (DW → fact_ingresos)
-7. Conectar Lookup → Destination
+INSERT INTO dim_tipo_torneo (id_tipo_torneo, nombre_tipo, tipo_trofeo)
+SELECT id_tipo_torneo, nombre_tipo, tipo_trofeo
+FROM stg_oracle_catalogo_tipo_torneo;
 
-### Paso 4: Ejecutar paquetes
+INSERT INTO dim_plataforma (id_plataforma, nombre_plataforma)
+VALUES (0, 'NO_APLICA');
 
-1. Click derecho sobre el paquete en Solution Explorer → **Execute Package** (o F5)
-2. El diseñador cambia a modo de ejecución
-3. Cada Data Flow Task aparecerá en **verde** ✅ si fue exitoso o **rojo** ❌ si falló
-4. Para ver errores: click en la pestaña **"Progress"** en la parte inferior
-5. Para detener: botón **Stop Debugging** (ícono cuadrado rojo) en la barra de herramientas
-6. **Ejecutar en orden:** Primero `ETL_DIM_Compartidas`, luego DM1, DM2, DM3, DM4
+INSERT INTO dim_plataforma (id_plataforma, nombre_plataforma)
+SELECT id_plataforma, nombre_plataforma
+FROM stg_oracle_catalogo_plataforma;
 
----
+INSERT INTO dim_region_torneo (id_region, nombre_region)
+VALUES (0, 'DESCONOCIDA');
 
-<a id="ssas"></a>
-## Pasos Detallados — Proyecto SSAS en Visual Studio
+INSERT INTO dim_region_torneo (id_region, nombre_region)
+SELECT id_region, nombre_region
+FROM stg_oracle_catalogo_region;
 
-### Paso 5: Crear el proyecto SSAS
+INSERT INTO dim_operacion (nombre_operacion)
+SELECT DISTINCT operacion
+FROM (
+    SELECT operacion FROM stg_oracle_auditoria_log
+    UNION ALL
+    SELECT 'INSERT'
+    UNION ALL
+    SELECT 'UPDATE'
+) src
+WHERE operacion IS NOT NULL
+    AND LTRIM(RTRIM(operacion)) <> '';
 
-1. En Visual Studio con la solución abierta:
-2. Menú: **File → Add → New Project…**
-3. Buscar: `Analysis Services`
-4. Seleccionar **"Analysis Services Multidimensional and Data Mining Project"**
-5. **Project name:** `SSAS_DW_ESPORTS`
-6. Click **Add**
+INSERT INTO dim_tabla_auditada (nombre_tabla)
+SELECT DISTINCT tabla_auditada
+FROM (
+    SELECT tabla_auditada FROM stg_oracle_auditoria_log
+    UNION ALL
+    SELECT 'TIENDA_SOLICITUD_SOPORTE'
+) src
+WHERE tabla_auditada IS NOT NULL
+    AND LTRIM(RTRIM(tabla_auditada)) <> '';
 
-### Paso 6: Configurar Data Source
+INSERT INTO dim_empleado_soporte (
+    id_empleado,
+    nombre_completo,
+    cargo,
+    departamento,
+    version,
+    version_actual
+)
+SELECT
+    id_empleado,
+    nombre_completo,
+    cargo,
+    departamento,
+    version,
+    version_actual
+FROM stg_rrhh_empleado_historial;
 
-1. En Solution Explorer, expandir el proyecto `SSAS_DW_ESPORTS`
-2. Click derecho en **Data Sources** → **New Data Source…**
-3. Click **Next** en el wizard
-4. Click **New…** → configurar conexión a SQL Server:
-   - Server: `localhost`
-   - Database: `DW_ESPORTS`
-   - Windows Authentication → **Test Connection** → **OK**
-5. **Next** → Impersonation info: seleccionar **"Use the service account"** → **Next**
-6. Data source name: `DS_DW_ESPORTS` → **Finish**
+INSERT INTO dim_pais_registro (nombre_pais, es_restringido, motivo_restriccion)
+VALUES ('DESCONOCIDO', 0, NULL);
 
-### Paso 7: Crear Data Source View
+INSERT INTO dim_pais_registro (nombre_pais, es_restringido, motivo_restriccion)
+SELECT DISTINCT
+    LTRIM(RTRIM(p.pais)) AS nombre_pais,
+    0 AS es_restringido,
+    NULL AS motivo_restriccion
+FROM stg_oracle_persona p
+WHERE p.pais IS NOT NULL
+  AND LTRIM(RTRIM(p.pais)) <> '';
 
-1. Click derecho en **Data Source Views** → **New Data Source View…**
-2. Seleccionar `DS_DW_ESPORTS` → **Next**
-3. En **"Available objects"** aparecen todas las tablas del DW
-4. Seleccionar **TODAS** las tablas (`dim_*` y `fact_*`) → click el botón **>** para moverlas a "Included objects"
-5. **Next** → Nombre: `DSV_DW_ESPORTS` → **Finish**
-6. Se abre un **diagrama visual** con todas las tablas
-7. Verificar que las relaciones (líneas entre tablas) estén correctas
-8. Si falta alguna relación:
-   - Click derecho en la tabla de hechos → **New Relationship…**
-   - Source: columna FK de la fact → Destination: columna PK de la dim → **OK**
+UPDATE d
+SET
+    d.es_restringido = 1,
+    d.motivo_restriccion = ln.motivo
+FROM dim_pais_registro d
+INNER JOIN stg_excel_lista_negra ln
+    ON UPPER(LTRIM(RTRIM(d.nombre_pais))) = UPPER(LTRIM(RTRIM(ln.valor)))
+WHERE UPPER(LTRIM(RTRIM(ln.tipo))) = 'PAIS'
+  AND ln.activo = 1;
 
-### Paso 8: Crear Dimensiones
-
-Para **cada dimensión** (dim_tiempo, dim_region, dim_juego, dim_usuario, etc.):
-
-1. Click derecho en **Dimensions** → **New Dimension…**
-2. **Next** → Seleccionar **"Use an existing table"** → **Next**
-3. **Main table:** seleccionar la tabla dimensión (ej: `dim_tiempo`)
-4. **Key column:** se detecta automáticamente (ej: `id_tiempo`)
-5. **Name column:** seleccionar un nombre descriptivo (ej: `fecha`)
-6. **Next** → Seleccionar los atributos a incluir:
-   - Para dim_tiempo: ☑ id_tiempo, ☑ anio, ☑ trimestre, ☑ mes_nombre, ☑ mes_numero, ☑ semestre
-   - Para dim_juego: ☑ id_juego, ☑ nombre_juego
-7. **Next** → Nombre de la dimensión (ej: `Dim Tiempo`) → **Finish**
-
-**Configurar jerarquías (IMPORTANTE):**
-
-1. Doble click en la dimensión creada (ej: `Dim Tiempo.dim`)
-2. En el panel izquierdo aparecen los **Attributes**
-3. Para crear una jerarquía, arrastrar atributos al panel central **"Hierarchies"**:
-   - **Dim Tiempo:** Arrastrar en orden: `Anio` → `Semestre` → `Trimestre` → `Mes Nombre`
-   - **Dim Modo Juego:** `Nombre Juego` → `Nombre Modo`
-   - **Dim Responsable RRHH:** `Departamento` → `Cargo` → `Nombre Completo`
-4. **Guardar** (Ctrl+S)
-
-### Paso 9: Crear Cubos (uno por datamart)
-
-1. Click derecho en **Cubes** → **New Cube…**
-2. **Next** → Seleccionar **"Use existing tables"** → **Next**
-3. **Measure Group Tables:** marcar ☑ la tabla de hechos (ej: `fact_ingresos`)
-4. **Next** → **Measures:** marcar ☑ las métricas a incluir:
-   - Para Cubo_Ingresos: ☑ monto_real, ☑ meta_ingresos, ☑ creditos_otorgados, ☑ cantidad
-   - Para Cubo_Torneos: ☑ total_inscritos, ☑ fondo_premios, ☑ calificacion_promedio, etc.
-5. **Next** → **Dimensions:** marcar ☑ todas las dimensiones relacionadas
-6. **Next** → Cube name: `Cubo Ingresos` → **Finish**
-7. **Repetir** para `Cubo Comportamiento`, `Cubo Torneos`, `Cubo Auditoria`
-
-### Paso 10: Procesar y Desplegar
-
-1. Click derecho sobre el proyecto SSAS en Solution Explorer → **Properties**
-2. En **Deployment → Target → Server:** escribir `localhost`
-3. **OK**
-4. Click derecho sobre el proyecto → **Deploy**
-5. Se abre la ventana de progreso de despliegue
-6. Debe terminar con **"Deploy Succeeded"**
-7. Si hay errores, leer el mensaje en el panel **Output**
-
-### Paso 11: Verificar en SSMS
-
-1. Abrir **SSMS**
-2. En "Connect to Server":
-   - **Server type:** `Analysis Services` (NO Database Engine)
-   - **Server name:** `localhost`
-   - **Connect**
-3. En Object Explorer expandir: `Databases → SSAS_DW_ESPORTS → Cubes`
-4. Click derecho en un cubo → **Browse**
-5. Se abre un explorador donde puedes arrastrar medidas y dimensiones
-6. Verificar que los datos se ven correctos
+INSERT INTO dim_rol_usuario (id_rol, nombre_rol)
+SELECT id_rol, nombre_rol
+FROM stg_oracle_catalogo_rol;
+```
 
 ---
 
-<a id="powerbi"></a>
-## Pasos Detallados — Power BI
+## Fase 7 - Carga de hechos (DM1, DM2, DM3, DM4)
 
-### Paso 12: Conectar Power BI a SSAS
+Crear cuatro paquetes:
 
-1. Abrir **Power BI Desktop**
-2. En la pantalla de inicio click **Get Data** (o menú Home → Get Data)
-3. Buscar **"Analysis Services"** → seleccionar **"SQL Server Analysis Services database"** → **Connect**
-4. **Server:** `localhost`
-5. **Database:** dejar vacío
-6. Seleccionar **"Connect live"** → **OK**
-7. En el Navigator, expandir la base de datos y seleccionar un cubo (ej: `Cubo Ingresos`)
-8. Click **Load** (o **Transform Data** si quieres editar antes)
-9. En el panel derecho **"Fields"** aparecen las dimensiones y medidas del cubo
+- ETL_02_Fact_DM1_Ingresos.dtsx
+- ETL_03_Fact_DM2_Comportamiento.dtsx
+- ETL_04_Fact_DM3_Torneos.dtsx
+- ETL_05_Fact_DM4_Auditoria.dtsx
 
-### Paso 13: Crear Dashboards (mínimo 4 páginas)
+Cada paquete contiene un Execute SQL Task usando CONN_SQLSERVER_DW.
 
-**Para cada dashboard:**
+### 7.1 SQL para ETL_02_Fact_DM1_Ingresos.dtsx
 
-1. Click en **"+"** en la barra inferior para crear una nueva página
-2. Renombrar la pestaña: doble click → ej: `Ingresos y Monetización`
-3. Arrastrar campos al canvas para crear visualizaciones:
-   - **Gráfico de barras:** Arrastrar `Dim Region → Nombre Region` al eje X, `monto_real` al eje Y
-   - **Gráfico de líneas:** Arrastrar `Dim Tiempo → Anio` y `Dim Tiempo → Mes` al eje X, `monto_real` al eje Y
-   - **KPI card:** Arrastrar `monto_real` → se muestra el total
-   - **Tabla:** Arrastrar múltiples campos
-4. Ajustar colores, títulos, y formato en el panel **Format**
+```sql
+TRUNCATE TABLE fact_ingresos;
 
-**Sugerencias por dashboard:**
-- **Ingresos:** Ventas vs Metas por región, tendencia mensual, top items vendidos
-- **Comportamiento:** Top usuarios por XP, correlación amigos vs actividad, mapa de eventos
-- **Torneos:** Juegos más populares, tasa de llenado, calificación promedio por tipo
-- **Auditoría:** Eventos por tipo de operación, países restringidos, tickets resueltos
+;WITH transacciones_enriquecidas AS (
+    SELECT
+        t.transaccion_id,
+        t.creado_en AS fecha_evento,
+        COALESCE(t.usuario_id, 0) AS id_usuario,
+        COALESCE(r.id_region, 0) AS id_region,
+        t.origen_id AS id_origen,
+        COALESCE(orden_match.tipo_id, 0) AS id_tipo_item,
+        COALESCE(orden_match.creditos_otorgados, 0) AS creditos_otorgados,
+        t.monto
+    FROM stg_oracle_transaccion t
+    LEFT JOIN stg_oracle_usuario u
+        ON u.usuario_id = t.usuario_id
+    LEFT JOIN stg_oracle_persona p
+        ON p.persona_id = u.persona_id
+    LEFT JOIN dim_region r
+        ON UPPER(LTRIM(RTRIM(r.nombre_region))) = UPPER(LTRIM(RTRIM(p.pais)))
+    OUTER APPLY (
+        SELECT TOP (1)
+            i.tipo_id,
+            i.creditos_otorgados
+        FROM stg_oracle_tienda_orden o
+        INNER JOIN stg_oracle_tienda_item i
+            ON i.item_id = o.item_id
+        WHERE o.usuario_id = t.usuario_id
+          AND ABS(o.monto - t.monto) <= 0.01
+          AND ABS(DATEDIFF(SECOND, o.creado_en, t.creado_en)) <= 300
+        ORDER BY ABS(DATEDIFF(SECOND, o.creado_en, t.creado_en)), o.orden_id DESC
+    ) orden_match
+)
+INSERT INTO fact_ingresos (
+    id_dim_tiempo,
+    id_dim_region,
+    id_dim_tipo_item,
+    id_dim_origen,
+    id_dim_usuario,
+    id_dim_responsable,
+    version_responsable,
+    monto_real,
+    meta_ingresos,
+    creditos_otorgados,
+    cantidad
+)
+SELECT
+    dt.id_tiempo,
+    te.id_region,
+    te.id_tipo_item,
+    te.id_origen,
+    te.id_usuario,
+    rr.id_empleado,
+    rr.version,
+    te.monto AS monto_real,
+    pv.meta_ingresos_usd AS meta_ingresos,
+    te.creditos_otorgados,
+    1 AS cantidad
+FROM transacciones_enriquecidas te
+INNER JOIN dim_tiempo dt
+    ON dt.id_tiempo = (YEAR(te.fecha_evento) * 10000) + (MONTH(te.fecha_evento) * 100) + DAY(te.fecha_evento)
+INNER JOIN dim_region dr
+    ON dr.id_region = te.id_region
+INNER JOIN dim_tipo_item dti
+    ON dti.id_tipo_item = te.id_tipo_item
+INNER JOIN dim_origen_transaccion dot
+    ON dot.id_origen = te.id_origen
+INNER JOIN dim_usuario_comprador duc
+    ON duc.id_usuario = te.id_usuario
+LEFT JOIN stg_excel_presupuestos_ventas pv
+    ON pv.anio = dt.anio
+   AND pv.mes = dt.mes_numero
+   AND UPPER(LTRIM(RTRIM(pv.region))) = UPPER(LTRIM(RTRIM(dr.nombre_region)))
+   AND UPPER(LTRIM(RTRIM(pv.categoria_producto))) = UPPER(LTRIM(RTRIM(dti.nombre_tipo)))
+LEFT JOIN dim_responsable_rrhh rr
+    ON rr.id_empleado = pv.responsable_rrhh_id
+   AND rr.version_actual = 1;
+```
 
-### Paso 14: Guardar como .pbix
+### 7.2 SQL para ETL_03_Fact_DM2_Comportamiento.dtsx
 
-1. **File → Save As** → guardar en `DataWarehouse/PowerBI/DW_ESPORTS.pbix`
+```sql
+TRUNCATE TABLE fact_actividad_usuario;
+
+;WITH amigos AS (
+    SELECT usuario_id, COUNT(*) AS total_amigos
+    FROM (
+        SELECT usuario1_id AS usuario_id FROM stg_oracle_usuario_amigos
+        UNION ALL
+        SELECT usuario2_id AS usuario_id FROM stg_oracle_usuario_amigos
+    ) x
+    WHERE usuario_id IS NOT NULL
+    GROUP BY usuario_id
+),
+seguidores AS (
+    SELECT seguido_id AS usuario_id, COUNT(*) AS total_seguidores
+    FROM stg_oracle_usuario_seguidores
+    WHERE seguido_id IS NOT NULL
+    GROUP BY seguido_id
+),
+social AS (
+    SELECT
+        u.usuario_id,
+        COALESCE(a.total_amigos, 0) AS total_amigos,
+        COALESCE(s.total_seguidores, 0) AS total_seguidores
+    FROM stg_oracle_usuario u
+    LEFT JOIN amigos a ON a.usuario_id = u.usuario_id
+    LEFT JOIN seguidores s ON s.usuario_id = u.usuario_id
+),
+stats AS (
+    SELECT
+        usuario_id,
+        COALESCE(juego_id, 0) AS juego_id,
+        SUM(victorias) AS victorias,
+        SUM(horas_jugadas) AS horas_jugadas
+    FROM stg_oracle_usuario_estadisticas_juego
+    GROUP BY usuario_id, COALESCE(juego_id, 0)
+),
+logs AS (
+    SELECT
+        l.*,
+        (YEAR(l.timestamp_evento) * 10000) + (MONTH(l.timestamp_evento) * 100) + DAY(l.timestamp_evento) AS id_tiempo
+    FROM stg_mongo_logs_actividad_evento l
+    WHERE l.timestamp_evento IS NOT NULL
+)
+INSERT INTO fact_actividad_usuario (
+    id_dim_tiempo,
+    id_dim_usuario,
+    id_dim_juego,
+    id_dim_tipo_evento,
+    id_dim_pais,
+    total_amigos,
+    total_seguidores,
+    xp_acumulado,
+    cantidad_eventos,
+    tiempo_sesion_seg,
+    victorias,
+    horas_jugadas
+)
+SELECT
+    logs.id_tiempo,
+    COALESCE(logs.oracle_usuario_id, 0) AS id_dim_usuario,
+    COALESCE(t.juego_id, 0) AS id_dim_juego,
+    dte.id_tipo_evento,
+    dp.id_pais,
+    COALESCE(sc.total_amigos, 0) AS total_amigos,
+    COALESCE(sc.total_seguidores, 0) AS total_seguidores,
+    COALESCE(du.xp, 0) AS xp_acumulado,
+    1 AS cantidad_eventos,
+    CASE
+        WHEN logs.tipo_evento = 'logout' THEN COALESCE(logs.detalle_duracion_sesion_min, 0) * 60
+        ELSE NULL
+    END AS tiempo_sesion_seg,
+    st.victorias,
+    st.horas_jugadas
+FROM logs
+INNER JOIN dim_tiempo dt
+    ON dt.id_tiempo = logs.id_tiempo
+INNER JOIN dim_usuario du
+    ON du.id_usuario = COALESCE(logs.oracle_usuario_id, 0)
+INNER JOIN dim_tipo_evento dte
+    ON dte.nombre_evento = logs.tipo_evento
+INNER JOIN dim_pais dp
+    ON dp.nombre_pais = COALESCE(NULLIF(LTRIM(RTRIM(logs.pais_origen)), ''), 'DESCONOCIDO')
+LEFT JOIN stg_oracle_torneo t
+    ON t.torneo_id = logs.detalle_torneo_id
+LEFT JOIN dim_juego dj
+    ON dj.id_juego = COALESCE(t.juego_id, 0)
+LEFT JOIN social sc
+    ON sc.usuario_id = COALESCE(logs.oracle_usuario_id, 0)
+LEFT JOIN stats st
+    ON st.usuario_id = COALESCE(logs.oracle_usuario_id, 0)
+   AND st.juego_id = COALESCE(t.juego_id, 0);
+```
+
+### 7.3 SQL para ETL_04_Fact_DM3_Torneos.dtsx
+
+```sql
+TRUNCATE TABLE fact_torneos;
+
+;WITH estado_confirmada AS (
+    SELECT TOP (1) id_estado
+    FROM stg_oracle_catalogo_estado_inscripcion
+    WHERE UPPER(valor_estado) = 'CONFIRMADA'
+),
+inscripciones AS (
+    SELECT
+        ti.torneo_id,
+        COUNT(*) AS total_inscritos,
+        SUM(CASE WHEN ti.estado_id = ec.id_estado THEN 1 ELSE 0 END) AS inscritos_confirmados
+    FROM stg_oracle_torneo_inscripcion ti
+    CROSS JOIN estado_confirmada ec
+    GROUP BY ti.torneo_id
+),
+feedback AS (
+    SELECT
+        f.oracle_torneo_id AS torneo_id,
+        AVG(CAST(f.calificacion AS DECIMAL(10,2))) AS calificacion_promedio,
+        COUNT(*) AS total_resenas,
+        CASE
+            WHEN COUNT(*) = 0 THEN 0
+            ELSE 100.0 * SUM(CASE WHEN f.recomendaria = 1 THEN 1 ELSE 0 END) / COUNT(*)
+        END AS pct_recomendacion
+    FROM stg_mongo_feedback_torneos_evento f
+    WHERE f.oracle_torneo_id IS NOT NULL
+    GROUP BY f.oracle_torneo_id
+),
+base_torneo AS (
+    SELECT
+        t.torneo_id,
+        t.fecha_inicio_torneo,
+        (YEAR(t.fecha_inicio_torneo) * 10000) + (MONTH(t.fecha_inicio_torneo) * 100) + DAY(t.fecha_inicio_torneo) AS id_tiempo,
+        COALESCE(t.juego_id, 0) AS juego_id,
+        COALESCE(t.modo_juego_id, 0) AS modo_juego_id,
+        COALESCE(t.tipo_torneo_id, 0) AS tipo_torneo_id,
+        COALESCE(t.plataforma_id, 0) AS plataforma_id,
+        COALESCE(t.region_id, 0) AS region_id,
+        t.capacidad
+    FROM stg_oracle_torneo t
+    WHERE t.fecha_inicio_torneo IS NOT NULL
+)
+INSERT INTO fact_torneos (
+    id_dim_tiempo,
+    id_dim_juego,
+    id_dim_modo_juego,
+    id_dim_tipo_torneo,
+    id_dim_plataforma,
+    id_dim_region,
+    total_inscritos,
+    inscritos_confirmados,
+    capacidad,
+    fondo_premios,
+    comision,
+    calificacion_promedio,
+    total_resenas,
+    pct_recomendacion,
+    cantidad_torneos
+)
+SELECT
+    bt.id_tiempo,
+    bt.juego_id,
+    bt.modo_juego_id,
+    bt.tipo_torneo_id,
+    bt.plataforma_id,
+    bt.region_id,
+    COALESCE(i.total_inscritos, 0) AS total_inscritos,
+    COALESCE(i.inscritos_confirmados, 0) AS inscritos_confirmados,
+    bt.capacidad,
+    COALESCE(tp.fondo_total, 0) AS fondo_premios,
+    COALESCE(tp.comision_total, 0) AS comision,
+    COALESCE(f.calificacion_promedio, 0) AS calificacion_promedio,
+    COALESCE(f.total_resenas, 0) AS total_resenas,
+    COALESCE(f.pct_recomendacion, 0) AS pct_recomendacion,
+    1 AS cantidad_torneos
+FROM base_torneo bt
+INNER JOIN dim_tiempo dt
+    ON dt.id_tiempo = bt.id_tiempo
+INNER JOIN dim_juego dj
+    ON dj.id_juego = bt.juego_id
+INNER JOIN dim_modo_juego dmj
+    ON dmj.id_modo_juego = bt.modo_juego_id
+INNER JOIN dim_tipo_torneo dtt
+    ON dtt.id_tipo_torneo = bt.tipo_torneo_id
+INNER JOIN dim_plataforma dpl
+    ON dpl.id_plataforma = bt.plataforma_id
+INNER JOIN dim_region_torneo drt
+    ON drt.id_region = bt.region_id
+LEFT JOIN inscripciones i
+    ON i.torneo_id = bt.torneo_id
+LEFT JOIN stg_oracle_torneo_premios tp
+    ON tp.torneo_id = bt.torneo_id
+LEFT JOIN feedback f
+    ON f.torneo_id = bt.torneo_id;
+```
+
+### 7.4 SQL para ETL_05_Fact_DM4_Auditoria.dtsx
+
+```sql
+TRUNCATE TABLE fact_auditoria;
+
+;WITH audit_detalle AS (
+    SELECT
+        CAST(a.fecha AS DATE) AS fecha_evento,
+        a.operacion,
+        a.tabla_auditada,
+        CASE
+            WHEN a.tabla_auditada = 'USUARIO' THEN a.registro_id
+            WHEN a.tabla_auditada = 'TIENDA_ORDEN' THEN o.usuario_id
+            ELSE NULL
+        END AS usuario_id
+    FROM stg_oracle_auditoria_log a
+    LEFT JOIN stg_oracle_tienda_orden o
+        ON a.tabla_auditada = 'TIENDA_ORDEN'
+       AND o.orden_id = a.registro_id
+),
+audit_agg AS (
+    SELECT
+        fecha_evento,
+        operacion,
+        tabla_auditada,
+        usuario_id,
+        COUNT(*) AS total_eventos
+    FROM audit_detalle
+    GROUP BY fecha_evento, operacion, tabla_auditada, usuario_id
+)
+INSERT INTO fact_auditoria (
+    id_dim_tiempo,
+    id_dim_operacion,
+    id_dim_tabla,
+    id_dim_empleado_soporte,
+    version_empleado,
+    id_dim_pais,
+    id_dim_rol,
+    total_eventos,
+    tickets_soporte,
+    tickets_resueltos,
+    registros_restringidos
+)
+SELECT
+    (YEAR(aa.fecha_evento) * 10000) + (MONTH(aa.fecha_evento) * 100) + DAY(aa.fecha_evento) AS id_dim_tiempo,
+    dop.id_operacion,
+    dta.id_tabla,
+    des.id_empleado,
+    des.version,
+    dpr.id_pais,
+    dru.id_rol,
+    aa.total_eventos,
+    0 AS tickets_soporte,
+    0 AS tickets_resueltos,
+    CASE WHEN dpr.es_restringido = 1 THEN aa.total_eventos ELSE 0 END AS registros_restringidos
+FROM audit_agg aa
+INNER JOIN dim_operacion dop
+    ON dop.nombre_operacion = aa.operacion
+INNER JOIN dim_tabla_auditada dta
+    ON dta.nombre_tabla = aa.tabla_auditada
+LEFT JOIN stg_oracle_usuario u
+    ON u.usuario_id = aa.usuario_id
+LEFT JOIN stg_oracle_persona p
+    ON p.persona_id = u.persona_id
+LEFT JOIN dim_pais_registro dpr
+    ON dpr.nombre_pais = COALESCE(NULLIF(LTRIM(RTRIM(p.pais)), ''), 'DESCONOCIDO')
+LEFT JOIN dim_rol_usuario dru
+    ON dru.id_rol = u.rol_id
+LEFT JOIN dim_empleado_soporte des
+    ON des.id_empleado = aa.usuario_id
+   AND des.version_actual = 1;
+
+;WITH soporte_creado AS (
+    SELECT
+        CAST(s.creado_en AS DATE) AS fecha_evento,
+        s.usuario_id,
+        COUNT(*) AS tickets_soporte
+    FROM stg_oracle_tienda_solicitud_soporte s
+    GROUP BY CAST(s.creado_en AS DATE), s.usuario_id
+)
+INSERT INTO fact_auditoria (
+    id_dim_tiempo,
+    id_dim_operacion,
+    id_dim_tabla,
+    id_dim_empleado_soporte,
+    version_empleado,
+    id_dim_pais,
+    id_dim_rol,
+    total_eventos,
+    tickets_soporte,
+    tickets_resueltos,
+    registros_restringidos
+)
+SELECT
+    (YEAR(sc.fecha_evento) * 10000) + (MONTH(sc.fecha_evento) * 100) + DAY(sc.fecha_evento) AS id_dim_tiempo,
+    dop.id_operacion,
+    dta.id_tabla,
+    NULL AS id_dim_empleado_soporte,
+    NULL AS version_empleado,
+    dpr.id_pais,
+    dru.id_rol,
+    0 AS total_eventos,
+    sc.tickets_soporte,
+    0 AS tickets_resueltos,
+    CASE WHEN dpr.es_restringido = 1 THEN sc.tickets_soporte ELSE 0 END AS registros_restringidos
+FROM soporte_creado sc
+INNER JOIN dim_operacion dop
+    ON dop.nombre_operacion = 'INSERT'
+INNER JOIN dim_tabla_auditada dta
+    ON dta.nombre_tabla = 'TIENDA_SOLICITUD_SOPORTE'
+LEFT JOIN stg_oracle_usuario u
+    ON u.usuario_id = sc.usuario_id
+LEFT JOIN stg_oracle_persona p
+    ON p.persona_id = u.persona_id
+LEFT JOIN dim_pais_registro dpr
+    ON dpr.nombre_pais = COALESCE(NULLIF(LTRIM(RTRIM(p.pais)), ''), 'DESCONOCIDO')
+LEFT JOIN dim_rol_usuario dru
+    ON dru.id_rol = u.rol_id;
+
+;WITH soporte_resuelto AS (
+    SELECT
+        CAST(s.resuelto_en AS DATE) AS fecha_evento,
+        s.resuelto_por,
+        COUNT(*) AS tickets_resueltos
+    FROM stg_oracle_tienda_solicitud_soporte s
+    WHERE s.resuelto_en IS NOT NULL
+      AND s.resuelto_por IS NOT NULL
+    GROUP BY CAST(s.resuelto_en AS DATE), s.resuelto_por
+)
+INSERT INTO fact_auditoria (
+    id_dim_tiempo,
+    id_dim_operacion,
+    id_dim_tabla,
+    id_dim_empleado_soporte,
+    version_empleado,
+    id_dim_pais,
+    id_dim_rol,
+    total_eventos,
+    tickets_soporte,
+    tickets_resueltos,
+    registros_restringidos
+)
+SELECT
+    (YEAR(sr.fecha_evento) * 10000) + (MONTH(sr.fecha_evento) * 100) + DAY(sr.fecha_evento) AS id_dim_tiempo,
+    dop.id_operacion,
+    dta.id_tabla,
+    des.id_empleado,
+    des.version,
+    dpr.id_pais,
+    dru.id_rol,
+    0 AS total_eventos,
+    0 AS tickets_soporte,
+    sr.tickets_resueltos,
+    CASE WHEN dpr.es_restringido = 1 THEN sr.tickets_resueltos ELSE 0 END AS registros_restringidos
+FROM soporte_resuelto sr
+INNER JOIN dim_operacion dop
+    ON dop.nombre_operacion = 'UPDATE'
+INNER JOIN dim_tabla_auditada dta
+    ON dta.nombre_tabla = 'TIENDA_SOLICITUD_SOPORTE'
+LEFT JOIN stg_oracle_usuario u
+    ON u.usuario_id = sr.resuelto_por
+LEFT JOIN stg_oracle_persona p
+    ON p.persona_id = u.persona_id
+LEFT JOIN dim_pais_registro dpr
+    ON dpr.nombre_pais = COALESCE(NULLIF(LTRIM(RTRIM(p.pais)), ''), 'DESCONOCIDO')
+LEFT JOIN dim_rol_usuario dru
+    ON dru.id_rol = u.rol_id
+LEFT JOIN dim_empleado_soporte des
+    ON des.id_empleado = sr.resuelto_por
+   AND des.version_actual = 1;
+```
 
 ---
 
-<a id="export"></a>
-## Pasos Detallados — Exportar Excel desde SSAS
+## Fase 8 - Ejecucion secuencial de paquetes SSIS
 
-### Paso 15: Exportar datos de cubos a Excel
+Ejecutar en este orden exacto:
 
-1. Abrir **SSMS** → Conectar a **Analysis Services** (`localhost`)
-2. Expandir: `Databases → SSAS_DW_ESPORTS → Cubes`
-3. Click derecho en `Cubo Ingresos` → **Browse**
-4. En el browser MDX, arrastrar dimensiones y medidas para crear la vista deseada
-5. En la barra de herramientas buscar **"Analyze in Excel"** (ícono de Excel)
-   - Si no está disponible: copiar los resultados manualmente, o...
-   - Abrir Excel → pestaña **Data** → **From Other Sources** → **From Analysis Services**
-   - Server: `localhost` → seleccionar el cubo → se crea una tabla dinámica
-6. Guardar el archivo como `DataWarehouse/Excel/Exports_SSAS/Cubo_Ingresos.xlsx`
-7. **Repetir** para cada cubo
+1. ETL_00_Staging.dtsx
+2. ETL_01_Dimensiones.dtsx
+3. ETL_02_Fact_DM1_Ingresos.dtsx
+4. ETL_03_Fact_DM2_Comportamiento.dtsx
+5. ETL_04_Fact_DM3_Torneos.dtsx
+6. ETL_05_Fact_DM4_Auditoria.dtsx
 
-### Paso 16: Generar Documento PDF
+Validacion inmediata en SQL Server:
 
-1. En Power BI: **File → Export → Export to PDF**
-2. Incluir una descripción textual de cada dashboard
-3. Guardar en `DataWarehouse/Docs/Dashboards_DW_ESPORTS.pdf`
+```sql
+SELECT COUNT(*) AS filas_dim_tiempo FROM dim_tiempo;
+SELECT COUNT(*) AS filas_fact_ingresos FROM fact_ingresos;
+SELECT COUNT(*) AS filas_fact_actividad_usuario FROM fact_actividad_usuario;
+SELECT COUNT(*) AS filas_fact_torneos FROM fact_torneos;
+SELECT COUNT(*) AS filas_fact_auditoria FROM fact_auditoria;
+```
+
+---
+
+## Fase 9 - Cubos SSAS
+
+### 9.1 Crear proyecto SSAS
+
+1. En la misma solucion, agregar proyecto Analysis Services Multidimensional and Data Mining.
+2. Nombre: SSAS_DW_ESPORTS.
+
+### 9.2 Data Source y Data Source View
+
+1. Data Source a localhost / DW_ESPORTS.
+2. Data Source View con todas las tablas dim_* y fact_*.
+
+### 9.3 Dimensiones
+
+Crear dimensiones para cada tabla dim_*. Definir clave en su PK.
+
+### 9.4 Cubos
+
+Crear 4 cubos:
+
+1. Cubo_Ingresos (Measure Group: fact_ingresos)
+   - Medidas: monto_real, meta_ingresos, creditos_otorgados, cantidad
+2. Cubo_Comportamiento (Measure Group: fact_actividad_usuario)
+   - Medidas: total_amigos, total_seguidores, xp_acumulado, cantidad_eventos, tiempo_sesion_seg, victorias, horas_jugadas
+3. Cubo_Torneos (Measure Group: fact_torneos)
+   - Medidas: total_inscritos, inscritos_confirmados, capacidad, fondo_premios, comision, calificacion_promedio, total_resenas, pct_recomendacion, cantidad_torneos
+4. Cubo_Auditoria (Measure Group: fact_auditoria)
+   - Medidas: total_eventos, tickets_soporte, tickets_resueltos, registros_restringidos
+
+### 9.5 Deploy y Process
+
+1. Target Server: localhost.
+2. Deploy del proyecto.
+3. Process Full de dimensiones y cubos.
+
+---
+
+## Fase 10 - Dashboards Power BI y verificacion final
+
+### 10.1 Conexion a SSAS
+
+1. Power BI Desktop.
+2. Get Data -> SQL Server Analysis Services database.
+3. Server: localhost.
+4. Modo: Connect live.
+
+### 10.2 Crear 4 paginas obligatorias
+
+1. Pagina Ingresos y Monetizacion
+   - Visual 1: monto_real por nombre_region
+   - Visual 2: meta_ingresos por mes_nombre
+   - Visual 3: monto_real vs meta_ingresos
+
+2. Pagina Comportamiento de Usuario
+   - Visual 1: cantidad_eventos por nombre_evento
+   - Visual 2: xp_acumulado por nickname
+   - Visual 3: tiempo_sesion_seg por nombre_pais
+
+3. Pagina Calidad de Torneos
+   - Visual 1: total_inscritos por nombre_juego
+   - Visual 2: calificacion_promedio por nombre_tipo
+   - Visual 3: pct_recomendacion por nombre_plataforma
+
+4. Pagina Seguridad y Auditoria
+   - Visual 1: total_eventos por nombre_operacion
+   - Visual 2: registros_restringidos por nombre_pais
+   - Visual 3: tickets_soporte y tickets_resueltos por nombre_tabla
+
+### 10.3 Verificacion final de consistencia
+
+Ejecutar en SQL Server:
+
+```sql
+SELECT TOP 20 * FROM fact_ingresos ORDER BY id_dim_tiempo DESC;
+SELECT TOP 20 * FROM fact_actividad_usuario ORDER BY id_dim_tiempo DESC;
+SELECT TOP 20 * FROM fact_torneos ORDER BY id_dim_tiempo DESC;
+SELECT TOP 20 * FROM fact_auditoria ORDER BY id_dim_tiempo DESC;
+
+SELECT nombre_pais, es_restringido, motivo_restriccion
+FROM dim_pais_registro
+WHERE es_restringido = 1
+ORDER BY nombre_pais;
+```
+
+Con esta secuencia el flujo completo queda:
+
+Oracle + RRHH + Excel + Mongo CSV -> Staging normalizado -> Dimensiones -> Hechos -> SSAS -> Power BI.
