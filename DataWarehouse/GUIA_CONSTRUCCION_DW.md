@@ -789,11 +789,11 @@ Esta primera carga se hace completa para que luego la repitas con copiar/pegar.
 4. En OLE DB Source Editor:
    - OLE DB connection manager: CONN_ORACLE_ESPORTS.
    - Data access mode: SQL command.
-   - SQL command text:
+    - SQL command text (sin punto y coma final):
 
 ```sql
 SELECT ID AS id_region, VALOR AS nombre_region
-FROM CATALOGO_REGION;
+FROM CATALOGO_REGION
 ```
 
 5. Click Preview para verificar que trae filas.
@@ -825,53 +825,55 @@ FROM CATALOGO_REGION;
 
 ### 4.3.4 Lista exacta de cargas Oracle (SQL y destino)
 
+Importante: todas estas consultas Oracle se pegan en OLE DB Source sin ';' al final.
+
 1. Destino: stg_oracle_catalogo_region
 
 ```sql
 SELECT ID AS id_region, VALOR AS nombre_region
-FROM CATALOGO_REGION;
+FROM CATALOGO_REGION
 ```
 
 2. Destino: stg_oracle_catalogo_tipo_item
 
 ```sql
 SELECT ID AS id_tipo_item, VALOR AS nombre_tipo
-FROM CATALOGO_TIPO_ITEM;
+FROM CATALOGO_TIPO_ITEM
 ```
 
 3. Destino: stg_oracle_catalogo_origen_transaccion
 
 ```sql
 SELECT ID AS id_origen, VALOR AS nombre_origen
-FROM CATALOGO_ORIGEN_TRANSACCION;
+FROM CATALOGO_ORIGEN_TRANSACCION
 ```
 
 4. Destino: stg_oracle_catalogo_tipo_torneo
 
 ```sql
 SELECT ID AS id_tipo_torneo, VALOR AS nombre_tipo, TIPO_TROFEO AS tipo_trofeo
-FROM CATALOGO_TIPO_TORNEO;
+FROM CATALOGO_TIPO_TORNEO
 ```
 
 5. Destino: stg_oracle_catalogo_plataforma
 
 ```sql
 SELECT ID AS id_plataforma, VALOR AS nombre_plataforma
-FROM CATALOGO_PLATAFORMA;
+FROM CATALOGO_PLATAFORMA
 ```
 
 6. Destino: stg_oracle_catalogo_rol
 
 ```sql
 SELECT ID AS id_rol, VALOR AS nombre_rol
-FROM CATALOGO_ROL;
+FROM CATALOGO_ROL
 ```
 
 7. Destino: stg_oracle_catalogo_estado_inscripcion
 
 ```sql
 SELECT ID AS id_estado, VALOR AS valor_estado
-FROM CATALOGO_ESTADO_INSCRIPCION;
+FROM CATALOGO_ESTADO_INSCRIPCION
 ```
 
 8. Destino: stg_oracle_usuario
@@ -885,7 +887,7 @@ SELECT
     CREADO_EN AS creado_en,
     PERSONA_ID AS persona_id,
     ROL_ID AS rol_id
-FROM USUARIO;
+FROM USUARIO
 ```
 
 9. Destino: stg_oracle_persona
@@ -896,7 +898,7 @@ SELECT
     PAIS AS pais,
     DIVISA AS divisa,
     CORREO AS correo
-FROM PERSONA;
+FROM PERSONA
 ```
 
 10. Destino: stg_oracle_transaccion
@@ -910,7 +912,7 @@ SELECT
     USUARIO_ID AS usuario_id,
     TIPO_ID AS tipo_id,
     ORIGEN_ID AS origen_id
-FROM TRANSACCION;
+FROM TRANSACCION
 ```
 
 11. Destino: stg_oracle_tienda_item
@@ -922,7 +924,7 @@ SELECT
     PRECIO AS precio,
     CREDITOS_OTORGADOS AS creditos_otorgados,
     TIPO_ID AS tipo_id
-FROM TIENDA_ITEM;
+FROM TIENDA_ITEM
 ```
 
 12. Destino: stg_oracle_tienda_orden
@@ -937,21 +939,21 @@ SELECT
     USUARIO_ID AS usuario_id,
     ITEM_ID AS item_id,
     DIVISA AS divisa
-FROM TIENDA_ORDEN;
+FROM TIENDA_ORDEN
 ```
 
 13. Destino: stg_oracle_juego
 
 ```sql
 SELECT ID AS juego_id, NOMBRE AS nombre_juego
-FROM JUEGO;
+FROM JUEGO
 ```
 
 14. Destino: stg_oracle_modo_juego
 
 ```sql
 SELECT ID AS modo_juego_id, NOMBRE AS nombre_modo, JUEGO_ID AS juego_id
-FROM MODO_JUEGO;
+FROM MODO_JUEGO
 ```
 
 15. Destino: stg_oracle_torneo
@@ -966,7 +968,7 @@ SELECT
     PLATAFORMA_ID AS plataforma_id,
     REGION_ID AS region_id,
     CAPACIDAD AS capacidad
-FROM TORNEO;
+FROM TORNEO
 ```
 
 16. Destino: stg_oracle_torneo_inscripcion
@@ -978,7 +980,7 @@ SELECT
     TORNEO_ID AS torneo_id,
     USUARIO_ID AS usuario_id,
     ESTADO_ID AS estado_id
-FROM TORNEO_INSCRIPCION;
+FROM TORNEO_INSCRIPCION
 ```
 
 17. Destino: stg_oracle_torneo_premios
@@ -988,7 +990,7 @@ SELECT
     TORNEO_ID AS torneo_id,
     FONDO_TOTAL AS fondo_total,
     COMISION_TOTAL AS comision_total
-FROM TORNEO_PREMIOS;
+FROM TORNEO_PREMIOS
 ```
 
 18. Destino: stg_oracle_usuario_amigos
@@ -1000,7 +1002,7 @@ SELECT
     USUARIO1_ID AS usuario1_id,
     USUARIO2_ID AS usuario2_id,
     ESTADO_ID AS estado_id
-FROM USUARIO_AMIGOS;
+FROM USUARIO_AMIGOS
 ```
 
 19. Destino: stg_oracle_usuario_seguidores
@@ -1011,7 +1013,7 @@ SELECT
     CREADO_EN AS creado_en,
     SEGUIDOR_ID AS seguidor_id,
     SEGUIDO_ID AS seguido_id
-FROM USUARIO_SEGUIDORES;
+FROM USUARIO_SEGUIDORES
 ```
 
 20. Destino: stg_oracle_usuario_estadisticas_juego
@@ -1022,7 +1024,7 @@ SELECT
     JUEGO_ID AS juego_id,
     VICTORIAS AS victorias,
     HORAS_JUGADAS AS horas_jugadas
-FROM USUARIO_ESTADISTICAS_JUEGO;
+FROM USUARIO_ESTADISTICAS_JUEGO
 ```
 
 21. Destino: stg_oracle_auditoria_log
@@ -1036,7 +1038,7 @@ SELECT
     USUARIO_BD AS usuario_bd,
     DETALLE AS detalle,
     FECHA AS fecha
-FROM AUDITORIA_LOG;
+FROM AUDITORIA_LOG
 ```
 
 22. Destino: stg_oracle_tienda_solicitud_soporte
@@ -1050,7 +1052,7 @@ SELECT
     RESUELTO_EN AS resuelto_en,
     USUARIO_ID AS usuario_id,
     RESUELTO_POR AS resuelto_por
-FROM TIENDA_SOLICITUD_SOPORTE;
+FROM TIENDA_SOLICITUD_SOPORTE
 ```
 
 ### 4.4 Configurar Task 3: DFT_Cargar_Staging_RRHH
