@@ -677,11 +677,66 @@ Crear exactamente estos Connection Managers:
 
 ## Fase 4 - Carga de staging desde Oracle, RRHH, Excel y Mongo CSV
 
-Crear paquete: ETL_00_Staging.dtsx
+Objetivo de esta fase:
 
-### 4.1 Task 1 - Execute SQL Task: SQL_Truncar_Staging
+1. Dejar todas las tablas stg_* cargadas con datos frescos.
+2. Ejecutar la carga en un unico paquete SSIS llamado ETL_00_Staging.dtsx.
+3. Dejar listo el terreno para la Fase 5 (normalizacion de Mongo).
 
-Usar CONN_SQLSERVER_DW y ejecutar:
+Resultado esperado al terminar:
+
+1. ETL_00_Staging.dtsx con 5 tasks en Control Flow.
+2. Cada task en verde al ejecutar.
+3. Todas las tablas staging con filas.
+
+### 4.0 Preparar Visual Studio para no perderse
+
+1. Abrir Visual Studio y abrir la solucion donde esta el proyecto SSIS.
+2. Ir a menu View -> Solution Explorer.
+3. Ir a menu SSIS -> SSIS Toolbox.
+4. Ir a menu View -> Properties Window.
+5. Verificar que abajo este visible el panel Connection Managers.
+6. En Solution Explorer, expandir SSIS Packages.
+
+Si no existe ETL_00_Staging.dtsx:
+
+1. Click derecho en SSIS Packages.
+2. Click New SSIS Package.
+3. Presionar F2 al nuevo paquete y renombrar a ETL_00_Staging.dtsx.
+4. Doble click en ETL_00_Staging.dtsx para abrirlo.
+
+### 4.1 Armar el Control Flow completo (boton por boton)
+
+En la pestana Control Flow de ETL_00_Staging.dtsx:
+
+1. En SSIS Toolbox, en la seccion Common, arrastrar Execute SQL Task al lienzo.
+2. Presionar F2 y renombrar ese task a SQL_Truncar_Staging.
+3. Arrastrar Data Flow Task al lienzo.
+4. Renombrar a DFT_Cargar_Staging_Oracle.
+5. Arrastrar otro Data Flow Task.
+6. Renombrar a DFT_Cargar_Staging_RRHH.
+7. Arrastrar otro Data Flow Task.
+8. Renombrar a DFT_Cargar_Staging_Excel.
+9. Arrastrar otro Data Flow Task.
+10. Renombrar a DFT_Cargar_Staging_Mongo_Raw.
+
+Conectar en secuencia (flechas verdes):
+
+1. Click en SQL_Truncar_Staging.
+2. Arrastrar la flecha verde hacia DFT_Cargar_Staging_Oracle.
+3. Desde DFT_Cargar_Staging_Oracle arrastrar flecha verde a DFT_Cargar_Staging_RRHH.
+4. Desde DFT_Cargar_Staging_RRHH arrastrar flecha verde a DFT_Cargar_Staging_Excel.
+5. Desde DFT_Cargar_Staging_Excel arrastrar flecha verde a DFT_Cargar_Staging_Mongo_Raw.
+
+### 4.2 Configurar Task 1: SQL_Truncar_Staging
+
+1. Doble click en SQL_Truncar_Staging.
+2. En el dialogo Execute SQL Task Editor:
+   - En General -> Name: SQL_Truncar_Staging.
+   - En General -> ConnectionType: OLE DB.
+   - En General -> Connection: seleccionar CONN_SQLSERVER_DW.
+   - En General -> SQLSourceType: Direct input.
+3. En SQLStatement, pegar exactamente este script:
 
 ```sql
 TRUNCATE TABLE stg_oracle_catalogo_region;
@@ -715,51 +770,111 @@ TRUNCATE TABLE stg_mongo_logs_actividad_evento;
 TRUNCATE TABLE stg_mongo_feedback_torneos_evento;
 ```
 
-### 4.2 Task 2 - Data Flow: Cargar staging Oracle
+4. Click OK para guardar el task.
 
-Crear un OLE DB Source por cada consulta (CONN_ORACLE_ESPORTS) y dirigir cada flujo a su tabla destino en CONN_SQLSERVER_DW.
+### 4.3 Configurar Task 2: DFT_Cargar_Staging_Oracle
+
+#### 4.3.1 Entrar al Data Flow
+
+1. En Control Flow, doble click en DFT_Cargar_Staging_Oracle.
+2. Verificar que ahora estas en la pestana Data Flow.
+
+#### 4.3.2 Crear la primera carga Oracle completa (modelo base)
+
+Esta primera carga se hace completa para que luego la repitas con copiar/pegar.
+
+1. En SSIS Toolbox (seccion Other Sources), arrastrar OLE DB Source al lienzo.
+2. Presionar F2 y renombrar a SRC_ORA_CATALOGO_REGION.
+3. Doble click en SRC_ORA_CATALOGO_REGION.
+4. En OLE DB Source Editor:
+   - OLE DB connection manager: CONN_ORACLE_ESPORTS.
+   - Data access mode: SQL command.
+   - SQL command text:
 
 ```sql
 SELECT ID AS id_region, VALOR AS nombre_region
 FROM CATALOGO_REGION;
 ```
-Destino: stg_oracle_catalogo_region
+
+5. Click Preview para verificar que trae filas.
+6. Click OK.
+7. En SSIS Toolbox (seccion Other Destinations), arrastrar OLE DB Destination.
+8. Renombrar a DST_STG_ORACLE_CATALOGO_REGION.
+9. Arrastrar la flecha azul desde SRC_ORA_CATALOGO_REGION hacia DST_STG_ORACLE_CATALOGO_REGION.
+10. Doble click en DST_STG_ORACLE_CATALOGO_REGION.
+11. En OLE DB Destination Editor:
+    - OLE DB connection manager: CONN_SQLSERVER_DW.
+    - Data access mode: Table or view - fast load.
+    - Name of the table or view: stg_oracle_catalogo_region.
+12. Ir a la pestana Mappings.
+13. Verificar:
+    - id_region -> id_region
+    - nombre_region -> nombre_region
+14. Click OK.
+
+#### 4.3.3 Duplicar rapidamente para las demas cargas Oracle
+
+1. Seleccionar SRC_ORA_CATALOGO_REGION y DST_STG_ORACLE_CATALOGO_REGION (mantener Ctrl y click en ambos).
+2. Presionar Ctrl+C.
+3. Presionar Ctrl+V para crear una copia del par source/destination con su flecha.
+4. Renombrar los dos componentes copiados para la siguiente tabla.
+5. Abrir el Source copiado y cambiar SQL.
+6. Abrir el Destination copiado y cambiar Name of the table or view.
+7. Ir a Mappings y validar columnas.
+8. Repetir hasta completar toda la lista Oracle de abajo.
+
+### 4.3.4 Lista exacta de cargas Oracle (SQL y destino)
+
+1. Destino: stg_oracle_catalogo_region
+
+```sql
+SELECT ID AS id_region, VALOR AS nombre_region
+FROM CATALOGO_REGION;
+```
+
+2. Destino: stg_oracle_catalogo_tipo_item
 
 ```sql
 SELECT ID AS id_tipo_item, VALOR AS nombre_tipo
 FROM CATALOGO_TIPO_ITEM;
 ```
-Destino: stg_oracle_catalogo_tipo_item
+
+3. Destino: stg_oracle_catalogo_origen_transaccion
 
 ```sql
 SELECT ID AS id_origen, VALOR AS nombre_origen
 FROM CATALOGO_ORIGEN_TRANSACCION;
 ```
-Destino: stg_oracle_catalogo_origen_transaccion
+
+4. Destino: stg_oracle_catalogo_tipo_torneo
 
 ```sql
 SELECT ID AS id_tipo_torneo, VALOR AS nombre_tipo, TIPO_TROFEO AS tipo_trofeo
 FROM CATALOGO_TIPO_TORNEO;
 ```
-Destino: stg_oracle_catalogo_tipo_torneo
+
+5. Destino: stg_oracle_catalogo_plataforma
 
 ```sql
 SELECT ID AS id_plataforma, VALOR AS nombre_plataforma
 FROM CATALOGO_PLATAFORMA;
 ```
-Destino: stg_oracle_catalogo_plataforma
+
+6. Destino: stg_oracle_catalogo_rol
 
 ```sql
 SELECT ID AS id_rol, VALOR AS nombre_rol
 FROM CATALOGO_ROL;
 ```
-Destino: stg_oracle_catalogo_rol
+
+7. Destino: stg_oracle_catalogo_estado_inscripcion
 
 ```sql
 SELECT ID AS id_estado, VALOR AS valor_estado
 FROM CATALOGO_ESTADO_INSCRIPCION;
 ```
-Destino: stg_oracle_catalogo_estado_inscripcion
+
+8. Destino: stg_oracle_usuario
 
 ```sql
 SELECT
@@ -772,7 +887,8 @@ SELECT
     ROL_ID AS rol_id
 FROM USUARIO;
 ```
-Destino: stg_oracle_usuario
+
+9. Destino: stg_oracle_persona
 
 ```sql
 SELECT
@@ -782,7 +898,8 @@ SELECT
     CORREO AS correo
 FROM PERSONA;
 ```
-Destino: stg_oracle_persona
+
+10. Destino: stg_oracle_transaccion
 
 ```sql
 SELECT
@@ -795,7 +912,8 @@ SELECT
     ORIGEN_ID AS origen_id
 FROM TRANSACCION;
 ```
-Destino: stg_oracle_transaccion
+
+11. Destino: stg_oracle_tienda_item
 
 ```sql
 SELECT
@@ -806,7 +924,8 @@ SELECT
     TIPO_ID AS tipo_id
 FROM TIENDA_ITEM;
 ```
-Destino: stg_oracle_tienda_item
+
+12. Destino: stg_oracle_tienda_orden
 
 ```sql
 SELECT
@@ -820,19 +939,22 @@ SELECT
     DIVISA AS divisa
 FROM TIENDA_ORDEN;
 ```
-Destino: stg_oracle_tienda_orden
+
+13. Destino: stg_oracle_juego
 
 ```sql
 SELECT ID AS juego_id, NOMBRE AS nombre_juego
 FROM JUEGO;
 ```
-Destino: stg_oracle_juego
+
+14. Destino: stg_oracle_modo_juego
 
 ```sql
 SELECT ID AS modo_juego_id, NOMBRE AS nombre_modo, JUEGO_ID AS juego_id
 FROM MODO_JUEGO;
 ```
-Destino: stg_oracle_modo_juego
+
+15. Destino: stg_oracle_torneo
 
 ```sql
 SELECT
@@ -846,7 +968,8 @@ SELECT
     CAPACIDAD AS capacidad
 FROM TORNEO;
 ```
-Destino: stg_oracle_torneo
+
+16. Destino: stg_oracle_torneo_inscripcion
 
 ```sql
 SELECT
@@ -857,7 +980,8 @@ SELECT
     ESTADO_ID AS estado_id
 FROM TORNEO_INSCRIPCION;
 ```
-Destino: stg_oracle_torneo_inscripcion
+
+17. Destino: stg_oracle_torneo_premios
 
 ```sql
 SELECT
@@ -866,7 +990,8 @@ SELECT
     COMISION_TOTAL AS comision_total
 FROM TORNEO_PREMIOS;
 ```
-Destino: stg_oracle_torneo_premios
+
+18. Destino: stg_oracle_usuario_amigos
 
 ```sql
 SELECT
@@ -877,7 +1002,8 @@ SELECT
     ESTADO_ID AS estado_id
 FROM USUARIO_AMIGOS;
 ```
-Destino: stg_oracle_usuario_amigos
+
+19. Destino: stg_oracle_usuario_seguidores
 
 ```sql
 SELECT
@@ -887,7 +1013,8 @@ SELECT
     SEGUIDO_ID AS seguido_id
 FROM USUARIO_SEGUIDORES;
 ```
-Destino: stg_oracle_usuario_seguidores
+
+20. Destino: stg_oracle_usuario_estadisticas_juego
 
 ```sql
 SELECT
@@ -897,7 +1024,8 @@ SELECT
     HORAS_JUGADAS AS horas_jugadas
 FROM USUARIO_ESTADISTICAS_JUEGO;
 ```
-Destino: stg_oracle_usuario_estadisticas_juego
+
+21. Destino: stg_oracle_auditoria_log
 
 ```sql
 SELECT
@@ -910,7 +1038,8 @@ SELECT
     FECHA AS fecha
 FROM AUDITORIA_LOG;
 ```
-Destino: stg_oracle_auditoria_log
+
+22. Destino: stg_oracle_tienda_solicitud_soporte
 
 ```sql
 SELECT
@@ -923,11 +1052,17 @@ SELECT
     RESUELTO_POR AS resuelto_por
 FROM TIENDA_SOLICITUD_SOPORTE;
 ```
-Destino: stg_oracle_tienda_solicitud_soporte
 
-### 4.3 Task 3 - Data Flow: Cargar staging RRHH
+### 4.4 Configurar Task 3: DFT_Cargar_Staging_RRHH
 
-OLE DB Source con CONN_SQLSERVER_RRHH:
+1. Volver a Control Flow (arriba, pestana Control Flow).
+2. Doble click en DFT_Cargar_Staging_RRHH.
+3. Arrastrar OLE DB Source.
+4. Renombrar a SRC_RRHH_EMPLEADO_HISTORIAL.
+5. Doble click en SRC_RRHH_EMPLEADO_HISTORIAL:
+   - OLE DB connection manager: CONN_SQLSERVER_RRHH.
+   - Data access mode: SQL command.
+   - SQL command text:
 
 ```sql
 SELECT
@@ -946,67 +1081,180 @@ INNER JOIN Cargo c ON c.idCargo = ce.idCargo
 INNER JOIN Departamento d ON d.idDepartamento = e.idDepartamento;
 ```
 
-Destino: stg_rrhh_empleado_historial
+6. Click Preview y luego OK.
+7. Arrastrar OLE DB Destination.
+8. Renombrar a DST_STG_RRHH_EMPLEADO_HISTORIAL.
+9. Conectar flecha azul desde SRC_RRHH_EMPLEADO_HISTORIAL hacia DST_STG_RRHH_EMPLEADO_HISTORIAL.
+10. Doble click en DST_STG_RRHH_EMPLEADO_HISTORIAL:
+    - OLE DB connection manager: CONN_SQLSERVER_DW.
+    - Data access mode: Table or view - fast load.
+    - Name of the table or view: stg_rrhh_empleado_historial.
+11. Ir a Mappings y validar todas las columnas.
+12. Click OK.
 
-### 4.4 Task 4 - Data Flow: Cargar staging Excel
+### 4.5 Configurar Task 4: DFT_Cargar_Staging_Excel
 
-Usar Excel Source con CONN_EXCEL_FUENTES.
+1. Volver a Control Flow.
+2. Doble click en DFT_Cargar_Staging_Excel.
 
-1. Hoja Presupuestos_Ventas$ -> stg_excel_presupuestos_ventas
-   - anio -> anio
-   - mes -> mes
-   - region -> region
-   - categoria_producto -> categoria_producto
-   - meta_ingresos_usd -> meta_ingresos_usd
-   - meta_transacciones -> meta_transacciones
-   - responsable_rrhh_id -> responsable_rrhh_id
+#### 4.5.1 Carga hoja Presupuestos_Ventas
 
-2. Hoja Lista_Negra$ -> stg_excel_lista_negra
-   - tipo -> tipo
-   - valor -> valor
-   - motivo -> motivo
-   - fecha_agregado -> fecha_agregado
-   - activo -> activo
+1. Arrastrar Excel Source.
+2. Renombrar a SRC_XLS_PRESUPUESTOS_VENTAS.
+3. Doble click en SRC_XLS_PRESUPUESTOS_VENTAS:
+   - Excel connection manager: CONN_EXCEL_FUENTES.
+   - Data access mode: Table or view.
+   - Name of the Excel sheet: Presupuestos_Ventas$.
+4. Click Preview.
+5. Click OK.
+6. Arrastrar OLE DB Destination.
+7. Renombrar a DST_STG_XLS_PRESUPUESTOS_VENTAS.
+8. Conectar flecha azul desde SRC_XLS_PRESUPUESTOS_VENTAS hacia DST_STG_XLS_PRESUPUESTOS_VENTAS.
+9. Doble click en DST_STG_XLS_PRESUPUESTOS_VENTAS:
+   - OLE DB connection manager: CONN_SQLSERVER_DW.
+   - Data access mode: Table or view - fast load.
+   - Name of the table or view: stg_excel_presupuestos_ventas.
+10. Pestana Mappings, validar:
+    - anio -> anio
+    - mes -> mes
+    - region -> region
+    - categoria_producto -> categoria_producto
+    - meta_ingresos_usd -> meta_ingresos_usd
+    - meta_transacciones -> meta_transacciones
+    - responsable_rrhh_id -> responsable_rrhh_id
+11. Click OK.
 
-### 4.5 Task 5 - Data Flow: Cargar staging Mongo raw
+#### 4.5.2 Carga hoja Lista_Negra
 
-1. Flat File Source CONN_FLAT_LOGS_ACTIVIDAD -> stg_mongo_logs_actividad_raw
+1. Arrastrar otro Excel Source.
+2. Renombrar a SRC_XLS_LISTA_NEGRA.
+3. Doble click en SRC_XLS_LISTA_NEGRA:
+   - Excel connection manager: CONN_EXCEL_FUENTES.
+   - Data access mode: Table or view.
+   - Name of the Excel sheet: Lista_Negra$.
+4. Click Preview.
+5. Click OK.
+6. Arrastrar OLE DB Destination.
+7. Renombrar a DST_STG_XLS_LISTA_NEGRA.
+8. Conectar flecha azul de SRC_XLS_LISTA_NEGRA a DST_STG_XLS_LISTA_NEGRA.
+9. Doble click en DST_STG_XLS_LISTA_NEGRA:
+   - OLE DB connection manager: CONN_SQLSERVER_DW.
+   - Data access mode: Table or view - fast load.
+   - Name of the table or view: stg_excel_lista_negra.
+10. Pestana Mappings, validar:
+    - tipo -> tipo
+    - valor -> valor
+    - motivo -> motivo
+    - fecha_agregado -> fecha_agregado
+    - activo -> activo
+11. Click OK.
 
-Mapeo exacto de columnas del CSV:
+### 4.6 Configurar Task 5: DFT_Cargar_Staging_Mongo_Raw
 
-- oracle_usuario_id -> oracle_usuario_id
-- tipo_evento -> tipo_evento
-- ip -> ip
-- user_agent -> user_agent
-- pais_origen -> pais_origen
-- timestamp -> timestamp_raw
-- detalle.metodo -> detalle_metodo
-- detalle.exitoso -> detalle_exitoso
-- detalle.duracion_sesion_min -> detalle_duracion_sesion_min
-- detalle.termino -> detalle_termino
-- detalle.resultados_encontrados -> detalle_resultados_encontrados
-- detalle.perfil_visitado_id -> detalle_perfil_visitado_id
-- detalle.tiempo_visualizacion_seg -> detalle_tiempo_visualizacion_seg
-- detalle.desde_seccion -> detalle_desde_seccion
-- detalle.torneo_id -> detalle_torneo_id
-- detalle.accion -> detalle_accion
-- detalle.item_id -> detalle_item_id
-- detalle.categoria -> detalle_categoria
-- detalle.seccion -> detalle_seccion
-- detalle.campo_modificado -> detalle_campo_modificado
-- detalle.destinatario_id -> detalle_destinatario_id
+1. Volver a Control Flow.
+2. Doble click en DFT_Cargar_Staging_Mongo_Raw.
 
-2. Flat File Source CONN_FLAT_FEEDBACK_TORNEOS -> stg_mongo_feedback_torneos_raw
+#### 4.6.1 Carga de logs_actividad_dw.csv
 
-Mapeo exacto de columnas del CSV:
+1. Arrastrar Flat File Source.
+2. Renombrar a SRC_CSV_LOGS_ACTIVIDAD.
+3. Doble click en SRC_CSV_LOGS_ACTIVIDAD:
+   - Flat file connection manager: CONN_FLAT_LOGS_ACTIVIDAD.
+4. Click Preview para ver columnas del CSV.
+5. Click OK.
+6. Arrastrar OLE DB Destination.
+7. Renombrar a DST_STG_MONGO_LOGS_RAW.
+8. Conectar flecha azul de SRC_CSV_LOGS_ACTIVIDAD a DST_STG_MONGO_LOGS_RAW.
+9. Doble click en DST_STG_MONGO_LOGS_RAW:
+   - OLE DB connection manager: CONN_SQLSERVER_DW.
+   - Data access mode: Table or view - fast load.
+   - Name of the table or view: stg_mongo_logs_actividad_raw.
+10. Ir a Mappings y verificar exacto:
+    - oracle_usuario_id -> oracle_usuario_id
+    - tipo_evento -> tipo_evento
+    - ip -> ip
+    - user_agent -> user_agent
+    - pais_origen -> pais_origen
+    - timestamp -> timestamp_raw
+    - detalle.metodo -> detalle_metodo
+    - detalle.exitoso -> detalle_exitoso
+    - detalle.duracion_sesion_min -> detalle_duracion_sesion_min
+    - detalle.termino -> detalle_termino
+    - detalle.resultados_encontrados -> detalle_resultados_encontrados
+    - detalle.perfil_visitado_id -> detalle_perfil_visitado_id
+    - detalle.tiempo_visualizacion_seg -> detalle_tiempo_visualizacion_seg
+    - detalle.desde_seccion -> detalle_desde_seccion
+    - detalle.torneo_id -> detalle_torneo_id
+    - detalle.accion -> detalle_accion
+    - detalle.item_id -> detalle_item_id
+    - detalle.categoria -> detalle_categoria
+    - detalle.seccion -> detalle_seccion
+    - detalle.campo_modificado -> detalle_campo_modificado
+    - detalle.destinatario_id -> detalle_destinatario_id
+11. Click OK.
 
-- oracle_torneo_id -> oracle_torneo_id
-- oracle_usuario_id -> oracle_usuario_id
-- calificacion -> calificacion
-- comentario -> comentario
-- tags -> tags
-- recomendaria -> recomendaria
-- timestamp -> timestamp_raw
+#### 4.6.2 Carga de feedback_torneos_dw.csv
+
+1. Arrastrar Flat File Source.
+2. Renombrar a SRC_CSV_FEEDBACK_TORNEOS.
+3. Doble click en SRC_CSV_FEEDBACK_TORNEOS:
+   - Flat file connection manager: CONN_FLAT_FEEDBACK_TORNEOS.
+4. Click Preview.
+5. Click OK.
+6. Arrastrar OLE DB Destination.
+7. Renombrar a DST_STG_MONGO_FEEDBACK_RAW.
+8. Conectar flecha azul de SRC_CSV_FEEDBACK_TORNEOS a DST_STG_MONGO_FEEDBACK_RAW.
+9. Doble click en DST_STG_MONGO_FEEDBACK_RAW:
+   - OLE DB connection manager: CONN_SQLSERVER_DW.
+   - Data access mode: Table or view - fast load.
+   - Name of the table or view: stg_mongo_feedback_torneos_raw.
+10. Ir a Mappings y validar:
+    - oracle_torneo_id -> oracle_torneo_id
+    - oracle_usuario_id -> oracle_usuario_id
+    - calificacion -> calificacion
+    - comentario -> comentario
+    - tags -> tags
+    - recomendaria -> recomendaria
+    - timestamp -> timestamp_raw
+11. Click OK.
+
+### 4.7 Validacion final de la Fase 4 en Visual Studio
+
+1. Volver a pestana Control Flow.
+2. Confirmar que existen 5 tasks con estos nombres:
+   - SQL_Truncar_Staging
+   - DFT_Cargar_Staging_Oracle
+   - DFT_Cargar_Staging_RRHH
+   - DFT_Cargar_Staging_Excel
+   - DFT_Cargar_Staging_Mongo_Raw
+3. Confirmar que las flechas verdes conectan los 5 tasks en orden.
+4. Presionar Ctrl+Shift+S para guardar todo.
+5. Ejecutar el paquete con F5.
+6. Esperar a que cada task cambie a color verde.
+7. Si alguno queda rojo:
+   - Click en pestana Progress.
+   - Buscar primer mensaje Error.
+   - Doble click en el componente indicado.
+   - Corregir connection manager, SQL o mappings.
+   - Ejecutar otra vez con F5.
+
+### 4.8 Verificacion SQL inmediata despues de ejecutar
+
+En SSMS sobre DW_ESPORTS:
+
+```sql
+SELECT COUNT(*) AS c FROM stg_oracle_catalogo_region;
+SELECT COUNT(*) AS c FROM stg_oracle_catalogo_tipo_item;
+SELECT COUNT(*) AS c FROM stg_oracle_catalogo_origen_transaccion;
+SELECT COUNT(*) AS c FROM stg_oracle_usuario;
+SELECT COUNT(*) AS c FROM stg_oracle_transaccion;
+SELECT COUNT(*) AS c FROM stg_oracle_torneo;
+SELECT COUNT(*) AS c FROM stg_rrhh_empleado_historial;
+SELECT COUNT(*) AS c FROM stg_excel_presupuestos_ventas;
+SELECT COUNT(*) AS c FROM stg_excel_lista_negra;
+SELECT COUNT(*) AS c FROM stg_mongo_logs_actividad_raw;
+SELECT COUNT(*) AS c FROM stg_mongo_feedback_torneos_raw;
+```
 
 ---
 
