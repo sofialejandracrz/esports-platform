@@ -798,34 +798,50 @@ FROM CATALOGO_REGION
 
 5. Click Preview para verificar que trae filas.
 6. Click OK.
-7. En SSIS Toolbox (seccion Other Destinations), arrastrar OLE DB Destination.
-8. Renombrar a DST_STG_ORACLE_CATALOGO_REGION.
-9. Arrastrar la flecha azul desde SRC_ORA_CATALOGO_REGION hacia DST_STG_ORACLE_CATALOGO_REGION.
-10. Doble click en DST_STG_ORACLE_CATALOGO_REGION.
-11. En OLE DB Destination Editor:
+7. En SSIS Toolbox (seccion Data Flow Transformations), arrastrar Data Conversion.
+8. Renombrar a CNV_ORA_CATALOGO_REGION.
+9. Arrastrar la flecha azul desde SRC_ORA_CATALOGO_REGION hacia CNV_ORA_CATALOGO_REGION.
+10. Doble click en CNV_ORA_CATALOGO_REGION.
+11. En Data Conversion Transformation Editor:
+    - Marcar la columna NOMBRE_REGION (o nombre_region, segun aparezca).
+    - Output Alias: nombre_region_str.
+    - Data Type: string [DT_STR].
+    - Length: 200.
+    - Code page: 1252.
+12. Click OK.
+13. En SSIS Toolbox (seccion Other Destinations), arrastrar OLE DB Destination.
+14. Renombrar a DST_STG_ORACLE_CATALOGO_REGION.
+15. Arrastrar la flecha azul desde CNV_ORA_CATALOGO_REGION hacia DST_STG_ORACLE_CATALOGO_REGION.
+16. Doble click en DST_STG_ORACLE_CATALOGO_REGION.
+17. En OLE DB Destination Editor:
     - OLE DB connection manager: CONN_SQLSERVER_DW.
     - Data access mode: Table or view - fast load.
     - Name of the table or view: stg_oracle_catalogo_region.
-12. Ir a la pestana Mappings.
-13. Verificar:
+18. Ir a la pestana Mappings.
+19. Verificar:
     - id_region -> id_region
-    - nombre_region -> nombre_region
-14. Click OK.
+    - nombre_region_str -> nombre_region
+20. Click OK.
 
 #### 4.3.3 Duplicar rapidamente para las demas cargas Oracle
 
-1. Seleccionar SRC_ORA_CATALOGO_REGION y DST_STG_ORACLE_CATALOGO_REGION (mantener Ctrl y click en ambos).
+1. Seleccionar SRC_ORA_CATALOGO_REGION, CNV_ORA_CATALOGO_REGION y DST_STG_ORACLE_CATALOGO_REGION (mantener Ctrl y click en los 3).
 2. Presionar Ctrl+C.
-3. Presionar Ctrl+V para crear una copia del par source/destination con su flecha.
-4. Renombrar los dos componentes copiados para la siguiente tabla.
+3. Presionar Ctrl+V para crear una copia del trio source/conversion/destination con sus flechas.
+4. Renombrar los tres componentes copiados para la siguiente tabla.
 5. Abrir el Source copiado y cambiar SQL.
-6. Abrir el Destination copiado y cambiar Name of the table or view.
-7. Ir a Mappings y validar columnas.
-8. Repetir hasta completar toda la lista Oracle de abajo.
+6. Abrir el Data Conversion copiado y convertir todas las columnas de texto que van a VARCHAR destino:
+    - Tipo: string [DT_STR]
+    - Length: igual a la longitud de la columna destino
+    - Code page: 1252
+7. Abrir el Destination copiado y cambiar Name of the table or view.
+8. Ir a Mappings y validar columnas (usar las columnas convertidas *_str para textos).
+9. Repetir hasta completar toda la lista Oracle de abajo.
 
 ### 4.3.4 Lista exacta de cargas Oracle (SQL y destino)
 
 Importante: todas estas consultas Oracle se pegan en OLE DB Source sin ';' al final.
+Importante: si una columna destino en SQL Server es VARCHAR, convertir antes en Data Conversion a DT_STR (code page 1252) para evitar error Unicode/no-Unicode.
 
 1. Destino: stg_oracle_catalogo_region
 
