@@ -118,6 +118,7 @@ Recursos para Proyecto-20260401/
 DataWarehouse/Excel/package-lock.json
 DataWarehouse/Excel/package.json
 DataWarehouse/SSIS_DW_ESPORTS
+DataWarehouse/MongoDB/exports/*.csv
 
 # ===================================
 # Temporales y Cache
