@@ -1341,7 +1341,11 @@ SELECT
     NULLIF(LTRIM(RTRIM(ip)), '') AS ip,
     NULLIF(LTRIM(RTRIM(user_agent)), '') AS user_agent,
     NULLIF(LTRIM(RTRIM(pais_origen)), '') AS pais_origen,
-    TRY_CAST(REPLACE(REPLACE(NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 'T', ' '), 'Z', '') AS DATETIME2) AS timestamp_evento,
+    COALESCE(
+        TRY_CONVERT(DATETIME2, TRY_CONVERT(DATETIMEOFFSET, NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 127)),
+        TRY_CONVERT(DATETIME2, NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 126),
+        TRY_CAST(REPLACE(REPLACE(NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 'T', ' '), 'Z', '') AS DATETIME2)
+    ) AS timestamp_evento,
     NULLIF(LTRIM(RTRIM(detalle_metodo)), '') AS detalle_metodo,
     CASE
         WHEN LOWER(LTRIM(RTRIM(detalle_exitoso))) IN ('true', '1') THEN 1
@@ -1383,7 +1387,11 @@ SELECT
         WHEN LOWER(LTRIM(RTRIM(recomendaria))) IN ('false', '0') THEN 0
         ELSE NULL
     END AS recomendaria,
-    TRY_CAST(REPLACE(REPLACE(NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 'T', ' '), 'Z', '') AS DATETIME2) AS timestamp_evento
+    COALESCE(
+        TRY_CONVERT(DATETIME2, TRY_CONVERT(DATETIMEOFFSET, NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 127)),
+        TRY_CONVERT(DATETIME2, NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 126),
+        TRY_CAST(REPLACE(REPLACE(NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 'T', ' '), 'Z', '') AS DATETIME2)
+    ) AS timestamp_evento
 FROM stg_mongo_feedback_torneos_raw;
 ```
 
@@ -1503,6 +1511,9 @@ VALUES (0, 'NO_APLICA');
 INSERT INTO dim_juego (id_juego, nombre_juego)
 SELECT juego_id, nombre_juego
 FROM stg_oracle_juego;
+
+INSERT INTO dim_tipo_evento (nombre_evento)
+VALUES ('DESCONOCIDO');
 
 INSERT INTO dim_tipo_evento (nombre_evento)
 SELECT DISTINCT LTRIM(RTRIM(tipo_evento))
@@ -1872,6 +1883,8 @@ stats AS (
 logs AS (
     SELECT
         l.*,
+        LOWER(LTRIM(RTRIM(COALESCE(l.tipo_evento, 'DESCONOCIDO')))) AS tipo_evento_key,
+        UPPER(LTRIM(RTRIM(COALESCE(NULLIF(l.pais_origen, ''), 'DESCONOCIDO')))) AS pais_key,
         (YEAR(l.timestamp_evento) * 10000) + (MONTH(l.timestamp_evento) * 100) + DAY(l.timestamp_evento) AS id_tiempo
     FROM stg_mongo_logs_actividad_evento l
     WHERE l.timestamp_evento IS NOT NULL
@@ -1892,10 +1905,10 @@ INSERT INTO fact_actividad_usuario (
 )
 SELECT
     logs.id_tiempo,
-    COALESCE(logs.oracle_usuario_id, 0) AS id_dim_usuario,
+    COALESCE(du.id_usuario, 0) AS id_dim_usuario,
     COALESCE(t.juego_id, 0) AS id_dim_juego,
-    dte.id_tipo_evento,
-    dp.id_pais,
+    COALESCE(dte.id_tipo_evento, dte_unk.id_tipo_evento) AS id_dim_tipo_evento,
+    COALESCE(dp.id_pais, dp_unk.id_pais) AS id_dim_pais,
     COALESCE(sc.total_amigos, 0) AS total_amigos,
     COALESCE(sc.total_seguidores, 0) AS total_seguidores,
     COALESCE(du.xp, 0) AS xp_acumulado,
@@ -1909,12 +1922,16 @@ SELECT
 FROM logs
 INNER JOIN dim_tiempo dt
     ON dt.id_tiempo = logs.id_tiempo
-INNER JOIN dim_usuario du
+LEFT JOIN dim_usuario du
     ON du.id_usuario = COALESCE(logs.oracle_usuario_id, 0)
-INNER JOIN dim_tipo_evento dte
-    ON dte.nombre_evento = logs.tipo_evento
-INNER JOIN dim_pais dp
-    ON dp.nombre_pais = COALESCE(NULLIF(LTRIM(RTRIM(logs.pais_origen)), ''), 'DESCONOCIDO')
+LEFT JOIN dim_tipo_evento dte
+    ON LOWER(LTRIM(RTRIM(dte.nombre_evento))) = logs.tipo_evento_key
+LEFT JOIN dim_tipo_evento dte_unk
+    ON dte_unk.nombre_evento = 'DESCONOCIDO'
+LEFT JOIN dim_pais dp
+    ON UPPER(LTRIM(RTRIM(dp.nombre_pais))) = logs.pais_key
+LEFT JOIN dim_pais dp_unk
+    ON dp_unk.nombre_pais = 'DESCONOCIDO'
 LEFT JOIN stg_oracle_torneo t
     ON t.torneo_id = logs.detalle_torneo_id
 LEFT JOIN dim_juego dj
@@ -2223,6 +2240,37 @@ SELECT COUNT(*) AS filas_fact_ingresos FROM fact_ingresos;
 SELECT COUNT(*) AS filas_fact_actividad_usuario FROM fact_actividad_usuario;
 SELECT COUNT(*) AS filas_fact_torneos FROM fact_torneos;
 SELECT COUNT(*) AS filas_fact_auditoria FROM fact_auditoria;
+```
+
+Si filas_fact_actividad_usuario = 0, ejecutar este diagnostico inmediato:
+
+```sql
+SELECT COUNT(*) AS c_raw_logs FROM stg_mongo_logs_actividad_raw;
+SELECT COUNT(*) AS c_logs_timestamp_ok
+FROM stg_mongo_logs_actividad_evento
+WHERE timestamp_evento IS NOT NULL;
+
+SELECT TOP 10 timestamp_raw,
+             COALESCE(
+                     TRY_CONVERT(DATETIME2, TRY_CONVERT(DATETIMEOFFSET, NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 127)),
+                     TRY_CONVERT(DATETIME2, NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 126),
+                     TRY_CAST(REPLACE(REPLACE(NULLIF(LTRIM(RTRIM(timestamp_raw)), ''), 'T', ' '), 'Z', '') AS DATETIME2)
+             ) AS timestamp_parseado
+FROM stg_mongo_logs_actividad_raw;
+
+SELECT COUNT(*) AS c_tipo_evento_sin_match
+FROM stg_mongo_logs_actividad_evento l
+LEFT JOIN dim_tipo_evento d
+    ON LOWER(LTRIM(RTRIM(d.nombre_evento))) = LOWER(LTRIM(RTRIM(COALESCE(l.tipo_evento, 'DESCONOCIDO'))))
+WHERE l.timestamp_evento IS NOT NULL
+    AND d.id_tipo_evento IS NULL;
+
+SELECT COUNT(*) AS c_pais_sin_match
+FROM stg_mongo_logs_actividad_evento l
+LEFT JOIN dim_pais d
+    ON UPPER(LTRIM(RTRIM(d.nombre_pais))) = UPPER(LTRIM(RTRIM(COALESCE(NULLIF(l.pais_origen, ''), 'DESCONOCIDO'))))
+WHERE l.timestamp_evento IS NOT NULL
+    AND d.id_pais IS NULL;
 ```
 
 ---
