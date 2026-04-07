@@ -1418,25 +1418,25 @@ TRUNCATE TABLE fact_torneos;
 TRUNCATE TABLE fact_actividad_usuario;
 TRUNCATE TABLE fact_ingresos;
 
-TRUNCATE TABLE dim_usuario_comprador;
-TRUNCATE TABLE dim_origen_transaccion;
-TRUNCATE TABLE dim_tipo_item;
-TRUNCATE TABLE dim_region;
+DELETE FROM dim_usuario_comprador;
+DELETE FROM dim_origen_transaccion;
+DELETE FROM dim_tipo_item;
+DELETE FROM dim_region;
 
-TRUNCATE TABLE dim_tipo_evento;
-TRUNCATE TABLE dim_pais;
-TRUNCATE TABLE dim_usuario;
-TRUNCATE TABLE dim_juego;
+DELETE FROM dim_tipo_evento;
+DELETE FROM dim_pais;
+DELETE FROM dim_usuario;
+DELETE FROM dim_juego;
 
-TRUNCATE TABLE dim_modo_juego;
-TRUNCATE TABLE dim_tipo_torneo;
-TRUNCATE TABLE dim_plataforma;
-TRUNCATE TABLE dim_region_torneo;
+DELETE FROM dim_modo_juego;
+DELETE FROM dim_tipo_torneo;
+DELETE FROM dim_plataforma;
+DELETE FROM dim_region_torneo;
 
-TRUNCATE TABLE dim_operacion;
-TRUNCATE TABLE dim_tabla_auditada;
-TRUNCATE TABLE dim_pais_registro;
-TRUNCATE TABLE dim_rol_usuario;
+DELETE FROM dim_operacion;
+DELETE FROM dim_tabla_auditada;
+DELETE FROM dim_pais_registro;
+DELETE FROM dim_rol_usuario;
 ```
 
 4. Click OK.
