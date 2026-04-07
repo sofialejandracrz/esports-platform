@@ -30,6 +30,7 @@
 3. No ejecutar cargas de hechos antes de completar staging y dimensiones.
 4. Oracle en SSIS se configura con servidor: localhost:1521/xe
 5. MongoDB se integra mediante archivos XLSX exportados con script Node.js.
+6. En Fase 6, dim_responsable_rrhh y dim_empleado_soporte se cargan de forma incremental con MERGE y no se truncan.
 
 ---
 
@@ -1201,7 +1202,6 @@ INNER JOIN Departamento d ON d.idDepartamento = e.idDepartamento;
    - ip -> ip
    - user_agent -> user_agent
    - pais_origen -> pais_origen
-   - _id -> _id
    - timestamp -> timestamp_raw
    - detalle_metodo -> detalle_metodo
    - detalle_exitoso -> detalle_exitoso
@@ -1243,7 +1243,6 @@ INNER JOIN Departamento d ON d.idDepartamento = e.idDepartamento;
    - Data access mode: Table or view - fast load.
    - Name of the table or view: stg_mongo_feedback_torneos_raw.
 13. Ir a Mappings y validar (usar salidas convertidas cuando aplique):
-   - _id -> _id
    - oracle_torneo_id -> oracle_torneo_id
    - oracle_usuario_id -> oracle_usuario_id
    - calificacion -> calificacion
@@ -1394,7 +1393,24 @@ FROM stg_mongo_feedback_torneos_raw;
 
 Crear paquete ETL_01_Dimensiones.dtsx.
 
-Agregar un Execute SQL Task: SQL_Cargar_Dimensiones con CONN_SQLSERVER_DW.
+### 6.1 Armar Control Flow secuencial del paquete ETL_01_Dimensiones.dtsx
+
+1. Abrir ETL_01_Dimensiones.dtsx.
+2. En SSIS Toolbox (seccion Common), arrastrar Execute SQL Task y renombrar a SQL_Reset_Dimensiones_FullRefresh.
+3. Arrastrar otro Execute SQL Task y renombrar a SQL_Cargar_Dimensiones_FullRefresh.
+4. Arrastrar otro Execute SQL Task y renombrar a SQL_Merge_Dimensiones_RRHH_Incremental.
+5. Conectar flechas verdes en este orden:
+   - SQL_Reset_Dimensiones_FullRefresh -> SQL_Cargar_Dimensiones_FullRefresh
+   - SQL_Cargar_Dimensiones_FullRefresh -> SQL_Merge_Dimensiones_RRHH_Incremental
+
+### 6.2 Configurar Task 1: SQL_Reset_Dimensiones_FullRefresh
+
+1. Doble click en SQL_Reset_Dimensiones_FullRefresh.
+2. En Execute SQL Task Editor:
+   - ConnectionType: OLE DB.
+   - Connection: CONN_SQLSERVER_DW.
+   - SQLSourceType: Direct input.
+3. Pegar exactamente este SQL:
 
 ```sql
 TRUNCATE TABLE fact_auditoria;
@@ -1402,7 +1418,6 @@ TRUNCATE TABLE fact_torneos;
 TRUNCATE TABLE fact_actividad_usuario;
 TRUNCATE TABLE fact_ingresos;
 
-TRUNCATE TABLE dim_responsable_rrhh;
 TRUNCATE TABLE dim_usuario_comprador;
 TRUNCATE TABLE dim_origen_transaccion;
 TRUNCATE TABLE dim_tipo_item;
@@ -1420,10 +1435,22 @@ TRUNCATE TABLE dim_region_torneo;
 
 TRUNCATE TABLE dim_operacion;
 TRUNCATE TABLE dim_tabla_auditada;
-TRUNCATE TABLE dim_empleado_soporte;
 TRUNCATE TABLE dim_pais_registro;
 TRUNCATE TABLE dim_rol_usuario;
+```
 
+4. Click OK.
+
+### 6.3 Configurar Task 2: SQL_Cargar_Dimensiones_FullRefresh
+
+1. Doble click en SQL_Cargar_Dimensiones_FullRefresh.
+2. En Execute SQL Task Editor:
+   - ConnectionType: OLE DB.
+   - Connection: CONN_SQLSERVER_DW.
+   - SQLSourceType: Direct input.
+3. Pegar exactamente este SQL:
+
+```sql
 INSERT INTO dim_region (id_region, nombre_region)
 VALUES (0, 'DESCONOCIDA');
 
@@ -1454,23 +1481,6 @@ SELECT
     u.creado_en
 FROM stg_oracle_usuario u
 LEFT JOIN stg_oracle_persona p ON p.persona_id = u.persona_id;
-
-INSERT INTO dim_responsable_rrhh (
-    id_empleado,
-    nombre_completo,
-    cargo,
-    departamento,
-    version,
-    version_actual
-)
-SELECT
-    id_empleado,
-    nombre_completo,
-    cargo,
-    departamento,
-    version,
-    version_actual
-FROM stg_rrhh_empleado_historial;
 
 INSERT INTO dim_usuario (id_usuario, nickname, xp, estado, pais, fecha_registro)
 VALUES (0, 'USUARIO_DESCONOCIDO', 0, 'desconocido', 'DESCONOCIDO', '2000-01-01');
@@ -1562,23 +1572,6 @@ FROM (
 WHERE tabla_auditada IS NOT NULL
     AND LTRIM(RTRIM(tabla_auditada)) <> '';
 
-INSERT INTO dim_empleado_soporte (
-    id_empleado,
-    nombre_completo,
-    cargo,
-    departamento,
-    version,
-    version_actual
-)
-SELECT
-    id_empleado,
-    nombre_completo,
-    cargo,
-    departamento,
-    version,
-    version_actual
-FROM stg_rrhh_empleado_historial;
-
 INSERT INTO dim_pais_registro (nombre_pais, es_restringido, motivo_restriccion)
 VALUES ('DESCONOCIDO', 0, NULL);
 
@@ -1604,6 +1597,142 @@ WHERE UPPER(LTRIM(RTRIM(ln.tipo))) = 'PAIS'
 INSERT INTO dim_rol_usuario (id_rol, nombre_rol)
 SELECT id_rol, nombre_rol
 FROM stg_oracle_catalogo_rol;
+```
+
+4. Click OK.
+
+### 6.4 Configurar Task 3: SQL_Merge_Dimensiones_RRHH_Incremental
+
+1. Doble click en SQL_Merge_Dimensiones_RRHH_Incremental.
+2. En Execute SQL Task Editor:
+   - ConnectionType: OLE DB.
+   - Connection: CONN_SQLSERVER_DW.
+   - SQLSourceType: Direct input.
+3. Pegar exactamente este SQL:
+
+```sql
+MERGE INTO dim_responsable_rrhh AS tgt
+USING (
+    SELECT
+        id_empleado,
+        nombre_completo,
+        cargo,
+        departamento,
+        version,
+        version_actual
+    FROM stg_rrhh_empleado_historial
+) AS src
+ON tgt.id_empleado = src.id_empleado
+AND tgt.version = src.version
+WHEN MATCHED AND (
+       ISNULL(tgt.nombre_completo, '') <> ISNULL(src.nombre_completo, '')
+    OR ISNULL(tgt.cargo, '') <> ISNULL(src.cargo, '')
+    OR ISNULL(tgt.departamento, '') <> ISNULL(src.departamento, '')
+    OR ISNULL(tgt.version_actual, -1) <> ISNULL(src.version_actual, -1)
+)
+THEN
+    UPDATE SET
+        tgt.nombre_completo = src.nombre_completo,
+        tgt.cargo = src.cargo,
+        tgt.departamento = src.departamento,
+        tgt.version_actual = src.version_actual
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT (
+        id_empleado,
+        nombre_completo,
+        cargo,
+        departamento,
+        version,
+        version_actual
+    )
+    VALUES (
+        src.id_empleado,
+        src.nombre_completo,
+        src.cargo,
+        src.departamento,
+        src.version,
+        src.version_actual
+    );
+
+MERGE INTO dim_empleado_soporte AS tgt
+USING (
+    SELECT
+        id_empleado,
+        nombre_completo,
+        cargo,
+        departamento,
+        version,
+        version_actual
+    FROM stg_rrhh_empleado_historial
+) AS src
+ON tgt.id_empleado = src.id_empleado
+AND tgt.version = src.version
+WHEN MATCHED AND (
+       ISNULL(tgt.nombre_completo, '') <> ISNULL(src.nombre_completo, '')
+    OR ISNULL(tgt.cargo, '') <> ISNULL(src.cargo, '')
+    OR ISNULL(tgt.departamento, '') <> ISNULL(src.departamento, '')
+    OR ISNULL(tgt.version_actual, -1) <> ISNULL(src.version_actual, -1)
+)
+THEN
+    UPDATE SET
+        tgt.nombre_completo = src.nombre_completo,
+        tgt.cargo = src.cargo,
+        tgt.departamento = src.departamento,
+        tgt.version_actual = src.version_actual
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT (
+        id_empleado,
+        nombre_completo,
+        cargo,
+        departamento,
+        version,
+        version_actual
+    )
+    VALUES (
+        src.id_empleado,
+        src.nombre_completo,
+        src.cargo,
+        src.departamento,
+        src.version,
+        src.version_actual
+    );
+```
+
+4. Click OK.
+
+### 6.5 Ejecutar y validar la Fase 6
+
+1. Volver a Control Flow.
+2. Confirmar que los 3 tasks estan en este orden:
+   - SQL_Reset_Dimensiones_FullRefresh
+   - SQL_Cargar_Dimensiones_FullRefresh
+   - SQL_Merge_Dimensiones_RRHH_Incremental
+3. Guardar con Ctrl+Shift+S.
+4. Ejecutar ETL_01_Dimensiones.dtsx con F5.
+5. En SSMS ejecutar exactamente estas validaciones:
+
+```sql
+SELECT COUNT(*) AS c_stg_rrhh FROM stg_rrhh_empleado_historial;
+SELECT COUNT(*) AS c_dim_responsable_rrhh FROM dim_responsable_rrhh;
+SELECT COUNT(*) AS c_dim_empleado_soporte FROM dim_empleado_soporte;
+
+SELECT id_empleado, version, version_actual, cargo, departamento
+FROM dim_responsable_rrhh
+ORDER BY id_empleado, version;
+
+SELECT id_empleado, version, version_actual, cargo, departamento
+FROM dim_empleado_soporte
+ORDER BY id_empleado, version;
+
+SELECT id_empleado, version, COUNT(*) AS repeticiones
+FROM dim_responsable_rrhh
+GROUP BY id_empleado, version
+HAVING COUNT(*) > 1;
+
+SELECT id_empleado, version, COUNT(*) AS repeticiones
+FROM dim_empleado_soporte
+GROUP BY id_empleado, version
+HAVING COUNT(*) > 1;
 ```
 
 ---
