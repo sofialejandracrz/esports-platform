@@ -1,0 +1,81 @@
+oracle_torneo_id,oracle_usuario_id,calificacion,comentario,tags,recomendaria,timestamp
+1,8,5,"Excelente torneo, muy bien organizado!","[""buen_formato"",""competitivo"",""estresante"",""premios_tardios""]",true,2025-12-28T17:58:36.913Z
+2,11,3,"Torneo aceptable, los horarios fueron un poco incómodos","[""desorganizado"",""buen_formato"",""estresante""]",true,2026-02-16T22:44:40.763Z
+3,14,4,Los premios fueron justos y la competencia fue genial,"[""divertido"",""premios_tardios"",""mala_comunicacion"",""mal_matchmaking""]",true,2025-11-27T02:04:59.910Z
+4,17,4,"Me gustó mucho el formato, fue muy emocionante","[""buen_formato"",""lag"",""mala_comunicacion"",""mal_matchmaking""]",true,2026-01-17T13:36:10.624Z
+5,20,3,Podría mejorar la comunicación previa al torneo,"[""divertido"",""competitivo"",""premios_justos""]",true,2025-12-05T12:54:15.252Z
+6,23,4,El mejor torneo en el que he participado,"[""servidores_caidos"",""divertido"",""buen_formato""]",true,2026-03-17T13:20:53.512Z
+7,26,4,"Organización impecable, sin problemas técnicos","[""casual"",""excelente_transmision"",""buen_premio"",""buena_organizacion""]",true,2026-01-26T02:03:48.407Z
+8,29,5,Muy buena transmisión y comunicación del staff,"[""emocionante"",""buen_matchmaking""]",true,2026-02-20T19:58:42.067Z
+9,32,5,"Excelente torneo, muy bien organizado!","[""competitivo"",""excelente_transmision"",""buen_formato"",""premios_tardios""]",true,2025-11-16T09:05:20.072Z
+10,35,1,Los premios no se entregaron a tiempo,"[""excelente_transmision"",""divertido"",""desorganizado"",""premios_justos""]",false,2026-03-14T04:50:31.932Z
+11,38,5,Los premios fueron justos y la competencia fue genial,"[""emocionante"",""lag""]",true,2026-01-08T15:55:39.831Z
+12,41,2,"El matchmaking fue terrible, equipos muy desbalanceados","[""estresante"",""buen_formato"",""excelente_transmision""]",false,2025-12-15T14:05:06.921Z
+13,44,4,"Increíble nivel de juego, lo recomiendo al 100%","[""mal_matchmaking"",""estresante"",""lag"",""buena_organizacion""]",true,2025-12-14T06:17:02.356Z
+14,47,4,El mejor torneo en el que he participado,"[""sin_lag"",""casual"",""emocionante""]",true,2025-11-26T04:52:59.791Z
+15,50,4,"Organización impecable, sin problemas técnicos","[""buen_premio"",""divertido""]",true,2025-11-11T03:11:01.838Z
+16,53,4,Muy buena transmisión y comunicación del staff,"[""desorganizado"",""estresante"",""buen_formato"",""competitivo""]",true,2025-10-06T02:45:26.131Z
+17,56,5,"Excelente torneo, muy bien organizado!","[""mala_comunicacion"",""sin_lag"",""desorganizado"",""buen_premio""]",true,2025-12-17T19:07:56.738Z
+18,59,4,"Buena experiencia, volvería a participar","[""buen_formato"",""sin_lag"",""estresante""]",true,2025-10-17T23:32:08.837Z
+19,2,4,Los premios fueron justos y la competencia fue genial,"[""buena_organizacion"",""buen_formato""]",true,2025-10-07T11:22:34.540Z
+20,5,3,Podría mejorar la comunicación previa al torneo,"[""excelente_transmision"",""sin_lag"",""servidores_caidos""]",true,2025-12-30T03:06:49.336Z
+21,8,5,"Increíble nivel de juego, lo recomiendo al 100%","[""sin_lag"",""competitivo""]",true,2026-01-14T23:35:23.405Z
+22,11,3,"Torneo aceptable, los horarios fueron un poco incómodos","[""estresante"",""buen_formato"",""emocionante"",""premios_justos""]",true,2026-03-25T13:26:59.701Z
+23,14,5,"Organización impecable, sin problemas técnicos","[""excelente_transmision"",""emocionante"",""buen_matchmaking"",""mal_matchmaking""]",true,2025-11-02T07:49:16.186Z
+24,17,3,"La experiencia fue normal, nada extraordinario","[""casual"",""buen_premio"",""buena_organizacion""]",true,2026-03-03T05:10:38.457Z
+25,20,4,"Excelente torneo, muy bien organizado!","[""buen_matchmaking"",""servidores_caidos""]",true,2025-12-14T21:21:12.979Z
+26,23,5,"Buena experiencia, volvería a participar","[""buena_organizacion"",""servidores_caidos""]",true,2025-12-10T17:31:03.313Z
+27,26,4,Los premios fueron justos y la competencia fue genial,"[""buen_matchmaking"",""buen_formato"",""buen_premio""]",true,2026-03-31T19:22:19.367Z
+28,29,3,"Buen torneo en general, pero hubo algo de lag","[""divertido"",""buen_matchmaking"",""desorganizado""]",true,2025-10-02T15:49:46.809Z
+29,32,2,"No recomiendo, la organización fue muy mala","[""emocionante"",""lag"",""competitivo""]",false,2026-02-26T20:15:24.598Z
+30,35,5,El mejor torneo en el que he participado,"[""sin_lag"",""buen_formato""]",true,2026-03-01T19:05:43.377Z
+31,38,5,"Organización impecable, sin problemas técnicos","[""buen_premio"",""estresante"",""servidores_caidos""]",true,2025-12-30T17:07:41.234Z
+32,41,5,Muy buena transmisión y comunicación del staff,"[""buen_matchmaking"",""servidores_caidos"",""buen_premio""]",true,2025-11-13T08:57:47.800Z
+33,44,1,"Problemas con los servidores, varias partidas se cayeron","[""casual"",""mala_comunicacion""]",false,2025-10-11T23:37:10.931Z
+34,47,4,"Buena experiencia, volvería a participar","[""divertido"",""competitivo"",""servidores_caidos"",""mala_comunicacion""]",true,2025-10-05T17:56:53.952Z
+35,50,3,Podría mejorar la comunicación previa al torneo,"[""casual"",""mala_comunicacion""]",true,2025-12-08T23:27:48.186Z
+36,53,5,"Me gustó mucho el formato, fue muy emocionante","[""casual"",""divertido"",""mal_matchmaking""]",true,2026-03-06T13:09:37.539Z
+37,56,5,"Increíble nivel de juego, lo recomiendo al 100%","[""competitivo"",""excelente_transmision"",""buen_formato""]",true,2025-11-05T21:08:25.044Z
+38,59,4,El mejor torneo en el que he participado,"[""casual"",""sin_lag"",""buen_formato""]",true,2025-11-12T09:12:11.698Z
+39,2,5,"Organización impecable, sin problemas técnicos","[""premios_justos"",""excelente_transmision"",""competitivo""]",true,2026-01-08T23:17:19.233Z
+40,5,5,Muy buena transmisión y comunicación del staff,"[""desorganizado"",""premios_tardios"",""mala_comunicacion"",""sin_lag""]",true,2025-11-29T15:37:43.955Z
+41,8,3,"Estuvo bien, pero podría mejorar el matchmaking","[""emocionante"",""estresante"",""mal_matchmaking"",""premios_justos""]",true,2025-11-20T20:49:59.675Z
+42,11,5,"Buena experiencia, volvería a participar","[""premios_justos"",""divertido""]",true,2026-01-25T09:42:32.305Z
+43,14,5,Los premios fueron justos y la competencia fue genial,"[""premios_tardios"",""competitivo""]",true,2026-01-04T00:34:23.271Z
+44,17,5,"Me gustó mucho el formato, fue muy emocionante","[""premios_tardios"",""desorganizado"",""buen_premio""]",true,2025-10-25T01:15:50.475Z
+45,20,2,Los premios no se entregaron a tiempo,"[""buen_matchmaking"",""buen_premio"",""mala_comunicacion""]",false,2026-02-27T02:32:15.363Z
+46,23,4,El mejor torneo en el que he participado,"[""emocionante"",""divertido"",""estresante""]",true,2025-11-03T12:12:46.720Z
+47,26,3,"Torneo aceptable, los horarios fueron un poco incómodos","[""competitivo"",""servidores_caidos"",""excelente_transmision"",""estresante""]",true,2025-11-06T11:45:48.381Z
+48,29,4,Muy buena transmisión y comunicación del staff,"[""emocionante"",""desorganizado""]",true,2026-02-11T23:45:34.919Z
+49,32,1,"No recomiendo, la organización fue muy mala","[""emocionante"",""excelente_transmision"",""servidores_caidos"",""buen_formato""]",false,2026-03-24T02:12:10.672Z
+50,35,4,"Buena experiencia, volvería a participar","[""buen_premio"",""mala_comunicacion"",""premios_tardios"",""excelente_transmision""]",true,2026-02-19T16:42:30.595Z
+51,38,5,Los premios fueron justos y la competencia fue genial,"[""premios_justos"",""buen_matchmaking""]",true,2026-02-10T03:00:06.782Z
+52,41,3,"Torneo aceptable, los horarios fueron un poco incómodos","[""estresante"",""divertido""]",true,2025-11-03T15:15:05.266Z
+53,44,3,"Buen torneo en general, pero hubo algo de lag","[""estresante"",""mala_comunicacion"",""premios_tardios""]",true,2025-12-26T16:44:34.640Z
+54,47,3,"La experiencia fue normal, nada extraordinario","[""divertido"",""buen_formato""]",true,2026-01-12T10:57:52.535Z
+55,50,5,"Organización impecable, sin problemas técnicos","[""desorganizado"",""casual""]",true,2025-12-04T09:57:39.354Z
+56,53,3,"Estuvo bien, pero podría mejorar el matchmaking","[""lag"",""buen_premio"",""buen_formato"",""estresante""]",true,2025-12-25T23:28:31.915Z
+57,56,2,"El matchmaking fue terrible, equipos muy desbalanceados","[""sin_lag"",""buen_matchmaking"",""mala_comunicacion"",""premios_justos""]",false,2025-10-05T07:59:11.634Z
+58,59,3,"Buen torneo en general, pero hubo algo de lag","[""buen_premio"",""estresante"",""servidores_caidos"",""premios_justos""]",true,2025-12-05T13:25:41.492Z
+59,2,3,"La experiencia fue normal, nada extraordinario","[""casual"",""buen_formato""]",true,2026-02-19T19:03:09.995Z
+60,5,5,"Me gustó mucho el formato, fue muy emocionante","[""lag"",""premios_tardios"",""desorganizado"",""emocionante""]",true,2026-02-02T01:56:22.851Z
+1,8,3,"Estuvo bien, pero podría mejorar el matchmaking","[""buen_premio"",""servidores_caidos"",""premios_justos""]",true,2026-01-05T18:39:44.971Z
+2,11,5,El mejor torneo en el que he participado,"[""competitivo"",""premios_tardios"",""sin_lag""]",true,2025-12-08T00:51:11.396Z
+3,14,4,"Organización impecable, sin problemas técnicos","[""competitivo"",""buena_organizacion"",""casual""]",true,2026-03-24T04:15:23.829Z
+4,17,5,Muy buena transmisión y comunicación del staff,"[""buena_organizacion"",""premios_justos"",""excelente_transmision""]",true,2026-02-22T08:19:26.133Z
+5,20,3,Podría mejorar la comunicación previa al torneo,"[""buen_formato"",""buen_premio"",""servidores_caidos""]",true,2025-12-27T23:30:14.349Z
+6,23,3,"Estuvo bien, pero podría mejorar el matchmaking","[""casual"",""mal_matchmaking"",""lag"",""competitivo""]",true,2025-12-13T09:09:09.112Z
+7,26,4,Los premios fueron justos y la competencia fue genial,"[""divertido"",""sin_lag"",""casual""]",true,2026-01-17T11:52:45.237Z
+8,29,5,"Me gustó mucho el formato, fue muy emocionante","[""buen_matchmaking"",""excelente_transmision""]",true,2026-01-14T08:21:22.879Z
+9,32,4,"Increíble nivel de juego, lo recomiendo al 100%","[""buen_formato"",""lag"",""premios_justos""]",true,2026-03-30T05:35:52.847Z
+10,35,4,El mejor torneo en el que he participado,"[""premios_justos"",""premios_tardios"",""sin_lag"",""emocionante""]",true,2025-11-15T22:12:49.937Z
+11,38,5,"Organización impecable, sin problemas técnicos","[""mal_matchmaking"",""lag""]",true,2025-12-05T15:50:02.296Z
+12,41,5,Muy buena transmisión y comunicación del staff,"[""premios_tardios"",""excelente_transmision""]",true,2026-02-25T15:30:56.794Z
+13,44,3,"Buen torneo en general, pero hubo algo de lag","[""buena_organizacion"",""mala_comunicacion"",""buen_matchmaking"",""premios_tardios""]",true,2026-02-27T00:14:44.152Z
+14,47,2,"No recomiendo, la organización fue muy mala","[""casual"",""buen_matchmaking"",""mala_comunicacion""]",false,2025-11-28T23:32:50.555Z
+15,50,3,Podría mejorar la comunicación previa al torneo,"[""divertido"",""buen_premio"",""buen_formato""]",true,2026-01-14T22:58:52.884Z
+16,53,1,"Mucho lag durante las partidas, experiencia frustrante","[""excelente_transmision"",""mala_comunicacion"",""casual"",""premios_tardios""]",false,2025-10-06T23:32:28.311Z
+17,56,3,"Torneo aceptable, los horarios fueron un poco incómodos","[""desorganizado"",""buen_formato""]",true,2026-02-17T15:06:38.228Z
+18,59,4,El mejor torneo en el que he participado,"[""desorganizado"",""competitivo"",""mala_comunicacion""]",true,2026-02-06T21:48:26.091Z
+19,2,1,"No recomiendo, la organización fue muy mala","[""competitivo"",""lag"",""mal_matchmaking"",""excelente_transmision""]",false,2025-10-13T23:23:28.043Z
+20,5,2,Los premios no se entregaron a tiempo,"[""premios_justos"",""competitivo"",""estresante""]",false,2025-12-24T20:19:26.733Z

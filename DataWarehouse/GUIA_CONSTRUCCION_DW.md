@@ -7,7 +7,7 @@
 > - RRHH SQL Server: backend/src/database/scripts/base-rrhh.sql
 > - Excel: DataWarehouse/Excel/generar_excel_dw.js
 > - MongoDB: DataWarehouse/MongoDB/init_esports_analytics.js
-> - CSV Mongo exportados: DataWarehouse/MongoDB/exports/*.csv
+> - XLSX Mongo exportados: DataWarehouse/MongoDB/exports/*.xlsx
 
 ## Indice
 
@@ -15,7 +15,7 @@
 2. Fase 1 - Creacion de DW_ESPORTS y DIM_TIEMPO
 3. Fase 2 - Creacion de tablas de staging normalizado y esquema estrella
 4. Fase 3 - Configuracion del proyecto SSIS
-5. Fase 4 - Carga de staging desde Oracle, RRHH, Excel y Mongo CSV
+5. Fase 4 - Carga de staging desde Oracle, RRHH, Excel y Mongo XLSX
 6. Fase 5 - Normalizacion de staging Mongo
 7. Fase 6 - Carga de dimensiones
 8. Fase 7 - Carga de hechos (DM1, DM2, DM3, DM4)
@@ -29,7 +29,7 @@
 2. No saltar fases.
 3. No ejecutar cargas de hechos antes de completar staging y dimensiones.
 4. Oracle en SSIS se configura con servidor: localhost:1521/xe
-5. MongoDB se integra mediante CSV exportado con mongoexport.
+5. MongoDB se integra mediante archivos XLSX exportados con script Node.js.
 
 ---
 
@@ -68,16 +68,16 @@ Esto genera:
     - fecha_agregado
     - activo
 
-### 0.3 Exportar MongoDB a CSV
+### 0.3 Exportar MongoDB a XLSX
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\DataWarehouse\MongoDB\export_mongo_dw.ps1
+node .\DataWarehouse\MongoDB\export_mongo_dw_xlsx.js
 ```
 
 Esto genera:
 
-- DataWarehouse/MongoDB/exports/logs_actividad_dw.csv
-- DataWarehouse/MongoDB/exports/feedback_torneos_dw.csv
+- DataWarehouse/MongoDB/exports/logs_actividad_dw.xlsx
+- DataWarehouse/MongoDB/exports/feedback_torneos_dw.xlsx
 
 ---
 
@@ -661,21 +661,21 @@ Crear exactamente estos Connection Managers:
    - Archivo: DataWarehouse/Excel/DW_Fuentes_Excel.xlsx
    - First row has column names: marcado
 
-5. CONN_FLAT_LOGS_ACTIVIDAD
-   - Tipo: FLATFILE
-   - Archivo: DataWarehouse/MongoDB/exports/logs_actividad_dw.csv
-   - Delimited: Comma
+5. CONN_EXCEL_LOGS_ACTIVIDAD
+   - Tipo: EXCEL
+   - Archivo: DataWarehouse/MongoDB/exports/logs_actividad_dw.xlsx
    - First row has column names: marcado
+   - Hoja: logs_actividad$
 
-6. CONN_FLAT_FEEDBACK_TORNEOS
-   - Tipo: FLATFILE
-   - Archivo: DataWarehouse/MongoDB/exports/feedback_torneos_dw.csv
-   - Delimited: Comma
+6. CONN_EXCEL_FEEDBACK_TORNEOS
+   - Tipo: EXCEL
+   - Archivo: DataWarehouse/MongoDB/exports/feedback_torneos_dw.xlsx
    - First row has column names: marcado
+   - Hoja: feedback_torneos$
 
 ---
 
-## Fase 4 - Carga de staging desde Oracle, RRHH, Excel y Mongo CSV
+## Fase 4 - Carga de staging desde Oracle, RRHH, Excel y Mongo XLSX
 
 Objetivo de esta fase:
 
@@ -1172,69 +1172,86 @@ INNER JOIN Departamento d ON d.idDepartamento = e.idDepartamento;
 1. Volver a Control Flow.
 2. Doble click en DFT_Cargar_Staging_Mongo_Raw.
 
-#### 4.6.1 Carga de logs_actividad_dw.csv
+#### 4.6.1 Carga de logs_actividad_dw.xlsx
 
-1. Arrastrar Flat File Source.
-2. Renombrar a SRC_CSV_LOGS_ACTIVIDAD.
-3. Doble click en SRC_CSV_LOGS_ACTIVIDAD:
-   - Flat file connection manager: CONN_FLAT_LOGS_ACTIVIDAD.
-4. Click Preview para ver columnas del CSV.
+1. Arrastrar Excel Source.
+2. Renombrar a SRC_XLS_LOGS_ACTIVIDAD.
+3. Doble click en SRC_XLS_LOGS_ACTIVIDAD:
+   - Excel connection manager: CONN_EXCEL_LOGS_ACTIVIDAD.
+   - Data access mode: Table or view.
+   - Name of the Excel sheet: logs_actividad$.
+4. Click Preview.
 5. Click OK.
-6. Arrastrar OLE DB Destination.
-7. Renombrar a DST_STG_MONGO_LOGS_RAW.
-8. Conectar flecha azul de SRC_CSV_LOGS_ACTIVIDAD a DST_STG_MONGO_LOGS_RAW.
-9. Doble click en DST_STG_MONGO_LOGS_RAW:
+6. Arrastrar Data Conversion y renombrar a DC_LOGS_ACTIVIDAD.
+7. Conectar flecha azul de SRC_XLS_LOGS_ACTIVIDAD a DC_LOGS_ACTIVIDAD.
+8. En DC_LOGS_ACTIVIDAD convertir las columnas de Excel (Unicode string [DT_WSTR]) a tipos compatibles con SQL Server:
+   - IDs (oracle_usuario_id, detalle_perfil_visitado_id, detalle_torneo_id, detalle_item_id, detalle_destinatario_id): DT_I4 o DT_STR segun tabla destino.
+   - Timestamp (_id y timestamp): DT_STR para campos raw o DT_DBTIMESTAMP cuando aplique conversion directa.
+   - Mantener alias de salida claros (ejemplo: timestamp_raw_conv, oracle_usuario_id_conv).
+9. Arrastrar OLE DB Destination.
+10. Renombrar a DST_STG_MONGO_LOGS_RAW.
+11. Conectar flecha azul de DC_LOGS_ACTIVIDAD a DST_STG_MONGO_LOGS_RAW.
+12. Doble click en DST_STG_MONGO_LOGS_RAW:
    - OLE DB connection manager: CONN_SQLSERVER_DW.
    - Data access mode: Table or view - fast load.
    - Name of the table or view: stg_mongo_logs_actividad_raw.
-10. Ir a Mappings y verificar exacto:
-    - oracle_usuario_id -> oracle_usuario_id
-    - tipo_evento -> tipo_evento
-    - ip -> ip
-    - user_agent -> user_agent
-    - pais_origen -> pais_origen
-    - timestamp -> timestamp_raw
-    - detalle.metodo -> detalle_metodo
-    - detalle.exitoso -> detalle_exitoso
-    - detalle.duracion_sesion_min -> detalle_duracion_sesion_min
-    - detalle.termino -> detalle_termino
-    - detalle.resultados_encontrados -> detalle_resultados_encontrados
-    - detalle.perfil_visitado_id -> detalle_perfil_visitado_id
-    - detalle.tiempo_visualizacion_seg -> detalle_tiempo_visualizacion_seg
-    - detalle.desde_seccion -> detalle_desde_seccion
-    - detalle.torneo_id -> detalle_torneo_id
-    - detalle.accion -> detalle_accion
-    - detalle.item_id -> detalle_item_id
-    - detalle.categoria -> detalle_categoria
-    - detalle.seccion -> detalle_seccion
-    - detalle.campo_modificado -> detalle_campo_modificado
-    - detalle.destinatario_id -> detalle_destinatario_id
-11. Click OK.
+13. Ir a Mappings y verificar exacto (usando columnas convertidas cuando corresponda):
+   - oracle_usuario_id -> oracle_usuario_id
+   - tipo_evento -> tipo_evento
+   - ip -> ip
+   - user_agent -> user_agent
+   - pais_origen -> pais_origen
+   - _id -> _id
+   - timestamp -> timestamp_raw
+   - detalle_metodo -> detalle_metodo
+   - detalle_exitoso -> detalle_exitoso
+   - detalle_duracion_sesion_min -> detalle_duracion_sesion_min
+   - detalle_termino -> detalle_termino
+   - detalle_resultados_encontrados -> detalle_resultados_encontrados
+   - detalle_perfil_visitado_id -> detalle_perfil_visitado_id
+   - detalle_tiempo_visualizacion_seg -> detalle_tiempo_visualizacion_seg
+   - detalle_desde_seccion -> detalle_desde_seccion
+   - detalle_torneo_id -> detalle_torneo_id
+   - detalle_accion -> detalle_accion
+   - detalle_item_id -> detalle_item_id
+   - detalle_categoria -> detalle_categoria
+   - detalle_seccion -> detalle_seccion
+   - detalle_campo_modificado -> detalle_campo_modificado
+   - detalle_destinatario_id -> detalle_destinatario_id
+14. Click OK.
 
-#### 4.6.2 Carga de feedback_torneos_dw.csv
+#### 4.6.2 Carga de feedback_torneos_dw.xlsx
 
-1. Arrastrar Flat File Source.
-2. Renombrar a SRC_CSV_FEEDBACK_TORNEOS.
-3. Doble click en SRC_CSV_FEEDBACK_TORNEOS:
-   - Flat file connection manager: CONN_FLAT_FEEDBACK_TORNEOS.
+1. Arrastrar Excel Source.
+2. Renombrar a SRC_XLS_FEEDBACK_TORNEOS.
+3. Doble click en SRC_XLS_FEEDBACK_TORNEOS:
+   - Excel connection manager: CONN_EXCEL_FEEDBACK_TORNEOS.
+   - Data access mode: Table or view.
+   - Name of the Excel sheet: feedback_torneos$.
 4. Click Preview.
 5. Click OK.
-6. Arrastrar OLE DB Destination.
-7. Renombrar a DST_STG_MONGO_FEEDBACK_RAW.
-8. Conectar flecha azul de SRC_CSV_FEEDBACK_TORNEOS a DST_STG_MONGO_FEEDBACK_RAW.
-9. Doble click en DST_STG_MONGO_FEEDBACK_RAW:
+6. Arrastrar Data Conversion y renombrar a DC_FEEDBACK_TORNEOS.
+7. Conectar flecha azul de SRC_XLS_FEEDBACK_TORNEOS a DC_FEEDBACK_TORNEOS.
+8. En DC_FEEDBACK_TORNEOS convertir campos DT_WSTR a tipos SQL compatibles:
+   - IDs (_id, oracle_torneo_id, oracle_usuario_id): DT_I4 o DT_STR segun destino.
+   - Timestamp: DT_STR para timestamp_raw o DT_DBTIMESTAMP si se parsea en flujo.
+9. Arrastrar OLE DB Destination.
+10. Renombrar a DST_STG_MONGO_FEEDBACK_RAW.
+11. Conectar flecha azul de DC_FEEDBACK_TORNEOS a DST_STG_MONGO_FEEDBACK_RAW.
+12. Doble click en DST_STG_MONGO_FEEDBACK_RAW:
    - OLE DB connection manager: CONN_SQLSERVER_DW.
    - Data access mode: Table or view - fast load.
    - Name of the table or view: stg_mongo_feedback_torneos_raw.
-10. Ir a Mappings y validar:
-    - oracle_torneo_id -> oracle_torneo_id
-    - oracle_usuario_id -> oracle_usuario_id
-    - calificacion -> calificacion
-    - comentario -> comentario
-    - tags -> tags
-    - recomendaria -> recomendaria
-    - timestamp -> timestamp_raw
-11. Click OK.
+13. Ir a Mappings y validar (usar salidas convertidas cuando aplique):
+   - _id -> _id
+   - oracle_torneo_id -> oracle_torneo_id
+   - oracle_usuario_id -> oracle_usuario_id
+   - calificacion -> calificacion
+   - comentario -> comentario
+   - tags -> tags
+   - recomendaria -> recomendaria
+   - timestamp -> timestamp_raw
+14. Click OK.
 
 ### 4.7 Validacion final de la Fase 4 en Visual Studio
 
@@ -1247,9 +1264,13 @@ INNER JOIN Departamento d ON d.idDepartamento = e.idDepartamento;
    - DFT_Cargar_Staging_Mongo_Raw
 3. Confirmar que las flechas verdes conectan los 5 tasks en orden.
 4. Presionar Ctrl+Shift+S para guardar todo.
-5. Ejecutar el paquete con F5.
-6. Esperar a que cada task cambie a color verde.
-7. Si alguno queda rojo:
+5. Antes de ejecutar SSIS, correr el export de Mongo a XLSX:
+   ```powershell
+   node .\DataWarehouse\MongoDB\export_mongo_dw_xlsx.js
+   ```
+6. Ejecutar el paquete con F5.
+7. Esperar a que cada task cambie a color verde.
+8. Si alguno queda rojo:
    - Click en pestana Progress.
    - Buscar primer mensaje Error.
    - Doble click en el componente indicado.
@@ -1257,6 +1278,12 @@ INNER JOIN Departamento d ON d.idDepartamento = e.idDepartamento;
    - Ejecutar otra vez con F5.
 
 ### 4.8 Verificacion SQL inmediata despues de ejecutar
+
+Precondicion: confirmar que los archivos XLSX de Mongo fueron regenerados con:
+
+```powershell
+node .\DataWarehouse\MongoDB\export_mongo_dw_xlsx.js
+```
 
 En SSMS sobre DW_ESPORTS:
 
@@ -2047,12 +2074,16 @@ LEFT JOIN dim_empleado_soporte des
 
 Ejecutar en este orden exacto:
 
-1. ETL_00_Staging.dtsx
-2. ETL_01_Dimensiones.dtsx
-3. ETL_02_Fact_DM1_Ingresos.dtsx
-4. ETL_03_Fact_DM2_Comportamiento.dtsx
-5. ETL_04_Fact_DM3_Torneos.dtsx
-6. ETL_05_Fact_DM4_Auditoria.dtsx
+1. Generar export Mongo en XLSX:
+   ```powershell
+   node .\DataWarehouse\MongoDB\export_mongo_dw_xlsx.js
+   ```
+2. ETL_00_Staging.dtsx
+3. ETL_01_Dimensiones.dtsx
+4. ETL_02_Fact_DM1_Ingresos.dtsx
+5. ETL_03_Fact_DM2_Comportamiento.dtsx
+6. ETL_04_Fact_DM3_Torneos.dtsx
+7. ETL_05_Fact_DM4_Auditoria.dtsx
 
 Validacion inmediata en SQL Server:
 
@@ -2152,4 +2183,4 @@ ORDER BY nombre_pais;
 
 Con esta secuencia el flujo completo queda:
 
-Oracle + RRHH + Excel + Mongo CSV -> Staging normalizado -> Dimensiones -> Hechos -> SSAS -> Power BI.
+Oracle + RRHH + Excel + Mongo XLSX -> Staging normalizado -> Dimensiones -> Hechos -> SSAS -> Power BI.
