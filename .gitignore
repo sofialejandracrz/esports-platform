@@ -117,7 +117,10 @@ Script Maestro (RUN)/
 Recursos para Proyecto-20260401/
 DataWarehouse/Excel/package-lock.json
 DataWarehouse/Excel/package.json
-DataWarehouse/SSIS_DW_ESPORTS
+DataWarehouse/SSIS_DW_ESPORTS/.vs/
+DataWarehouse/SSIS_DW_ESPORTS/bin/
+DataWarehouse/SSIS_DW_ESPORTS/obj/
+DataWarehouse/SSIS_DW_ESPORTS/*.dtproj.user
 DataWarehouse/MongoDB/exports/*.csv
 
 # ===================================
