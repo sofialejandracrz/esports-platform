@@ -1276,6 +1276,13 @@ INNER JOIN Departamento d ON d.idDepartamento = e.idDepartamento;
    - Corregir connection manager, SQL o mappings.
    - Ejecutar otra vez con F5.
 
+Nota critica para Mongo normalizado:
+
+1. Antes de continuar a Fase 6/7, abrir el task SQL_Normalizar_Mongo en ETL_00_Staging.dtsx.
+2. Confirmar que el SQL del task contiene el bloque COALESCE con TRY_CONVERT(DATETIMEOFFSET, ..., 127).
+3. Confirmar que SQL_Normalizar_Mongo esta conectado al final del flujo con flecha verde desde DFT_Cargar_Staging_Mongo_Raw.
+4. Si no esta conectado, ETL_00 puede terminar en verde pero dejar stg_mongo_logs_actividad_evento vacia o con timestamp_evento nulo.
+
 ### 4.8 Verificacion SQL inmediata despues de ejecutar
 
 Precondicion: confirmar que los archivos XLSX de Mongo fueron regenerados con:
@@ -1298,6 +1305,10 @@ SELECT COUNT(*) AS c FROM stg_excel_presupuestos_ventas;
 SELECT COUNT(*) AS c FROM stg_excel_lista_negra;
 SELECT COUNT(*) AS c FROM stg_mongo_logs_actividad_raw;
 SELECT COUNT(*) AS c FROM stg_mongo_feedback_torneos_raw;
+SELECT COUNT(*) AS c FROM stg_mongo_logs_actividad_evento;
+SELECT COUNT(*) AS c_timestamp_ok FROM stg_mongo_logs_actividad_evento WHERE timestamp_evento IS NOT NULL;
+SELECT COUNT(*) AS c FROM stg_mongo_feedback_torneos_evento;
+SELECT COUNT(*) AS c_timestamp_ok FROM stg_mongo_feedback_torneos_evento WHERE timestamp_evento IS NOT NULL;
 ```
 
 ---
@@ -1394,6 +1405,35 @@ SELECT
     ) AS timestamp_evento
 FROM stg_mongo_feedback_torneos_raw;
 ```
+
+### 5.1 Gate obligatorio antes de Fase 6 (no continuar si falla)
+
+Ejecutar inmediatamente en SSMS al terminar ETL_00_Staging.dtsx:
+
+```sql
+SELECT COUNT(*) AS c_raw_logs FROM stg_mongo_logs_actividad_raw;
+SELECT COUNT(*) AS c_evento_logs FROM stg_mongo_logs_actividad_evento;
+SELECT COUNT(*) AS c_evento_logs_timestamp_ok
+FROM stg_mongo_logs_actividad_evento
+WHERE timestamp_evento IS NOT NULL;
+```
+
+Criterio de avance a Fase 6:
+
+1. c_raw_logs > 0
+2. c_evento_logs > 0
+3. c_evento_logs_timestamp_ok > 0
+
+Si cualquiera da 0, detener el flujo y corregir en este orden exacto:
+
+1. Abrir ETL_00_Staging.dtsx -> Control Flow.
+2. Verificar que existe SQL_Normalizar_Mongo y que esta habilitado (Disabled = False).
+3. Verificar precedencia: DFT_Cargar_Staging_Mongo_Raw -> SQL_Normalizar_Mongo con Exito (flecha verde).
+4. Abrir SQL_Normalizar_Mongo y confirmar que el SQL es exactamente el de Fase 5 (incluyendo COALESCE con TRY_CONVERT DATETIMEOFFSET estilo 127).
+5. Guardar el paquete (Ctrl+Shift+S).
+6. Ejecutar solo ETL_00_Staging.dtsx.
+7. Repetir este gate 5.1.
+8. Solo si pasa el gate, continuar con ETL_01_Dimensiones.dtsx y luego hechos.
 
 ---
 
