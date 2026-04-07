@@ -1,0 +1,72 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="4/7/2026 1:57:03 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="DESKTOP-J4EDSA8"
+  DTS:CreatorName="DESKTOP-J4EDSA8\USER"
+  DTS:DTSID="{60C43DBD-461D-4C57-B91E-B845F08630EA}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="17.0.1016.0"
+  DTS:LocaleID="18442"
+  DTS:ObjectName="Package1"
+  DTS:PackageType="5"
+  DTS:VersionBuild="2"
+  DTS:VersionGUID="{2A404856-9FF9-44E5-A379-3329DC51B3C6}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[localhost.DW_ESPORTS]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{54D807B1-8433-4A01-A6D4-1DFB53945BD6}"
+      DTS:ObjectName="localhost.DW_ESPORTS">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectRetryCount="1"
+          DTS:ConnectRetryInterval="5"
+          DTS:ConnectionString="Data Source=localhost;Initial Catalog=DW_ESPORTS;Provider=SQLNCLI11.1;Integrated Security=SSPI;Application Name=SSIS-Package1-{54D807B1-8433-4A01-A6D4-1DFB53945BD6}localhost.DW_ESPORTS;Auto Translate=False;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Tarea Ejecutar SQL"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Tarea Ejecutar SQL"
+      DTS:DTSID="{613D88BC-C5E4-4691-967B-AEEF3DFA9D4C}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Tarea Ejecutar SQL"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2025; © 2025 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{54D807B1-8433-4A01-A6D4-1DFB53945BD6}"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE fact_torneos;&#xA;&#xA;;WITH estado_confirmada AS (&#xA;    SELECT TOP (1) id_estado&#xA;    FROM stg_oracle_catalogo_estado_inscripcion&#xA;    WHERE UPPER(valor_estado) = 'CONFIRMADA'&#xA;),&#xA;inscripciones AS (&#xA;    SELECT&#xA;        ti.torneo_id,&#xA;        COUNT(*) AS total_inscritos,&#xA;        SUM(CASE WHEN ti.estado_id = ec.id_estado THEN 1 ELSE 0 END) AS inscritos_confirmados&#xA;    FROM stg_oracle_torneo_inscripcion ti&#xA;    CROSS JOIN estado_confirmada ec&#xA;    GROUP BY ti.torneo_id&#xA;),&#xA;feedback AS (&#xA;    SELECT&#xA;        f.oracle_torneo_id AS torneo_id,&#xA;        AVG(CAST(f.calificacion AS DECIMAL(10,2))) AS calificacion_promedio,&#xA;        COUNT(*) AS total_resenas,&#xA;        CASE&#xA;            WHEN COUNT(*) = 0 THEN 0&#xA;            ELSE 100.0 * SUM(CASE WHEN f.recomendaria = 1 THEN 1 ELSE 0 END) / COUNT(*)&#xA;        END AS pct_recomendacion&#xA;    FROM stg_mongo_feedback_torneos_evento f&#xA;    WHERE f.oracle_torneo_id IS NOT NULL&#xA;    GROUP BY f.oracle_torneo_id&#xA;),&#xA;base_torneo AS (&#xA;    SELECT&#xA;        t.torneo_id,&#xA;        t.fecha_inicio_torneo,&#xA;        (YEAR(t.fecha_inicio_torneo) * 10000) + (MONTH(t.fecha_inicio_torneo) * 100) + DAY(t.fecha_inicio_torneo) AS id_tiempo,&#xA;        COALESCE(t.juego_id, 0) AS juego_id,&#xA;        COALESCE(t.modo_juego_id, 0) AS modo_juego_id,&#xA;        COALESCE(t.tipo_torneo_id, 0) AS tipo_torneo_id,&#xA;        COALESCE(t.plataforma_id, 0) AS plataforma_id,&#xA;        COALESCE(t.region_id, 0) AS region_id,&#xA;        t.capacidad&#xA;    FROM stg_oracle_torneo t&#xA;    WHERE t.fecha_inicio_torneo IS NOT NULL&#xA;)&#xA;INSERT INTO fact_torneos (&#xA;    id_dim_tiempo,&#xA;    id_dim_juego,&#xA;    id_dim_modo_juego,&#xA;    id_dim_tipo_torneo,&#xA;    id_dim_plataforma,&#xA;    id_dim_region,&#xA;    total_inscritos,&#xA;    inscritos_confirmados,&#xA;    capacidad,&#xA;    fondo_premios,&#xA;    comision,&#xA;    calificacion_promedio,&#xA;    total_resenas,&#xA;    pct_recomendacion,&#xA;    cantidad_torneos&#xA;)&#xA;SELECT&#xA;    bt.id_tiempo,&#xA;    bt.juego_id,&#xA;    bt.modo_juego_id,&#xA;    bt.tipo_torneo_id,&#xA;    bt.plataforma_id,&#xA;    bt.region_id,&#xA;    COALESCE(i.total_inscritos, 0) AS total_inscritos,&#xA;    COALESCE(i.inscritos_confirmados, 0) AS inscritos_confirmados,&#xA;    bt.capacidad,&#xA;    COALESCE(tp.fondo_total, 0) AS fondo_premios,&#xA;    COALESCE(tp.comision_total, 0) AS comision,&#xA;    COALESCE(f.calificacion_promedio, 0) AS calificacion_promedio,&#xA;    COALESCE(f.total_resenas, 0) AS total_resenas,&#xA;    COALESCE(f.pct_recomendacion, 0) AS pct_recomendacion,&#xA;    1 AS cantidad_torneos&#xA;FROM base_torneo bt&#xA;INNER JOIN dim_tiempo dt&#xA;    ON dt.id_tiempo = bt.id_tiempo&#xA;INNER JOIN dim_juego dj&#xA;    ON dj.id_juego = bt.juego_id&#xA;INNER JOIN dim_modo_juego dmj&#xA;    ON dmj.id_modo_juego = bt.modo_juego_id&#xA;INNER JOIN dim_tipo_torneo dtt&#xA;    ON dtt.id_tipo_torneo = bt.tipo_torneo_id&#xA;INNER JOIN dim_plataforma dpl&#xA;    ON dpl.id_plataforma = bt.plataforma_id&#xA;INNER JOIN dim_region_torneo drt&#xA;    ON drt.id_region = bt.region_id&#xA;LEFT JOIN inscripciones i&#xA;    ON i.torneo_id = bt.torneo_id&#xA;LEFT JOIN stg_oracle_torneo_premios tp&#xA;    ON tp.torneo_id = bt.torneo_id&#xA;LEFT JOIN feedback f&#xA;    ON f.torneo_id = bt.torneo_id;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--Esta sección CDATA contiene la información de diseño del paquete. Esta sección incluye información como, por ejemplo, las coordenadas (x,y), el ancho y el alto.-->
+<!--Si edita manualmente esta sección y comete un error, puede eliminarlo. -->
+<!--El paquete podrá cargarse normalmente, pero se perderá la información de diseño anterior y el diseñador reorganizará los elementos automáticamente en la superficie de diseño.-->
+<Objects
+  Version="8">
+  <!--Cada uno de los nodos siguientes contiene propiedades que no afectan al comportamiento en tiempo de ejecución.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="170,42"
+          Id="Package\Tarea Ejecutar SQL"
+          TopLeft="250,165" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

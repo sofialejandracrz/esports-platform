@@ -1,0 +1,72 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="4/7/2026 1:56:41 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="DESKTOP-J4EDSA8"
+  DTS:CreatorName="DESKTOP-J4EDSA8\USER"
+  DTS:DTSID="{BD01B37A-1C43-4C0A-8D0E-95225DDEB55D}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="17.0.1016.0"
+  DTS:LocaleID="18442"
+  DTS:ObjectName="Package1"
+  DTS:PackageType="5"
+  DTS:VersionBuild="4"
+  DTS:VersionGUID="{5027C076-8A37-46F3-A644-944C3E2BBCAA}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[localhost.DW_ESPORTS]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{375A0EB0-6BEC-4433-9366-3DE732DCDAD4}"
+      DTS:ObjectName="localhost.DW_ESPORTS">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectRetryCount="1"
+          DTS:ConnectRetryInterval="5"
+          DTS:ConnectionString="Data Source=localhost;Initial Catalog=DW_ESPORTS;Provider=SQLNCLI11.1;Integrated Security=SSPI;Application Name=SSIS-Package1-{375A0EB0-6BEC-4433-9366-3DE732DCDAD4}localhost.DW_ESPORTS;Auto Translate=False;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Tarea Ejecutar SQL"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Tarea Ejecutar SQL"
+      DTS:DTSID="{11A6CBC5-82C1-4B8D-A1CB-ABFA54A6653A}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Tarea Ejecutar SQL"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2025; © 2025 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{375A0EB0-6BEC-4433-9366-3DE732DCDAD4}"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE fact_actividad_usuario;&#xA;&#xA;;WITH amigos AS (&#xA;    SELECT usuario_id, COUNT(*) AS total_amigos&#xA;    FROM (&#xA;        SELECT usuario1_id AS usuario_id FROM stg_oracle_usuario_amigos&#xA;        UNION ALL&#xA;        SELECT usuario2_id AS usuario_id FROM stg_oracle_usuario_amigos&#xA;    ) x&#xA;    WHERE usuario_id IS NOT NULL&#xA;    GROUP BY usuario_id&#xA;),&#xA;seguidores AS (&#xA;    SELECT seguido_id AS usuario_id, COUNT(*) AS total_seguidores&#xA;    FROM stg_oracle_usuario_seguidores&#xA;    WHERE seguido_id IS NOT NULL&#xA;    GROUP BY seguido_id&#xA;),&#xA;social AS (&#xA;    SELECT&#xA;        u.usuario_id,&#xA;        COALESCE(a.total_amigos, 0) AS total_amigos,&#xA;        COALESCE(s.total_seguidores, 0) AS total_seguidores&#xA;    FROM stg_oracle_usuario u&#xA;    LEFT JOIN amigos a ON a.usuario_id = u.usuario_id&#xA;    LEFT JOIN seguidores s ON s.usuario_id = u.usuario_id&#xA;),&#xA;stats AS (&#xA;    SELECT&#xA;        usuario_id,&#xA;        COALESCE(juego_id, 0) AS juego_id,&#xA;        SUM(victorias) AS victorias,&#xA;        SUM(horas_jugadas) AS horas_jugadas&#xA;    FROM stg_oracle_usuario_estadisticas_juego&#xA;    GROUP BY usuario_id, COALESCE(juego_id, 0)&#xA;),&#xA;logs AS (&#xA;    SELECT&#xA;        l.*,&#xA;        LOWER(LTRIM(RTRIM(COALESCE(l.tipo_evento, 'DESCONOCIDO')))) AS tipo_evento_key,&#xA;        UPPER(LTRIM(RTRIM(COALESCE(NULLIF(l.pais_origen, ''), 'DESCONOCIDO')))) AS pais_key,&#xA;        (YEAR(l.timestamp_evento) * 10000) + (MONTH(l.timestamp_evento) * 100) + DAY(l.timestamp_evento) AS id_tiempo&#xA;    FROM stg_mongo_logs_actividad_evento l&#xA;    WHERE l.timestamp_evento IS NOT NULL&#xA;)&#xA;INSERT INTO fact_actividad_usuario (&#xA;    id_dim_tiempo,&#xA;    id_dim_usuario,&#xA;    id_dim_juego,&#xA;    id_dim_tipo_evento,&#xA;    id_dim_pais,&#xA;    total_amigos,&#xA;    total_seguidores,&#xA;    xp_acumulado,&#xA;    cantidad_eventos,&#xA;    tiempo_sesion_seg,&#xA;    victorias,&#xA;    horas_jugadas&#xA;)&#xA;SELECT&#xA;    logs.id_tiempo,&#xA;    COALESCE(du.id_usuario, 0) AS id_dim_usuario,&#xA;    COALESCE(t.juego_id, 0) AS id_dim_juego,&#xA;    COALESCE(dte.id_tipo_evento, dte_unk.id_tipo_evento) AS id_dim_tipo_evento,&#xA;    COALESCE(dp.id_pais, dp_unk.id_pais) AS id_dim_pais,&#xA;    COALESCE(sc.total_amigos, 0) AS total_amigos,&#xA;    COALESCE(sc.total_seguidores, 0) AS total_seguidores,&#xA;    COALESCE(du.xp, 0) AS xp_acumulado,&#xA;    1 AS cantidad_eventos,&#xA;    CASE&#xA;        WHEN logs.tipo_evento = 'logout' THEN COALESCE(logs.detalle_duracion_sesion_min, 0) * 60&#xA;        ELSE NULL&#xA;    END AS tiempo_sesion_seg,&#xA;    st.victorias,&#xA;    st.horas_jugadas&#xA;FROM logs&#xA;INNER JOIN dim_tiempo dt&#xA;    ON dt.id_tiempo = logs.id_tiempo&#xA;LEFT JOIN dim_usuario du&#xA;    ON du.id_usuario = COALESCE(logs.oracle_usuario_id, 0)&#xA;LEFT JOIN dim_tipo_evento dte&#xA;    ON LOWER(LTRIM(RTRIM(dte.nombre_evento))) = logs.tipo_evento_key&#xA;LEFT JOIN dim_tipo_evento dte_unk&#xA;    ON dte_unk.nombre_evento = 'DESCONOCIDO'&#xA;LEFT JOIN dim_pais dp&#xA;    ON UPPER(LTRIM(RTRIM(dp.nombre_pais))) = logs.pais_key&#xA;LEFT JOIN dim_pais dp_unk&#xA;    ON dp_unk.nombre_pais = 'DESCONOCIDO'&#xA;LEFT JOIN stg_oracle_torneo t&#xA;    ON t.torneo_id = logs.detalle_torneo_id&#xA;LEFT JOIN dim_juego dj&#xA;    ON dj.id_juego = COALESCE(t.juego_id, 0)&#xA;LEFT JOIN social sc&#xA;    ON sc.usuario_id = COALESCE(logs.oracle_usuario_id, 0)&#xA;LEFT JOIN stats st&#xA;    ON st.usuario_id = COALESCE(logs.oracle_usuario_id, 0)&#xA;   AND st.juego_id = COALESCE(t.juego_id, 0);" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--Esta sección CDATA contiene la información de diseño del paquete. Esta sección incluye información como, por ejemplo, las coordenadas (x,y), el ancho y el alto.-->
+<!--Si edita manualmente esta sección y comete un error, puede eliminarlo. -->
+<!--El paquete podrá cargarse normalmente, pero se perderá la información de diseño anterior y el diseñador reorganizará los elementos automáticamente en la superficie de diseño.-->
+<Objects
+  Version="8">
+  <!--Cada uno de los nodos siguientes contiene propiedades que no afectan al comportamiento en tiempo de ejecución.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="170,42"
+          Id="Package\Tarea Ejecutar SQL"
+          TopLeft="260,177" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

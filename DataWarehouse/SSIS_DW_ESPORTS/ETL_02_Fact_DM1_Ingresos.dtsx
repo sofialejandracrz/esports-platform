@@ -1,0 +1,84 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="4/7/2026 1:55:05 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="DESKTOP-J4EDSA8"
+  DTS:CreatorName="DESKTOP-J4EDSA8\USER"
+  DTS:DTSID="{5D3596A7-C269-4C67-A0A4-C8409F2F0703}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="17.0.1016.0"
+  DTS:LocaleID="18442"
+  DTS:ObjectName="Package1"
+  DTS:PackageType="5"
+  DTS:VersionBuild="2"
+  DTS:VersionGUID="{66186F39-B74F-4756-A1C6-762A032F0818}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[localhost.DW_ESPORTS]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{4AE8C8F4-7FE9-4297-9281-DE65FE31CC2C}"
+      DTS:ObjectName="localhost.DW_ESPORTS">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectRetryCount="1"
+          DTS:ConnectRetryInterval="5"
+          DTS:ConnectionString="Data Source=localhost;Initial Catalog=DW_ESPORTS;Provider=SQLNCLI11.1;Integrated Security=SSPI;Application Name=SSIS-Package1-{4AE8C8F4-7FE9-4297-9281-DE65FE31CC2C}localhost.DW_ESPORTS;Auto Translate=False;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[localhost.DW_ESPORTS 1]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{E3E0FE47-2A98-4B7C-BC8E-24E48B470F48}"
+      DTS:ObjectName="localhost.DW_ESPORTS 1">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectRetryCount="1"
+          DTS:ConnectRetryInterval="5"
+          DTS:ConnectionString="Data Source=localhost;Initial Catalog=DW_ESPORTS;Provider=SQLNCLI11.1;Integrated Security=SSPI;Application Name=SSIS-Package1-{E3E0FE47-2A98-4B7C-BC8E-24E48B470F48}localhost.DW_ESPORTS 1;Auto Translate=False;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Tarea Ejecutar SQL"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Tarea Ejecutar SQL"
+      DTS:DTSID="{5B50D7E3-70DE-4E31-98D8-AD8A65963DCC}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Tarea Ejecutar SQL"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2025; © 2025 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{E3E0FE47-2A98-4B7C-BC8E-24E48B470F48}"
+          SQLTask:SqlStatementSource="TRUNCATE TABLE fact_ingresos;&#xA;&#xA;;WITH transacciones_enriquecidas AS (&#xA;    SELECT&#xA;        t.transaccion_id,&#xA;        t.creado_en AS fecha_evento,&#xA;        COALESCE(t.usuario_id, 0) AS id_usuario,&#xA;        COALESCE(r.id_region, 0) AS id_region,&#xA;        t.origen_id AS id_origen,&#xA;        COALESCE(orden_match.tipo_id, 0) AS id_tipo_item,&#xA;        COALESCE(orden_match.creditos_otorgados, 0) AS creditos_otorgados,&#xA;        t.monto&#xA;    FROM stg_oracle_transaccion t&#xA;    LEFT JOIN stg_oracle_usuario u&#xA;        ON u.usuario_id = t.usuario_id&#xA;    LEFT JOIN stg_oracle_persona p&#xA;        ON p.persona_id = u.persona_id&#xA;    LEFT JOIN dim_region r&#xA;        ON UPPER(LTRIM(RTRIM(r.nombre_region))) = UPPER(LTRIM(RTRIM(p.pais)))&#xA;    OUTER APPLY (&#xA;        SELECT TOP (1)&#xA;            i.tipo_id,&#xA;            i.creditos_otorgados&#xA;        FROM stg_oracle_tienda_orden o&#xA;        INNER JOIN stg_oracle_tienda_item i&#xA;            ON i.item_id = o.item_id&#xA;        WHERE o.usuario_id = t.usuario_id&#xA;          AND ABS(o.monto - t.monto) &lt;= 0.01&#xA;          AND ABS(DATEDIFF(SECOND, o.creado_en, t.creado_en)) &lt;= 300&#xA;        ORDER BY ABS(DATEDIFF(SECOND, o.creado_en, t.creado_en)), o.orden_id DESC&#xA;    ) orden_match&#xA;)&#xA;INSERT INTO fact_ingresos (&#xA;    id_dim_tiempo,&#xA;    id_dim_region,&#xA;    id_dim_tipo_item,&#xA;    id_dim_origen,&#xA;    id_dim_usuario,&#xA;    id_dim_responsable,&#xA;    version_responsable,&#xA;    monto_real,&#xA;    meta_ingresos,&#xA;    creditos_otorgados,&#xA;    cantidad&#xA;)&#xA;SELECT&#xA;    dt.id_tiempo,&#xA;    te.id_region,&#xA;    te.id_tipo_item,&#xA;    te.id_origen,&#xA;    te.id_usuario,&#xA;    rr.id_empleado,&#xA;    rr.version,&#xA;    te.monto AS monto_real,&#xA;    pv.meta_ingresos_usd AS meta_ingresos,&#xA;    te.creditos_otorgados,&#xA;    1 AS cantidad&#xA;FROM transacciones_enriquecidas te&#xA;INNER JOIN dim_tiempo dt&#xA;    ON dt.id_tiempo = (YEAR(te.fecha_evento) * 10000) + (MONTH(te.fecha_evento) * 100) + DAY(te.fecha_evento)&#xA;INNER JOIN dim_region dr&#xA;    ON dr.id_region = te.id_region&#xA;INNER JOIN dim_tipo_item dti&#xA;    ON dti.id_tipo_item = te.id_tipo_item&#xA;INNER JOIN dim_origen_transaccion dot&#xA;    ON dot.id_origen = te.id_origen&#xA;INNER JOIN dim_usuario_comprador duc&#xA;    ON duc.id_usuario = te.id_usuario&#xA;LEFT JOIN stg_excel_presupuestos_ventas pv&#xA;    ON pv.anio = dt.anio&#xA;   AND pv.mes = dt.mes_numero&#xA;   AND UPPER(LTRIM(RTRIM(pv.region))) = UPPER(LTRIM(RTRIM(dr.nombre_region)))&#xA;   AND UPPER(LTRIM(RTRIM(pv.categoria_producto))) = UPPER(LTRIM(RTRIM(dti.nombre_tipo)))&#xA;LEFT JOIN dim_responsable_rrhh rr&#xA;    ON rr.id_empleado = pv.responsable_rrhh_id&#xA;   AND rr.version_actual = 1;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--Esta sección CDATA contiene la información de diseño del paquete. Esta sección incluye información como, por ejemplo, las coordenadas (x,y), el ancho y el alto.-->
+<!--Si edita manualmente esta sección y comete un error, puede eliminarlo. -->
+<!--El paquete podrá cargarse normalmente, pero se perderá la información de diseño anterior y el diseñador reorganizará los elementos automáticamente en la superficie de diseño.-->
+<Objects
+  Version="8">
+  <!--Cada uno de los nodos siguientes contiene propiedades que no afectan al comportamiento en tiempo de ejecución.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="170,42"
+          Id="Package\Tarea Ejecutar SQL"
+          TopLeft="290,198" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>
