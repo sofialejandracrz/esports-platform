@@ -1317,6 +1317,13 @@ SELECT COUNT(*) AS c_timestamp_ok FROM stg_mongo_feedback_torneos_evento WHERE t
 
 En ETL_00_Staging.dtsx agregar Execute SQL Task final: SQL_Normalizar_Mongo.
 
+Pasos obligatorios de conexion en Control Flow (orden estricto):
+
+1. Arrastrar Execute SQL Task al final del flujo y renombrar a SQL_Normalizar_Mongo.
+2. Conectar flecha verde de exito desde DFT_Cargar_Staging_Mongo_Raw hacia SQL_Normalizar_Mongo.
+3. Abrir SQL_Normalizar_Mongo y asignar Connection: CONN_SQLSERVER_DW.
+4. Pegar el SQL de esta fase y guardar.
+
 Usar CONN_SQLSERVER_DW y ejecutar:
 
 ```sql
@@ -2317,87 +2324,613 @@ WHERE l.timestamp_evento IS NOT NULL
 
 ## Fase 9 - Cubos SSAS
 
-### 9.1 Crear proyecto SSAS
+Objetivo de esta fase:
 
-1. En la misma solucion, agregar proyecto Analysis Services Multidimensional and Data Mining.
-2. Nombre: SSAS_DW_ESPORTS.
+1. Construir en SSAS 4 cubos multidimensionales (uno por datamart) usando exclusivamente tablas de DW_ESPORTS.
+2. Dejar cada cubo procesado y navegable para consumo en Power BI Live Connection.
+3. Ejecutar en una secuencia lineal, sin saltos ni regresos entre tipos de tarea.
 
-### 9.2 Data Source y Data Source View
+Resultado esperado al terminar:
 
-1. Data Source a localhost / DW_ESPORTS.
-2. Data Source View con todas las tablas dim_* y fact_*.
+1. Proyecto SSAS_DW_ESPORTS creado en la misma solucion del proyecto SSIS.
+2. Un Data Source apuntando a DW_ESPORTS en localhost.
+3. Un Data Source View con todas las dimensiones y hechos del DW.
+4. Dimensiones procesadas correctamente.
+5. Cubos Cubo_Ingresos, Cubo_Comportamiento, Cubo_Torneos y Cubo_Auditoria desplegados y procesados.
 
-### 9.3 Dimensiones
+### 9.1 Precondicion obligatoria antes de abrir SSAS
 
-Crear dimensiones para cada tabla dim_*. Definir clave en su PK.
+1. Verificar que la Fase 8 termino en verde (ETL_00 a ETL_05).
+2. En SSMS (Database Engine), ejecutar sobre DW_ESPORTS:
 
-### 9.4 Cubos
+```sql
+SELECT COUNT(*) AS filas_dim_tiempo FROM dim_tiempo;
+SELECT COUNT(*) AS filas_fact_ingresos FROM fact_ingresos;
+SELECT COUNT(*) AS filas_fact_actividad_usuario FROM fact_actividad_usuario;
+SELECT COUNT(*) AS filas_fact_torneos FROM fact_torneos;
+SELECT COUNT(*) AS filas_fact_auditoria FROM fact_auditoria;
+```
 
-Crear 4 cubos:
+3. Criterio para continuar a 9.2:
+    - filas_dim_tiempo > 0
+    - filas_fact_ingresos > 0
+    - filas_fact_actividad_usuario > 0
+    - filas_fact_torneos > 0
+    - filas_fact_auditoria > 0
+4. Si cualquier conteo da 0, no avanzar a SSAS; corregir primero ETL en Fase 8.
 
-1. Cubo_Ingresos (Measure Group: fact_ingresos)
-   - Medidas: monto_real, meta_ingresos, creditos_otorgados, cantidad
-2. Cubo_Comportamiento (Measure Group: fact_actividad_usuario)
-   - Medidas: total_amigos, total_seguidores, xp_acumulado, cantidad_eventos, tiempo_sesion_seg, victorias, horas_jugadas
-3. Cubo_Torneos (Measure Group: fact_torneos)
-   - Medidas: total_inscritos, inscritos_confirmados, capacidad, fondo_premios, comision, calificacion_promedio, total_resenas, pct_recomendacion, cantidad_torneos
-4. Cubo_Auditoria (Measure Group: fact_auditoria)
-   - Medidas: total_eventos, tickets_soporte, tickets_resueltos, registros_restringidos
+### 9.2 Crear proyecto SSAS_DW_ESPORTS en la misma solucion
 
-### 9.5 Deploy y Process
+1. Abrir Visual Studio.
+2. Abrir la solucion del DW (la que contiene SSIS_DW_ESPORTS).
+3. En Solution Explorer:
+    - Click derecho sobre la solucion.
+    - Add -> New Project.
+4. Buscar plantilla: Analysis Services Multidimensional and Data Mining Project.
+5. Project name: SSAS_DW_ESPORTS.
+6. Location: misma carpeta DataWarehouse.
+7. Click Create.
+8. Confirmar en Solution Explorer que existe el proyecto SSAS_DW_ESPORTS con carpetas:
+    - Data Sources
+    - Data Source Views
+    - Dimensions
+    - Cubes
 
-1. Target Server: localhost.
-2. Deploy del proyecto.
-3. Process Full de dimensiones y cubos.
+### 9.3 Configurar propiedades del proyecto SSAS (una sola vez)
+
+1. Click en proyecto SSAS_DW_ESPORTS.
+2. Presionar F4 para abrir Properties.
+3. Configurar:
+    - Deployment Server Name = localhost
+    - Database = SSAS_DW_ESPORTS
+    - Processing Option = Default
+4. Guardar (Ctrl+Shift+S).
+
+### 9.4 Crear Data Source DS_DW_ESPORTS
+
+1. En proyecto SSAS_DW_ESPORTS -> carpeta Data Sources:
+    - Click derecho -> New Data Source.
+2. En Data Source Wizard:
+    - Click Next.
+    - Create a data source based on an existing or new connection -> New.
+3. En Connection Manager:
+    - Provider native de SQL Server.
+    - Server name: localhost.
+    - Authentication: Windows Authentication.
+    - Database: DW_ESPORTS.
+4. Click Test Connection (debe decir Test connection succeeded).
+5. Click OK.
+6. En la pantalla de impersonation:
+    - Seleccionar Use the service account.
+7. Data Source name: DS_DW_ESPORTS.
+8. Click Finish.
+9. Confirmar que aparece DS_DW_ESPORTS en Data Sources.
+
+### 9.5 Crear Data Source View DSV_DW_ESPORTS (todas las tablas del DW analitico)
+
+1. En Data Source Views:
+    - Click derecho -> New Data Source View.
+2. Data Source Wizard:
+    - Data source: DS_DW_ESPORTS.
+3. En Select Tables and Views mover a Included exactamente estas tablas:
+    - dim_tiempo
+    - dim_region
+    - dim_tipo_item
+    - dim_origen_transaccion
+    - dim_usuario_comprador
+    - dim_responsable_rrhh
+    - dim_usuario
+    - dim_juego
+    - dim_tipo_evento
+    - dim_pais
+    - dim_modo_juego
+    - dim_tipo_torneo
+    - dim_plataforma
+    - dim_region_torneo
+    - dim_operacion
+    - dim_tabla_auditada
+    - dim_empleado_soporte
+    - dim_pais_registro
+    - dim_rol_usuario
+    - fact_ingresos
+    - fact_actividad_usuario
+    - fact_torneos
+    - fact_auditoria
+4. Name: DSV_DW_ESPORTS.
+5. Click Finish.
+6. Verificar en el diagrama del DSV que existen las relaciones fact -> dim para los 4 hechos.
+7. Confirmar especialmente relaciones compuestas:
+    - fact_ingresos (id_dim_responsable, version_responsable) -> dim_responsable_rrhh (id_empleado, version)
+    - fact_auditoria (id_dim_empleado_soporte, version_empleado) -> dim_empleado_soporte (id_empleado, version)
+8. Guardar (Ctrl+Shift+S).
+
+### 9.6 Crear dimensiones en secuencia unica (sin intercalar cubos)
+
+Regla fija de creacion para cada dimension:
+
+1. Click derecho en Dimensions -> New Dimension.
+2. Use an existing table.
+3. Main table: la tabla dim_* correspondiente.
+4. Key columns: PK real de la tabla.
+5. Seleccionar atributos descriptivos (no seleccionar columnas de hecho).
+6. Definir nombre de dimension como DIM_...
+7. Finish y guardar.
+
+Crear en este orden exacto:
+
+1. DIM_Tiempo
+    - Tabla: dim_tiempo.
+    - Key: id_tiempo.
+    - Name column del atributo clave: fecha.
+    - Atributos: anio, trimestre, mes_nombre, mes_numero, semestre.
+    - Crear jerarquia de usuario HJ_Calendario: anio -> trimestre -> mes_nombre -> fecha.
+
+2. DIM_Region_Ingresos
+    - Tabla: dim_region.
+    - Key: id_region.
+    - Name: nombre_region.
+
+3. DIM_Tipo_Item
+    - Tabla: dim_tipo_item.
+    - Key: id_tipo_item.
+    - Name: nombre_tipo.
+
+4. DIM_Origen_Transaccion
+    - Tabla: dim_origen_transaccion.
+    - Key: id_origen.
+    - Name: nombre_origen.
+
+5. DIM_Usuario_Comprador
+    - Tabla: dim_usuario_comprador.
+    - Key: id_usuario.
+    - Name: nickname.
+    - Atributos extra: pais, divisa, fecha_registro.
+
+6. DIM_Responsable_RRHH
+    - Tabla: dim_responsable_rrhh.
+    - Key compuesto: id_empleado + version.
+    - Name: nombre_completo.
+    - Atributos extra: cargo, departamento, version_actual.
+    - Despues del wizard, abrir Dimension Structure y en atributo clave:
+      - KeyColumns = id_empleado, version.
+      - NameColumn = nombre_completo.
+
+7. DIM_Usuario
+    - Tabla: dim_usuario.
+    - Key: id_usuario.
+    - Name: nickname.
+    - Atributos extra: xp, estado, pais, fecha_registro.
+
+8. DIM_Juego
+    - Tabla: dim_juego.
+    - Key: id_juego.
+    - Name: nombre_juego.
+
+9. DIM_Tipo_Evento
+    - Tabla: dim_tipo_evento.
+    - Key: id_tipo_evento.
+    - Name: nombre_evento.
+
+10. DIM_Pais
+    - Tabla: dim_pais.
+    - Key: id_pais.
+    - Name: nombre_pais.
+
+11. DIM_Modo_Juego
+    - Tabla: dim_modo_juego.
+    - Key: id_modo_juego.
+    - Name: nombre_modo.
+    - Atributo extra: nombre_juego.
+    - Crear jerarquia HJ_Juego_Modo: nombre_juego -> nombre_modo.
+
+12. DIM_Tipo_Torneo
+    - Tabla: dim_tipo_torneo.
+    - Key: id_tipo_torneo.
+    - Name: nombre_tipo.
+    - Atributo extra: tipo_trofeo.
+
+13. DIM_Plataforma
+    - Tabla: dim_plataforma.
+    - Key: id_plataforma.
+    - Name: nombre_plataforma.
+
+14. DIM_Region_Torneo
+    - Tabla: dim_region_torneo.
+    - Key: id_region.
+    - Name: nombre_region.
+
+15. DIM_Operacion
+    - Tabla: dim_operacion.
+    - Key: id_operacion.
+    - Name: nombre_operacion.
+
+16. DIM_Tabla_Auditada
+    - Tabla: dim_tabla_auditada.
+    - Key: id_tabla.
+    - Name: nombre_tabla.
+
+17. DIM_Empleado_Soporte
+    - Tabla: dim_empleado_soporte.
+    - Key compuesto: id_empleado + version.
+    - Name: nombre_completo.
+    - Atributos extra: cargo, departamento, version_actual.
+    - Despues del wizard, abrir Dimension Structure y en atributo clave:
+      - KeyColumns = id_empleado, version.
+      - NameColumn = nombre_completo.
+
+18. DIM_Pais_Registro
+    - Tabla: dim_pais_registro.
+    - Key: id_pais.
+    - Name: nombre_pais.
+    - Atributos extra: es_restringido, motivo_restriccion.
+
+19. DIM_Rol_Usuario
+    - Tabla: dim_rol_usuario.
+    - Key: id_rol.
+    - Name: nombre_rol.
+
+Al finalizar 9.6:
+
+1. Guardar todo (Ctrl+Shift+S).
+2. Confirmar que en carpeta Dimensions existen las 19 dimensiones.
+
+### 9.7 Crear cubos en secuencia (uno completo y luego el siguiente)
+
+Regla para cada cubo:
+
+1. Click derecho en Cubes -> New Cube.
+2. Use existing tables.
+3. Measure group table: fact correspondiente.
+4. Seleccionar solo las medidas definidas en el DW.
+5. Incluir solo las dimensiones relacionadas por FK de esa fact.
+6. Finalizar wizard.
+7. Abrir Cube Structure y validar nombres de medidas.
+8. Abrir Dimension Usage y validar relaciones.
+
+Crear en este orden exacto:
+
+#### 9.7.1 Cubo_Ingresos
+
+1. Measure group table: fact_ingresos.
+2. Medidas a incluir:
+    - monto_real
+    - meta_ingresos
+    - creditos_otorgados
+    - cantidad
+3. Dimensiones a incluir:
+    - DIM_Tiempo
+    - DIM_Region_Ingresos
+    - DIM_Tipo_Item
+    - DIM_Origen_Transaccion
+    - DIM_Usuario_Comprador
+    - DIM_Responsable_RRHH
+4. En Dimension Usage revisar:
+    - Todas en tipo Regular.
+    - Para DIM_Responsable_RRHH mapear columnas compuestas:
+      - fact_ingresos.id_dim_responsable -> dim_responsable_rrhh.id_empleado
+      - fact_ingresos.version_responsable -> dim_responsable_rrhh.version
+
+#### 9.7.2 Cubo_Comportamiento
+
+1. Measure group table: fact_actividad_usuario.
+2. Medidas a incluir:
+    - total_amigos
+    - total_seguidores
+    - xp_acumulado
+    - cantidad_eventos
+    - tiempo_sesion_seg
+    - victorias
+    - horas_jugadas
+3. Dimensiones a incluir:
+    - DIM_Tiempo
+    - DIM_Usuario
+    - DIM_Juego
+    - DIM_Tipo_Evento
+    - DIM_Pais
+4. En Dimension Usage revisar todas como Regular y con coincidencia 1 a 1 de FK.
+
+#### 9.7.3 Cubo_Torneos
+
+1. Measure group table: fact_torneos.
+2. Medidas a incluir:
+    - total_inscritos
+    - inscritos_confirmados
+    - capacidad
+    - fondo_premios
+    - comision
+    - calificacion_promedio
+    - total_resenas
+    - pct_recomendacion
+    - cantidad_torneos
+3. Dimensiones a incluir:
+    - DIM_Tiempo
+    - DIM_Juego
+    - DIM_Modo_Juego
+    - DIM_Tipo_Torneo
+    - DIM_Plataforma
+    - DIM_Region_Torneo
+4. Ajuste recomendado de agregacion:
+    - calificacion_promedio = AverageOfChildren
+    - pct_recomendacion = AverageOfChildren
+    - El resto = Sum
+
+#### 9.7.4 Cubo_Auditoria
+
+1. Measure group table: fact_auditoria.
+2. Medidas a incluir:
+    - total_eventos
+    - tickets_soporte
+    - tickets_resueltos
+    - registros_restringidos
+3. Dimensiones a incluir:
+    - DIM_Tiempo
+    - DIM_Operacion
+    - DIM_Tabla_Auditada
+    - DIM_Empleado_Soporte
+    - DIM_Pais_Registro
+    - DIM_Rol_Usuario
+4. En Dimension Usage revisar:
+    - Todas en tipo Regular.
+    - Para DIM_Empleado_Soporte mapear columnas compuestas:
+      - fact_auditoria.id_dim_empleado_soporte -> dim_empleado_soporte.id_empleado
+      - fact_auditoria.version_empleado -> dim_empleado_soporte.version
+
+### 9.8 Deploy y Process Full (orden estricto)
+
+1. Build de la solucion completa:
+    - Menu Build -> Build Solution.
+    - Corregir cualquier error antes de seguir.
+2. Click derecho en proyecto SSAS_DW_ESPORTS -> Deploy.
+3. Esperar mensaje Deploy completed successfully.
+4. En Solution Explorer, abrir SSAS_DW_ESPORTS.database.
+5. Click derecho sobre el nodo de base SSAS -> Process.
+6. Seleccionar Process Full.
+7. En la ventana de procesamiento confirmar que se procesan:
+    - Todas las dimensiones DIM_...
+    - Cubo_Ingresos
+    - Cubo_Comportamiento
+    - Cubo_Torneos
+    - Cubo_Auditoria
+8. Click Run.
+9. Esperar estado Success en todos los objetos.
+10. Click Close.
+
+### 9.9 Verificacion final obligatoria de Fase 9
+
+1. Abrir Cubo_Ingresos -> Browser.
+    - Arrastrar monto_real y nombre_region.
+    - Confirmar que devuelve datos.
+2. Abrir Cubo_Comportamiento -> Browser.
+    - Arrastrar cantidad_eventos y nombre_evento.
+    - Confirmar que devuelve datos.
+3. Abrir Cubo_Torneos -> Browser.
+    - Arrastrar total_inscritos y nombre_juego.
+    - Confirmar que devuelve datos.
+4. Abrir Cubo_Auditoria -> Browser.
+    - Arrastrar total_eventos y nombre_operacion.
+    - Confirmar que devuelve datos.
+5. Gate para pasar a Fase 10:
+    - Los 4 cubos despliegan sin error.
+    - Los 4 cubos procesan en Success.
+    - Los 4 cubos muestran valores en Browser.
+6. Solo si se cumple el gate, continuar con Power BI (Fase 10).
 
 ---
 
 ## Fase 10 - Dashboards Power BI y verificacion final
 
-### 10.1 Conexion a SSAS
+Objetivo de esta fase:
 
-1. Power BI Desktop.
-2. Get Data -> SQL Server Analysis Services database.
-3. Server: localhost.
-4. Modo: Connect live.
+1. Construir dashboards finales en Power BI a partir de los 4 cubos SSAS ya procesados.
+2. Validar que los resultados de Power BI coinciden con los datos del DW en SQL Server.
+3. Cerrar el flujo completo con una evidencia final reproducible.
 
-### 10.2 Crear 4 paginas obligatorias
+Resultado esperado al terminar:
 
-1. Pagina Ingresos y Monetizacion
-   - Visual 1: monto_real por nombre_region
-   - Visual 2: meta_ingresos por mes_nombre
-   - Visual 3: monto_real vs meta_ingresos
+1. 4 archivos .pbix (uno por datamart/cubo).
+2. Cada archivo con 1 pagina principal y 3 visuales obligatorios.
+3. Medidas visibles y coherentes con consultas SQL de control.
 
-2. Pagina Comportamiento de Usuario
-   - Visual 1: cantidad_eventos por nombre_evento
-   - Visual 2: xp_acumulado por nickname
-   - Visual 3: tiempo_sesion_seg por nombre_pais
+### 10.1 Precondicion obligatoria antes de abrir Power BI
 
-3. Pagina Calidad de Torneos
-   - Visual 1: total_inscritos por nombre_juego
-   - Visual 2: calificacion_promedio por nombre_tipo
-   - Visual 3: pct_recomendacion por nombre_plataforma
-
-4. Pagina Seguridad y Auditoria
-   - Visual 1: total_eventos por nombre_operacion
-   - Visual 2: registros_restringidos por nombre_pais
-   - Visual 3: tickets_soporte y tickets_resueltos por nombre_tabla
-
-### 10.3 Verificacion final de consistencia
-
-Ejecutar en SQL Server:
+1. Confirmar que la Fase 9 termino en Success (Deploy + Process Full de los 4 cubos).
+2. En SSMS (Analysis Services), verificar que existen y estan procesados:
+    - Cubo_Ingresos
+    - Cubo_Comportamiento
+    - Cubo_Torneos
+    - Cubo_Auditoria
+3. Si algun cubo no esta procesado, volver a Fase 9.8 y no continuar.
+4. En SSMS (Database Engine), ejecutar control rapido en DW_ESPORTS:
 
 ```sql
-SELECT TOP 20 * FROM fact_ingresos ORDER BY id_dim_tiempo DESC;
-SELECT TOP 20 * FROM fact_actividad_usuario ORDER BY id_dim_tiempo DESC;
-SELECT TOP 20 * FROM fact_torneos ORDER BY id_dim_tiempo DESC;
-SELECT TOP 20 * FROM fact_auditoria ORDER BY id_dim_tiempo DESC;
+SELECT COUNT(*) AS filas_fact_ingresos FROM fact_ingresos;
+SELECT COUNT(*) AS filas_fact_actividad_usuario FROM fact_actividad_usuario;
+SELECT COUNT(*) AS filas_fact_torneos FROM fact_torneos;
+SELECT COUNT(*) AS filas_fact_auditoria FROM fact_auditoria;
+```
+
+5. Si alguna fact esta en 0, detenerse y corregir ETL (Fase 8) antes de Power BI.
+
+### 10.2 Estructura de entrega obligatoria (orden unico)
+
+1. Crear carpeta de salida para dashboards:
+    - DataWarehouse/PowerBI
+2. Crear exactamente estos archivos (en este orden):
+    - Dashboard_DM1_Ingresos.pbix
+    - Dashboard_DM2_Comportamiento.pbix
+    - Dashboard_DM3_Torneos.pbix
+    - Dashboard_DM4_Auditoria.pbix
+3. Regla tecnica de esta guia:
+    - Como trabajas con cubos SSAS separados, usar 1 archivo PBIX por cubo para evitar mezclar modelos en una sola conexion Live.
+
+### 10.3 Dashboard 1 - Ingresos y Monetizacion (Cubo_Ingresos)
+
+1. Abrir Power BI Desktop.
+2. Home -> Get Data -> SQL Server Analysis Services database.
+3. Server: localhost.
+4. Connectivity mode: Connect live.
+5. Click OK.
+6. En Navigator seleccionar Cubo_Ingresos.
+7. Click Connect.
+8. Renombrar la pagina a PAG_DM1_Ingresos.
+9. Insertar Slicer de tiempo:
+    - Campo: DIM_Tiempo.anio.
+10. Crear Visual 1 (Column chart):
+    - Eje: DIM_Region_Ingresos.nombre_region.
+    - Valores: monto_real.
+    - Titulo: Ingresos reales por region.
+11. Crear Visual 2 (Line chart):
+    - Eje: jerarquia de DIM_Tiempo (usar nivel mes_nombre dentro del anio filtrado).
+    - Valores: meta_ingresos.
+    - Titulo: Meta de ingresos por mes.
+12. Crear Visual 3 (Line and clustered column chart):
+    - Eje compartido: jerarquia de DIM_Tiempo (mes).
+    - Column values: monto_real.
+    - Line values: meta_ingresos.
+    - Titulo: Real vs Meta de ingresos.
+13. Formato minimo obligatorio:
+    - Mostrar etiquetas de datos en los 3 visuales.
+    - Mostrar separador de miles.
+    - Mantener mismo filtro de anio para toda la pagina.
+14. Guardar en DataWarehouse/PowerBI como Dashboard_DM1_Ingresos.pbix.
+
+### 10.4 Dashboard 2 - Comportamiento de Usuario (Cubo_Comportamiento)
+
+1. File -> New en Power BI Desktop.
+2. Home -> Get Data -> SQL Server Analysis Services database.
+3. Server: localhost.
+4. Connectivity mode: Connect live.
+5. En Navigator seleccionar Cubo_Comportamiento.
+6. Click Connect.
+7. Renombrar la pagina a PAG_DM2_Comportamiento.
+8. Insertar Slicer de tiempo:
+    - Campo: DIM_Tiempo.anio.
+9. Crear Visual 1 (Column chart):
+    - Eje: DIM_Tipo_Evento.nombre_evento.
+    - Valores: cantidad_eventos.
+    - Titulo: Eventos por tipo.
+10. Crear Visual 2 (Bar chart):
+    - Eje: DIM_Usuario.nickname.
+    - Valores: xp_acumulado.
+    - Titulo: XP acumulado por usuario.
+11. Crear Visual 3 (Column chart):
+    - Eje: DIM_Pais.nombre_pais.
+    - Valores: tiempo_sesion_seg.
+    - Titulo: Tiempo de sesion por pais.
+12. Formato minimo obligatorio:
+    - Ordenar Visual 2 de mayor a menor por xp_acumulado.
+    - Mantener el mismo slicer de anio para los 3 visuales.
+13. Guardar en DataWarehouse/PowerBI como Dashboard_DM2_Comportamiento.pbix.
+
+### 10.5 Dashboard 3 - Calidad de Torneos (Cubo_Torneos)
+
+1. File -> New en Power BI Desktop.
+2. Home -> Get Data -> SQL Server Analysis Services database.
+3. Server: localhost.
+4. Connectivity mode: Connect live.
+5. En Navigator seleccionar Cubo_Torneos.
+6. Click Connect.
+7. Renombrar la pagina a PAG_DM3_Torneos.
+8. Insertar Slicer de tiempo:
+    - Campo: DIM_Tiempo.anio.
+9. Crear Visual 1 (Column chart):
+    - Eje: DIM_Juego.nombre_juego.
+    - Valores: total_inscritos.
+    - Titulo: Inscritos por juego.
+10. Crear Visual 2 (Bar chart):
+    - Eje: DIM_Tipo_Torneo.nombre_tipo.
+    - Valores: calificacion_promedio.
+    - Titulo: Calificacion promedio por tipo de torneo.
+11. Crear Visual 3 (Column chart):
+    - Eje: DIM_Plataforma.nombre_plataforma.
+    - Valores: pct_recomendacion.
+    - Titulo: Recomendacion por plataforma.
+12. Formato minimo obligatorio:
+    - En Visual 3 mostrar porcentaje con 2 decimales.
+    - Mantener slicer de anio para toda la pagina.
+13. Guardar en DataWarehouse/PowerBI como Dashboard_DM3_Torneos.pbix.
+
+### 10.6 Dashboard 4 - Seguridad y Auditoria (Cubo_Auditoria)
+
+1. File -> New en Power BI Desktop.
+2. Home -> Get Data -> SQL Server Analysis Services database.
+3. Server: localhost.
+4. Connectivity mode: Connect live.
+5. En Navigator seleccionar Cubo_Auditoria.
+6. Click Connect.
+7. Renombrar la pagina a PAG_DM4_Auditoria.
+8. Insertar Slicer de tiempo:
+    - Campo: DIM_Tiempo.anio.
+9. Crear Visual 1 (Column chart):
+    - Eje: DIM_Operacion.nombre_operacion.
+    - Valores: total_eventos.
+    - Titulo: Eventos auditados por operacion.
+10. Crear Visual 2 (Bar chart):
+    - Eje: DIM_Pais_Registro.nombre_pais.
+    - Valores: registros_restringidos.
+    - Titulo: Registros restringidos por pais.
+11. Crear Visual 3 (Line and clustered column chart):
+    - Eje compartido: DIM_Tabla_Auditada.nombre_tabla.
+    - Column values: tickets_soporte.
+    - Line values: tickets_resueltos.
+    - Titulo: Tickets creados vs resueltos por tabla.
+12. Formato minimo obligatorio:
+    - Etiquetas de datos activas en los 3 visuales.
+    - Mantener slicer de anio para toda la pagina.
+13. Guardar en DataWarehouse/PowerBI como Dashboard_DM4_Auditoria.pbix.
+
+### 10.7 Verificacion final de consistencia (obligatoria)
+
+Ejecutar en SQL Server (DW_ESPORTS):
+
+```sql
+SELECT SUM(monto_real) AS total_monto_real,
+         SUM(meta_ingresos) AS total_meta_ingresos,
+         SUM(creditos_otorgados) AS total_creditos,
+         SUM(cantidad) AS total_transacciones
+FROM fact_ingresos;
+
+SELECT SUM(cantidad_eventos) AS total_eventos_comportamiento,
+         SUM(xp_acumulado) AS total_xp_acumulado,
+         SUM(tiempo_sesion_seg) AS total_tiempo_sesion_seg
+FROM fact_actividad_usuario;
+
+SELECT SUM(total_inscritos) AS total_inscritos,
+         SUM(total_resenas) AS total_resenas,
+         SUM(cantidad_torneos) AS total_torneos
+FROM fact_torneos;
+
+SELECT SUM(total_eventos) AS total_eventos_auditoria,
+         SUM(tickets_soporte) AS total_tickets_soporte,
+         SUM(tickets_resueltos) AS total_tickets_resueltos,
+         SUM(registros_restringidos) AS total_registros_restringidos
+FROM fact_auditoria;
 
 SELECT nombre_pais, es_restringido, motivo_restriccion
 FROM dim_pais_registro
 WHERE es_restringido = 1
 ORDER BY nombre_pais;
 ```
+
+Comparar contra Power BI:
+
+1. En cada dashboard agregar temporalmente tarjetas (Card) con las medidas principales.
+2. Verificar que los totales coincidan con SQL para el mismo filtro de anio.
+3. Si no coincide:
+    - Revisar slicers activos.
+    - Revisar que el cubo conectado sea el correcto.
+    - Revisar que Fase 9 y Fase 8 fueron ejecutadas en orden.
+4. Solo cuando todo coincida, retirar tarjetas temporales si no se desean en la entrega final.
+
+### 10.8 Cierre final de entrega
+
+Checklist obligatorio:
+
+1. Existen 4 archivos PBIX en DataWarehouse/PowerBI.
+2. Cada PBIX tiene su pagina principal con 3 visuales obligatorios.
+3. Los 4 dashboards responden al slicer de anio.
+4. Los totales validan contra SQL.
+5. No hay visuales en blanco ni errores de conexion.
 
 Con esta secuencia el flujo completo queda:
 
