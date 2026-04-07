@@ -1411,6 +1411,7 @@ Crear paquete ETL_01_Dimensiones.dtsx.
    - Connection: CONN_SQLSERVER_DW.
    - SQLSourceType: Direct input.
 3. Pegar exactamente este SQL:
+    - Importante: pegar solo sentencias SQL, sin delimitadores de bloque markdown.
 
 ```sql
 TRUNCATE TABLE fact_auditoria;
