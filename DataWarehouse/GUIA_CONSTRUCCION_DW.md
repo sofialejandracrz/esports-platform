@@ -2446,133 +2446,103 @@ SELECT COUNT(*) AS filas_fact_auditoria FROM fact_auditoria;
 
 ### 9.6 Crear dimensiones en secuencia unica (sin intercalar cubos)
 
-Regla fija de creacion para cada dimension:
+En este punto NO saltar entre dimensiones y cubos. Primero se crean y configuran TODAS las dimensiones.
 
-1. Click derecho en Dimensions -> New Dimension.
-2. Use an existing table.
-3. Main table: la tabla dim_* correspondiente.
-4. Key columns: PK real de la tabla.
-5. Seleccionar atributos descriptivos (no seleccionar columnas de hecho).
-6. Definir nombre de dimension como DIM_...
-7. Finish y guardar.
+Mapa rapido (para que no te confundas en el Wizard):
 
-Crear en este orden exacto:
+1. Main table: se coloca en pantalla Specify Source Information.
+2. Key Columns: se coloca en pantalla Specify Source Information (PK de la tabla dim_*).
+3. Name Column: se coloca en pantalla Specify Source Information (columna descriptiva para mostrar nombres).
+4. Dimension name: se coloca en la pantalla final Completing the Wizard.
+5. Atributos: se marcan en pantalla Select Dimension Attributes.
 
-1. DIM_Tiempo
-    - Tabla: dim_tiempo.
-    - Key: id_tiempo.
-    - Name column del atributo clave: fecha.
-    - Atributos: anio, trimestre, mes_nombre, mes_numero, semestre.
-    - Crear jerarquia de usuario HJ_Calendario: anio -> trimestre -> mes_nombre -> fecha.
+#### 9.6.1 Plantilla obligatoria (la repites para cada dimension)
 
-2. DIM_Region_Ingresos
-    - Tabla: dim_region.
-    - Key: id_region.
-    - Name: nombre_region.
+1. En Solution Explorer -> carpeta Dimensions -> click derecho -> New Dimension.
+2. Welcome: click Next.
+3. Select Creation Method:
+   - Use an existing table.
+   - Click Next.
+4. Specify Source Information:
+   - Main table: selecciona la tabla segun la matriz 9.6.2.
+   - Key Columns: selecciona la PK segun la matriz 9.6.2.
+   - Name Column: selecciona columna descriptiva segun la matriz 9.6.2.
+5. Select Dimension Attributes:
+   - Marca solo las columnas indicadas en la matriz 9.6.2.
+   - No marcar columnas de hechos ni columnas tecnicas que no se van a analizar.
+6. Completing the Wizard:
+   - Dimension name: escribe EXACTAMENTE el nombre indicado en la matriz 9.6.2.
+7. Click Finish.
+8. Guardar (Ctrl+Shift+S).
 
-3. DIM_Tipo_Item
-    - Tabla: dim_tipo_item.
-    - Key: id_tipo_item.
-    - Name: nombre_tipo.
+#### 9.6.2 Matriz exacta de configuracion por dimension
 
-4. DIM_Origen_Transaccion
-    - Tabla: dim_origen_transaccion.
-    - Key: id_origen.
-    - Name: nombre_origen.
+| # | Dimension name (wizard) | Main table | Key Columns | Name Column | Atributos a marcar en Select Dimension Attributes |
+|---|---|---|---|---|---|
+| 1 | DIM_Tiempo | dim_tiempo | id_tiempo | fecha | fecha, anio, trimestre, mes_nombre, mes_numero, semestre |
+| 2 | DIM_Region_Ingresos | dim_region | id_region | nombre_region | nombre_region |
+| 3 | DIM_Tipo_Item | dim_tipo_item | id_tipo_item | nombre_tipo | nombre_tipo |
+| 4 | DIM_Origen_Transaccion | dim_origen_transaccion | id_origen | nombre_origen | nombre_origen |
+| 5 | DIM_Usuario_Comprador | dim_usuario_comprador | id_usuario | nickname | nickname, pais, divisa, fecha_registro |
+| 6 | DIM_Responsable_RRHH | dim_responsable_rrhh | id_empleado + version | nombre_completo | nombre_completo, cargo, departamento, version, version_actual |
+| 7 | DIM_Usuario | dim_usuario | id_usuario | nickname | nickname, xp, estado, pais, fecha_registro |
+| 8 | DIM_Juego | dim_juego | id_juego | nombre_juego | nombre_juego |
+| 9 | DIM_Tipo_Evento | dim_tipo_evento | id_tipo_evento | nombre_evento | nombre_evento |
+| 10 | DIM_Pais | dim_pais | id_pais | nombre_pais | nombre_pais |
+| 11 | DIM_Modo_Juego | dim_modo_juego | id_modo_juego | nombre_modo | nombre_modo, nombre_juego |
+| 12 | DIM_Tipo_Torneo | dim_tipo_torneo | id_tipo_torneo | nombre_tipo | nombre_tipo, tipo_trofeo |
+| 13 | DIM_Plataforma | dim_plataforma | id_plataforma | nombre_plataforma | nombre_plataforma |
+| 14 | DIM_Region_Torneo | dim_region_torneo | id_region | nombre_region | nombre_region |
+| 15 | DIM_Operacion | dim_operacion | id_operacion | nombre_operacion | nombre_operacion |
+| 16 | DIM_Tabla_Auditada | dim_tabla_auditada | id_tabla | nombre_tabla | nombre_tabla |
+| 17 | DIM_Empleado_Soporte | dim_empleado_soporte | id_empleado + version | nombre_completo | nombre_completo, cargo, departamento, version, version_actual |
+| 18 | DIM_Pais_Registro | dim_pais_registro | id_pais | nombre_pais | nombre_pais, es_restringido, motivo_restriccion |
+| 19 | DIM_Rol_Usuario | dim_rol_usuario | id_rol | nombre_rol | nombre_rol |
 
-5. DIM_Usuario_Comprador
-    - Tabla: dim_usuario_comprador.
-    - Key: id_usuario.
-    - Name: nickname.
-    - Atributos extra: pais, divisa, fecha_registro.
+#### 9.6.3 Orden exacto de ejecucion (sin saltar)
 
-6. DIM_Responsable_RRHH
-    - Tabla: dim_responsable_rrhh.
-    - Key compuesto: id_empleado + version.
-    - Name: nombre_completo.
-    - Atributos extra: cargo, departamento, version_actual.
-    - Despues del wizard, abrir Dimension Structure y en atributo clave:
-      - KeyColumns = id_empleado, version.
-      - NameColumn = nombre_completo.
+1. Crear DIM_Tiempo (fila 1 de la matriz).
+2. Crear DIM_Region_Ingresos (fila 2).
+3. Crear DIM_Tipo_Item (fila 3).
+4. Crear DIM_Origen_Transaccion (fila 4).
+5. Crear DIM_Usuario_Comprador (fila 5).
+6. Crear DIM_Responsable_RRHH (fila 6).
+7. Crear DIM_Usuario (fila 7).
+8. Crear DIM_Juego (fila 8).
+9. Crear DIM_Tipo_Evento (fila 9).
+10. Crear DIM_Pais (fila 10).
+11. Crear DIM_Modo_Juego (fila 11).
+12. Crear DIM_Tipo_Torneo (fila 12).
+13. Crear DIM_Plataforma (fila 13).
+14. Crear DIM_Region_Torneo (fila 14).
+15. Crear DIM_Operacion (fila 15).
+16. Crear DIM_Tabla_Auditada (fila 16).
+17. Crear DIM_Empleado_Soporte (fila 17).
+18. Crear DIM_Pais_Registro (fila 18).
+19. Crear DIM_Rol_Usuario (fila 19).
 
-7. DIM_Usuario
-    - Tabla: dim_usuario.
-    - Key: id_usuario.
-    - Name: nickname.
-    - Atributos extra: xp, estado, pais, fecha_registro.
+#### 9.6.4 Ajustes obligatorios despues del wizard (claves y jerarquias)
 
-8. DIM_Juego
-    - Tabla: dim_juego.
-    - Key: id_juego.
-    - Name: nombre_juego.
-
-9. DIM_Tipo_Evento
-    - Tabla: dim_tipo_evento.
-    - Key: id_tipo_evento.
-    - Name: nombre_evento.
-
-10. DIM_Pais
-    - Tabla: dim_pais.
-    - Key: id_pais.
-    - Name: nombre_pais.
-
-11. DIM_Modo_Juego
-    - Tabla: dim_modo_juego.
-    - Key: id_modo_juego.
-    - Name: nombre_modo.
-    - Atributo extra: nombre_juego.
-    - Crear jerarquia HJ_Juego_Modo: nombre_juego -> nombre_modo.
-
-12. DIM_Tipo_Torneo
-    - Tabla: dim_tipo_torneo.
-    - Key: id_tipo_torneo.
-    - Name: nombre_tipo.
-    - Atributo extra: tipo_trofeo.
-
-13. DIM_Plataforma
-    - Tabla: dim_plataforma.
-    - Key: id_plataforma.
-    - Name: nombre_plataforma.
-
-14. DIM_Region_Torneo
-    - Tabla: dim_region_torneo.
-    - Key: id_region.
-    - Name: nombre_region.
-
-15. DIM_Operacion
-    - Tabla: dim_operacion.
-    - Key: id_operacion.
-    - Name: nombre_operacion.
-
-16. DIM_Tabla_Auditada
-    - Tabla: dim_tabla_auditada.
-    - Key: id_tabla.
-    - Name: nombre_tabla.
-
-17. DIM_Empleado_Soporte
-    - Tabla: dim_empleado_soporte.
-    - Key compuesto: id_empleado + version.
-    - Name: nombre_completo.
-    - Atributos extra: cargo, departamento, version_actual.
-    - Despues del wizard, abrir Dimension Structure y en atributo clave:
-      - KeyColumns = id_empleado, version.
-      - NameColumn = nombre_completo.
-
-18. DIM_Pais_Registro
-    - Tabla: dim_pais_registro.
-    - Key: id_pais.
-    - Name: nombre_pais.
-    - Atributos extra: es_restringido, motivo_restriccion.
-
-19. DIM_Rol_Usuario
-    - Tabla: dim_rol_usuario.
-    - Key: id_rol.
-    - Name: nombre_rol.
+1. Abrir DIM_Responsable_RRHH -> Dimension Structure.
+2. Click en el atributo clave (arriba, normalmente el nombre de la dimension).
+3. Presionar F4 (Properties).
+4. Verificar:
+   - KeyColumns = id_empleado, version.
+   - NameColumn = nombre_completo.
+5. Repetir exactamente lo mismo para DIM_Empleado_Soporte.
+6. Abrir DIM_Tiempo -> Dimension Structure.
+7. En panel Attributes verificar que existen: anio, trimestre, mes_nombre, fecha.
+8. En panel Hierarchies crear HJ_Calendario arrastrando en este orden:
+   - anio -> trimestre -> mes_nombre -> fecha.
+9. Abrir DIM_Modo_Juego -> Dimension Structure.
+10. En panel Hierarchies crear HJ_Juego_Modo:
+   - nombre_juego -> nombre_modo.
 
 Al finalizar 9.6:
 
 1. Guardar todo (Ctrl+Shift+S).
 2. Confirmar que en carpeta Dimensions existen las 19 dimensiones.
+3. No avanzar a 9.7 hasta confirmar que no hay iconos de error en ninguna dimension.
 
 ### 9.7 Crear cubos en secuencia (uno completo y luego el siguiente)
 
