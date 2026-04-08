@@ -1,0 +1,208 @@
+﻿<DeploymentSnapshot xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ddl2="http://schemas.microsoft.com/analysisservices/2003/engine/2" xmlns:ddl2_2="http://schemas.microsoft.com/analysisservices/2003/engine/2/2" xmlns:ddl100_100="http://schemas.microsoft.com/analysisservices/2008/engine/100/100" xmlns:ddl200="http://schemas.microsoft.com/analysisservices/2010/engine/200" xmlns:ddl200_200="http://schemas.microsoft.com/analysisservices/2010/engine/200/200" xmlns:ddl300="http://schemas.microsoft.com/analysisservices/2011/engine/300" xmlns:ddl300_300="http://schemas.microsoft.com/analysisservices/2011/engine/300/300" xmlns:ddl400="http://schemas.microsoft.com/analysisservices/2012/engine/400" xmlns:ddl400_400="http://schemas.microsoft.com/analysisservices/2012/engine/400/400" xmlns:ddl500="http://schemas.microsoft.com/analysisservices/2013/engine/500" xmlns:ddl500_500="http://schemas.microsoft.com/analysisservices/2013/engine/500/500" xmlns:dwd="http://schemas.microsoft.com/DataWarehouse/Designer/1.0">
+  <Target>
+    <Database>SSAS_DW_ESPORTS</Database>
+    <Server>localhost</Server>
+    <ConnectionString>Data Source=localhost;Timeout=0</ConnectionString>
+  </Target>
+  <Options>
+    <TransactionalDeployment>false</TransactionalDeployment>
+    <PartitionDeployment>DeployPartitions</PartitionDeployment>
+    <RoleDeployment>DeployRolesRetainMembers</RoleDeployment>
+    <ProcessingOption>Default</ProcessingOption>
+    <OutputScript></OutputScript>
+    <ImpactAnalysisFile></ImpactAnalysisFile>
+    <ConfigurationSettingsDeployment>Deploy</ConfigurationSettingsDeployment>
+    <OptimizationSettingsDeployment>Deploy</OptimizationSettingsDeployment>
+    <WriteBackTableCreation>UseExisting</WriteBackTableCreation>
+  </Options>
+  <Snapshot>
+    <ObjectSnapshots>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.RelationalDataSource</Type>
+        <TimeStamp>nqJCK7BRgIzL+5966jKWhx7xH+w=7/4/2026 17:46:447/4/2026 17:46:44</TimeStamp>
+        <ID>
+          <String>DS_DW_ESPORTS</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.DataSourceView</Type>
+        <TimeStamp>0yxdo7u5VuymwFL1cXYS6PwsYbs=7/4/2026 18:01:287/4/2026 17:51:55</TimeStamp>
+        <ID>
+          <String>DSV_DW_ESPORTS</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>cmXc0s6t0zf23QsuQUN8Go5pjHE=7/4/2026 19:29:097/4/2026 18:43:56</TimeStamp>
+        <ID>
+          <String>Dim Tiempo</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>Qi7ZrEol8MASaf2UUhLv2wDIA9o=7/4/2026 18:45:447/4/2026 18:45:44</TimeStamp>
+        <ID>
+          <String>DIM_Region_Ingresos</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>uMOcLMoPGS+TQmeazsjACdchm2M=7/4/2026 18:46:497/4/2026 18:46:49</TimeStamp>
+        <ID>
+          <String>DIM_Tipo_Item</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>+LGMpaecQzqXV4pISLtI/TY4YE0=7/4/2026 19:02:177/4/2026 18:47:14</TimeStamp>
+        <ID>
+          <String>Dim Origen Transaccion</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>jF6FFgWCgNNXv/FMGIR7rDFl8fk=8/4/2026 02:32:037/4/2026 18:49:08</TimeStamp>
+        <ID>
+          <String>Dim Usuario Comprador</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>KNA9r4mD0sobch+Cg0DuKfyTn8g=8/4/2026 02:32:037/4/2026 19:02:17</TimeStamp>
+        <ID>
+          <String>DIM_Usuario</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>xWoc++IMdDnsv5NyRb1vHw8P9sM=7/4/2026 19:09:247/4/2026 19:09:01</TimeStamp>
+        <ID>
+          <String>Dim Responsable Rrhh</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>9QGGdX1ut7SItOnWnrxqA5gwx1Y=7/4/2026 19:12:007/4/2026 19:11:10</TimeStamp>
+        <ID>
+          <String>Dim Juego</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>B1bHMu8HOShTQBQB7lY74P3gaHo=7/4/2026 19:13:017/4/2026 19:12:00</TimeStamp>
+        <ID>
+          <String>DIM_Tipo_Evento</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>upMZCvV4+CXG7ZU5SU45bQnDSqQ=7/4/2026 19:13:527/4/2026 19:13:01</TimeStamp>
+        <ID>
+          <String>DIM_Pais</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>LZ4Emumk0jq75JJ4YlBnve9PF78=7/4/2026 19:29:097/4/2026 19:13:52</TimeStamp>
+        <ID>
+          <String>DIM_Modo_Juego</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>jHvUAyEirXEGAo4WlxpM7reeDxQ=7/4/2026 19:15:327/4/2026 19:15:00</TimeStamp>
+        <ID>
+          <String>DIM_Tipo_Torneo</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>b+b4RSHXEW3gzhYkCojhfX5tHcQ=7/4/2026 19:16:247/4/2026 19:15:32</TimeStamp>
+        <ID>
+          <String>DIM_Plataforma</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>cqXMMGx9uVTK0YP5p9DZxDt8unk=7/4/2026 19:17:037/4/2026 19:16:24</TimeStamp>
+        <ID>
+          <String>DIM_Region_Torneo</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>EIXd1f6QNo36FgympUPrCKyy018=7/4/2026 19:17:497/4/2026 19:17:03</TimeStamp>
+        <ID>
+          <String>DIM_Operacion</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>epMP82XfKlv8W5RMuusYcZRYDGY=7/4/2026 19:19:057/4/2026 19:17:49</TimeStamp>
+        <ID>
+          <String>DIM_Tabla_Auditada</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>jPi/SC0mSgNWAYzI/iorVg7MENs=7/4/2026 19:19:057/4/2026 19:19:05</TimeStamp>
+        <ID>
+          <String>DIM_Empleado_Soporte</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>WB/+g++fAOD7ttfsF/PlFBqBHOA=7/4/2026 19:20:317/4/2026 19:19:41</TimeStamp>
+        <ID>
+          <String>DIM_Pais_Registro</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Dimension</Type>
+        <TimeStamp>NKTyqNW+qgC/3krnmmUAtfTEyXk=7/4/2026 19:29:097/4/2026 19:20:31</TimeStamp>
+        <ID>
+          <String>DIM_Rol_Usuario</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Cube</Type>
+        <TimeStamp>sOdJVS+HHgu6Gm5Eex7t5+K+hzQ=8/4/2026 01:33:258/4/2026 01:32:23D1Hw/ryCK4P0Dro3S0VzaskMUPk=8/4/2026 01:32:238/4/2026 01:32:23</TimeStamp>
+        <ID>
+          <String>DSV_DW_ESPORTS 2</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Cube</Type>
+        <TimeStamp>kOjzdgsBBuXPKVU2Kfq4TyUca8Q=8/4/2026 16:36:118/4/2026 01:26:330I6YappPh1hZBsq8rD2ftZlddv4=8/4/2026 01:26:338/4/2026 01:26:33</TimeStamp>
+        <ID>
+          <String>Cubo_Comportamiento</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Cube</Type>
+        <TimeStamp>27g93ltkSuAIO3vygCPbN+SS0MU=8/4/2026 16:39:228/4/2026 01:29:49w4HMB5V0J4PITDO8KlH7UnuX0jU=8/4/2026 01:29:498/4/2026 01:29:49</TimeStamp>
+        <ID>
+          <String>Cubo_Torneos</String>
+        </ID>
+      </ObjectSnapshot>
+      <ObjectSnapshot>
+        <Type>Microsoft.AnalysisServices.Cube</Type>
+        <TimeStamp>gsmwVsDr6VWKJdlYFognSgtlMXI=8/4/2026 16:39:228/4/2026 01:18:53sA/ylgY0M4chtFsCQPTDdSExlbU=8/4/2026 01:18:538/4/2026 01:18:53</TimeStamp>
+        <ID>
+          <String>Cubo_Ingresos</String>
+        </ID>
+      </ObjectSnapshot>
+    </ObjectSnapshots>
+    <DatabaseSnapshot>
+      <Type>Microsoft.AnalysisServices.Database</Type>
+      <TimeStamp>tVbvco2ppcvBLXGgFN23Ms/yYdU=7/4/2026 17:38:587/4/2026 17:38:58</TimeStamp>
+      <ID>
+        <String>SSAS_DW_ESPORTS</String>
+      </ID>
+    </DatabaseSnapshot>
+    <Granularity>Coarse</Granularity>
+  </Snapshot>
+  <AssemblyLocations />
+  <ProcessingComplete>true</ProcessingComplete>
+  <LastDeployed>2026-04-08T22:40:00.886667Z</LastDeployed>
+</DeploymentSnapshot>

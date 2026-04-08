@@ -6,6 +6,48 @@
     <Name>SSAS_DW_ESPORTS.database</Name>
     <FullPath>SSAS_DW_ESPORTS.database</FullPath>
   </Database>
+  <Cubes>
+    <ProjectItem>
+      <Name>Cubo_Ingresos.cube</Name>
+      <FullPath>Cubo_Ingresos.cube</FullPath>
+      <Dependencies>
+        <ProjectItem>
+          <Name>Cubo_Ingresos.partitions</Name>
+          <FullPath>Cubo_Ingresos.partitions</FullPath>
+        </ProjectItem>
+      </Dependencies>
+    </ProjectItem>
+    <ProjectItem>
+      <Name>Cubo_Comportamiento.cube</Name>
+      <FullPath>Cubo_Comportamiento.cube</FullPath>
+      <Dependencies>
+        <ProjectItem>
+          <Name>Cubo_Comportamiento.partitions</Name>
+          <FullPath>Cubo_Comportamiento.partitions</FullPath>
+        </ProjectItem>
+      </Dependencies>
+    </ProjectItem>
+    <ProjectItem>
+      <Name>Cubo_Torneos.cube</Name>
+      <FullPath>Cubo_Torneos.cube</FullPath>
+      <Dependencies>
+        <ProjectItem>
+          <Name>Cubo_Torneos.partitions</Name>
+          <FullPath>Cubo_Torneos.partitions</FullPath>
+        </ProjectItem>
+      </Dependencies>
+    </ProjectItem>
+    <ProjectItem>
+      <Name>Cubo_Auditoria.cube</Name>
+      <FullPath>Cubo_Auditoria.cube</FullPath>
+      <Dependencies>
+        <ProjectItem>
+          <Name>Cubo_Auditoria.partitions</Name>
+          <FullPath>Cubo_Auditoria.partitions</FullPath>
+        </ProjectItem>
+      </Dependencies>
+    </ProjectItem>
+  </Cubes>
   <Dimensions>
     <ProjectItem>
       <Name>DIM_Tiempo.dim</Name>

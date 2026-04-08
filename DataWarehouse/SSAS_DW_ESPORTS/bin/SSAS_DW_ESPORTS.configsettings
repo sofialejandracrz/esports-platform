@@ -1,0 +1,131 @@
+﻿<ConfigurationSettings xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ddl2="http://schemas.microsoft.com/analysisservices/2003/engine/2" xmlns:ddl2_2="http://schemas.microsoft.com/analysisservices/2003/engine/2/2" xmlns:ddl100_100="http://schemas.microsoft.com/analysisservices/2008/engine/100/100" xmlns:ddl200="http://schemas.microsoft.com/analysisservices/2010/engine/200" xmlns:ddl200_200="http://schemas.microsoft.com/analysisservices/2010/engine/200/200" xmlns:ddl300="http://schemas.microsoft.com/analysisservices/2011/engine/300" xmlns:ddl300_300="http://schemas.microsoft.com/analysisservices/2011/engine/300/300" xmlns:ddl400="http://schemas.microsoft.com/analysisservices/2012/engine/400" xmlns:ddl400_400="http://schemas.microsoft.com/analysisservices/2012/engine/400/400" xmlns:ddl500="http://schemas.microsoft.com/analysisservices/2013/engine/500" xmlns:ddl500_500="http://schemas.microsoft.com/analysisservices/2013/engine/500/500" xmlns:dwd="http://schemas.microsoft.com/DataWarehouse/Designer/1.0">
+  <Database>
+    <DataSources>
+      <DataSource>
+        <ID>DS_DW_ESPORTS</ID>
+        <ConnectionString>Provider=SQLNCLI11.1;Data Source=localhost;Integrated Security=SSPI;Initial Catalog=DW_ESPORTS</ConnectionString>
+        <ImpersonationInfo>
+          <ImpersonationMode xmlns="http://schemas.microsoft.com/analysisservices/2003/engine">ImpersonateServiceAccount</ImpersonationMode>
+          <ImpersonationInfoSecurity xmlns="http://schemas.microsoft.com/analysisservices/2003/engine">Unchanged</ImpersonationInfoSecurity>
+        </ImpersonationInfo>
+      </DataSource>
+    </DataSources>
+    <Dimensions>
+      <Dimension>
+        <ID>Dim Tiempo</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Region_Ingresos</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Tipo_Item</ID>
+      </Dimension>
+      <Dimension>
+        <ID>Dim Origen Transaccion</ID>
+      </Dimension>
+      <Dimension>
+        <ID>Dim Usuario Comprador</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Usuario</ID>
+      </Dimension>
+      <Dimension>
+        <ID>Dim Responsable Rrhh</ID>
+      </Dimension>
+      <Dimension>
+        <ID>Dim Juego</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Tipo_Evento</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Pais</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Modo_Juego</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Tipo_Torneo</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Plataforma</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Region_Torneo</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Operacion</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Tabla_Auditada</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Empleado_Soporte</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Pais_Registro</ID>
+      </Dimension>
+      <Dimension>
+        <ID>DIM_Rol_Usuario</ID>
+      </Dimension>
+    </Dimensions>
+    <Cubes>
+      <Cube>
+        <ID>DSV_DW_ESPORTS 2</ID>
+        <MeasureGroups>
+          <MeasureGroup>
+            <ID>Fact Auditoria</ID>
+            <Partitions>
+              <Partition>
+                <ID>Fact Auditoria</ID>
+              </Partition>
+            </Partitions>
+          </MeasureGroup>
+        </MeasureGroups>
+      </Cube>
+      <Cube>
+        <ID>Cubo_Comportamiento</ID>
+        <MeasureGroups>
+          <MeasureGroup>
+            <ID>Fact Actividad Usuario</ID>
+            <Partitions>
+              <Partition>
+                <ID>Fact Actividad Usuario</ID>
+              </Partition>
+            </Partitions>
+          </MeasureGroup>
+        </MeasureGroups>
+      </Cube>
+      <Cube>
+        <ID>Cubo_Torneos</ID>
+        <MeasureGroups>
+          <MeasureGroup>
+            <ID>Fact Torneos</ID>
+            <Partitions>
+              <Partition>
+                <ID>Fact Torneos</ID>
+              </Partition>
+            </Partitions>
+          </MeasureGroup>
+        </MeasureGroups>
+      </Cube>
+      <Cube>
+        <ID>Cubo_Ingresos</ID>
+        <MeasureGroups>
+          <MeasureGroup>
+            <ID>Fact Ingresos</ID>
+            <Partitions>
+              <Partition>
+                <ID>Fact Ingresos</ID>
+              </Partition>
+            </Partitions>
+          </MeasureGroup>
+        </MeasureGroups>
+      </Cube>
+    </Cubes>
+    <DataSourceImpersonationInfo>
+      <ImpersonationMode xmlns="http://schemas.microsoft.com/analysisservices/2003/engine">Default</ImpersonationMode>
+      <ImpersonationInfoSecurity xmlns="http://schemas.microsoft.com/analysisservices/2003/engine">Unchanged</ImpersonationInfoSecurity>
+    </DataSourceImpersonationInfo>
+  </Database>
+</ConfigurationSettings>

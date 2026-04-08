@@ -183,7 +183,22 @@
             <ColumnID>fecha_registro</ColumnID>
           </Source>
         </KeyColumn>
+        <KeyColumn dwd:design-time-name="e42b9afd-95a2-4f97-aa0b-345f5f335a9f">
+          <DataType>Integer</DataType>
+          <Source xsi:type="ColumnBinding" dwd:design-time-name="2d0e9d1d-c5f1-42c8-b80b-ec9f03b19758">
+            <TableID>dbo_dim_usuario_comprador</TableID>
+            <ColumnID>id_usuario</ColumnID>
+          </Source>
+        </KeyColumn>
       </KeyColumns>
+      <NameColumn dwd:design-time-name="e5c3df92-8f84-482a-8108-fa8bb57f89a4">
+        <DataType>WChar</DataType>
+        <DataSize>30</DataSize>
+        <Source xsi:type="ColumnBinding" dwd:design-time-name="ee7740f9-1f47-4d70-b2a1-272087272ff1">
+          <TableID>dbo_dim_usuario_comprador</TableID>
+          <ColumnID>fecha_registro</ColumnID>
+        </Source>
+      </NameColumn>
       <OrderBy>Key</OrderBy>
       <ddl200:ProcessingState>Unprocessed</ddl200:ProcessingState>
       <ddl300:AttributeHierarchyProcessingState>Unprocessed</ddl300:AttributeHierarchyProcessingState>

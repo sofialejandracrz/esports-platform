@@ -203,7 +203,22 @@
             <ColumnID>fecha_registro</ColumnID>
           </Source>
         </KeyColumn>
+        <KeyColumn dwd:design-time-name="c72f0c31-8139-4a6b-8bdd-77f0f2e6d00b">
+          <DataType>Integer</DataType>
+          <Source xsi:type="ColumnBinding" dwd:design-time-name="cc3aef40-23d8-4609-a926-b2e65dcef4cb">
+            <TableID>dbo_dim_usuario</TableID>
+            <ColumnID>id_usuario</ColumnID>
+          </Source>
+        </KeyColumn>
       </KeyColumns>
+      <NameColumn dwd:design-time-name="fec88f1a-eb85-4f87-9fc2-f711e0406f7f">
+        <DataType>WChar</DataType>
+        <DataSize>30</DataSize>
+        <Source xsi:type="ColumnBinding" dwd:design-time-name="15465cd7-0f4c-4208-8620-20f4af445f1b">
+          <TableID>dbo_dim_usuario</TableID>
+          <ColumnID>fecha_registro</ColumnID>
+        </Source>
+      </NameColumn>
       <OrderBy>Key</OrderBy>
       <ddl200:ProcessingState>Unprocessed</ddl200:ProcessingState>
       <ddl300:AttributeHierarchyProcessingState>Unprocessed</ddl300:AttributeHierarchyProcessingState>

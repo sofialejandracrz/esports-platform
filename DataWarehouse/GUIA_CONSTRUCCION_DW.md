@@ -2687,19 +2687,39 @@ Crear en este orden exacto:
 
 ---
 
-## Fase 10 - Dashboards Power BI y verificacion final
+## Fase 10 - Dashboards Power BI (diseno profesional) y verificacion final
 
 Objetivo de esta fase:
 
 1. Construir dashboards finales en Power BI a partir de los 4 cubos SSAS ya procesados.
-2. Validar que los resultados de Power BI coinciden con los datos del DW en SQL Server.
-3. Cerrar el flujo completo con una evidencia final reproducible.
+2. Mantener 1 dashboard por cada cubo SSAS (sin mezclar cubos en un mismo PBIX).
+3. Aplicar un diseno visual profesional y consistente.
+4. Validar que los resultados de Power BI coinciden con los datos del DW en SQL Server.
 
 Resultado esperado al terminar:
 
 1. 4 archivos .pbix (uno por datamart/cubo).
-2. Cada archivo con 1 pagina principal y 3 visuales obligatorios.
-3. Medidas visibles y coherentes con consultas SQL de control.
+2. Cada archivo con 1 pagina principal, 1 slicer de anio y 3 visuales obligatorios.
+3. Diseno limpio, legible y uniforme (tipografia, colores, espaciado y titulos).
+4. Medidas visibles y coherentes con consultas SQL de control.
+
+### 10.0 Regla de ejecucion lineal (obligatoria)
+
+No mezclar pasos entre dashboards.
+
+Secuencia obligatoria:
+
+1. Completar Dashboard_DM1_Ingresos.pbix de inicio a fin:
+    - Conexion
+    - Estructura visual
+    - Creacion de visuales
+    - Formato final
+    - Verificacion
+    - Guardado
+2. Solo despues iniciar Dashboard_DM2_Comportamiento.pbix y repetir el mismo ciclo completo.
+3. Solo despues iniciar Dashboard_DM3_Torneos.pbix y repetir el ciclo completo.
+4. Solo despues iniciar Dashboard_DM4_Auditoria.pbix y repetir el ciclo completo.
+5. No hacer primero visuales de varios PBIX y luego volver a formatear; cada PBIX se cierra completo antes de pasar al siguiente.
 
 ### 10.1 Precondicion obligatoria antes de abrir Power BI
 
@@ -2721,7 +2741,38 @@ SELECT COUNT(*) AS filas_fact_auditoria FROM fact_auditoria;
 
 5. Si alguna fact esta en 0, detenerse y corregir ETL (Fase 8) antes de Power BI.
 
-### 10.2 Estructura de entrega obligatoria (orden unico)
+### 10.2 Estandar visual profesional obligatorio (aplica a los 4 dashboards)
+
+Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
+
+1. Lienzo:
+    - Page size: 16:9.
+    - Wallpaper color: #F3F5F9.
+    - Wallpaper transparency: 0%.
+2. Tipografia:
+    - Titulos de pagina: Segoe UI Semibold, 20 pt, color #0F1E3A.
+    - Titulos de visual: Segoe UI Semibold, 12 pt, color #1F2D3D.
+    - Etiquetas y ejes: Segoe UI, 10 pt, color #425466.
+3. Paleta base recomendada:
+    - Azul principal: #1F4E79.
+    - Azul secundario: #4F81BD.
+    - Naranja de contraste: #E67E22.
+    - Verde de apoyo: #2A9D8F.
+    - Gris neutro: #7B8794.
+4. Contenedores:
+    - Cada visual dentro de un panel blanco (#FFFFFF).
+    - Bordes suaves en color #D9E2EC.
+    - Sin saturar el lienzo con demasiados colores.
+5. Legibilidad:
+    - Data labels activas en visuales obligatorios.
+    - Separador de miles activado.
+    - Evitar truncar titulos (ajustar ancho antes de reducir fuente).
+6. Espaciado:
+    - Margen superior para cabecera.
+    - Slicer separado visualmente del area de graficos.
+    - Distancia uniforme entre visuales.
+
+### 10.3 Estructura de entrega obligatoria
 
 1. Crear carpeta de salida para dashboards:
     - DataWarehouse/PowerBI
@@ -2730,10 +2781,12 @@ SELECT COUNT(*) AS filas_fact_auditoria FROM fact_auditoria;
     - Dashboard_DM2_Comportamiento.pbix
     - Dashboard_DM3_Torneos.pbix
     - Dashboard_DM4_Auditoria.pbix
-3. Regla tecnica de esta guia:
+3. Regla tecnica:
     - Como trabajas con cubos SSAS separados, usar 1 archivo PBIX por cubo para evitar mezclar modelos en una sola conexion Live.
 
-### 10.3 Dashboard 1 - Ingresos y Monetizacion (Cubo_Ingresos)
+### 10.4 Dashboard 1 - Ingresos y Monetizacion (Cubo_Ingresos)
+
+#### 10.4.1 Crear archivo y conectar cubo
 
 1. Abrir Power BI Desktop.
 2. Home -> Get Data -> SQL Server Analysis Services database.
@@ -2742,114 +2795,273 @@ SELECT COUNT(*) AS filas_fact_auditoria FROM fact_auditoria;
 5. Click OK.
 6. En Navigator seleccionar Cubo_Ingresos.
 7. Click Connect.
-8. Renombrar la pagina a PAG_DM1_Ingresos.
-9. Insertar Slicer de tiempo:
-    - Campo: DIM_Tiempo.anio.
-10. Crear Visual 1 (Column chart):
-    - Eje: DIM_Region_Ingresos.nombre_region.
-    - Valores: monto_real.
-    - Titulo: Ingresos reales por region.
-11. Crear Visual 2 (Line chart):
-    - Eje: jerarquia de DIM_Tiempo (usar nivel mes_nombre dentro del anio filtrado).
-    - Valores: meta_ingresos.
-    - Titulo: Meta de ingresos por mes.
-12. Crear Visual 3 (Line and clustered column chart):
-    - Eje compartido: jerarquia de DIM_Tiempo (mes).
-    - Column values: monto_real.
-    - Line values: meta_ingresos.
-    - Titulo: Real vs Meta de ingresos.
-13. Formato minimo obligatorio:
-    - Mostrar etiquetas de datos en los 3 visuales.
-    - Mostrar separador de miles.
-    - Mantener mismo filtro de anio para toda la pagina.
-14. Guardar en DataWarehouse/PowerBI como Dashboard_DM1_Ingresos.pbix.
+8. Ir a File -> Save As.
+9. Guardar como DataWarehouse/PowerBI/Dashboard_DM1_Ingresos.pbix.
 
-### 10.4 Dashboard 2 - Comportamiento de Usuario (Cubo_Comportamiento)
+#### 10.4.2 Configurar pagina base
 
-1. File -> New en Power BI Desktop.
+1. Renombrar la pagina a PAG_DM1_Ingresos.
+2. Click en fondo de pagina (sin seleccionar visual).
+3. En panel Format:
+    - Canvas settings -> Type: 16:9.
+    - Wallpaper -> Color: #F3F5F9.
+    - Wallpaper -> Transparency: 0%.
+4. Insert -> Text box.
+5. Titulo: Dashboard DM1 - Ingresos y Monetizacion.
+6. Subtitulo recomendado: Cubo_Ingresos | DW_ESPORTS | Vista Ejecutiva.
+
+#### 10.4.3 Crear filtro principal
+
+1. Insertar Slicer.
+2. Campo: DIM_Tiempo.anio.
+3. Configurar slicer como lista vertical.
+4. Activar seleccion unica (single select = On).
+5. Colocar el slicer en la zona superior izquierda para que gobierne toda la pagina.
+
+#### 10.4.4 Crear Visual 1 (obligatorio)
+
+1. Insertar Clustered column chart.
+2. Eje: DIM_Region_Ingresos.nombre_region.
+3. Valores: monto_real.
+4. Titulo: Ingresos reales por region.
+5. Formato:
+    - Data labels: On.
+    - Data colors: #1F4E79.
+    - Y-axis separador de miles: On.
+    - Ordenar de mayor a menor por monto_real.
+
+#### 10.4.5 Crear Visual 2 (obligatorio)
+
+1. Insertar Line chart.
+2. Eje: jerarquia de DIM_Tiempo usando mes_nombre (dentro del anio filtrado).
+3. Valores: meta_ingresos.
+4. Titulo: Meta de ingresos por mes.
+5. Formato:
+    - Line color: #E67E22.
+    - Data labels: On.
+    - Markers: On.
+    - Y-axis separador de miles: On.
+
+#### 10.4.6 Crear Visual 3 (obligatorio)
+
+1. Insertar Line and clustered column chart.
+2. Shared axis: jerarquia de DIM_Tiempo (mes).
+3. Column values: monto_real.
+4. Line values: meta_ingresos.
+5. Titulo: Real vs Meta de ingresos.
+6. Formato:
+    - Column color (monto_real): #1F4E79.
+    - Line color (meta_ingresos): #E67E22.
+    - Data labels: On.
+    - Y-axis separador de miles: On.
+
+#### 10.4.7 Ajuste visual final y guardado
+
+1. Verificar que los 3 visuales tengan tamano similar y alineacion uniforme.
+2. Verificar que el slicer de anio filtre los 3 visuales.
+3. Revisar que no existan titulos truncados ni etiquetas montadas.
+4. Guardar (Ctrl+S).
+
+### 10.5 Dashboard 2 - Comportamiento de Usuario (Cubo_Comportamiento)
+
+#### 10.5.1 Crear archivo y conectar cubo
+
+1. En Power BI, File -> New.
 2. Home -> Get Data -> SQL Server Analysis Services database.
 3. Server: localhost.
 4. Connectivity mode: Connect live.
 5. En Navigator seleccionar Cubo_Comportamiento.
 6. Click Connect.
-7. Renombrar la pagina a PAG_DM2_Comportamiento.
-8. Insertar Slicer de tiempo:
-    - Campo: DIM_Tiempo.anio.
-9. Crear Visual 1 (Column chart):
-    - Eje: DIM_Tipo_Evento.nombre_evento.
-    - Valores: cantidad_eventos.
-    - Titulo: Eventos por tipo.
-10. Crear Visual 2 (Bar chart):
-    - Eje: DIM_Usuario.nickname.
-    - Valores: xp_acumulado.
-    - Titulo: XP acumulado por usuario.
-11. Crear Visual 3 (Column chart):
-    - Eje: DIM_Pais.nombre_pais.
-    - Valores: tiempo_sesion_seg.
-    - Titulo: Tiempo de sesion por pais.
-12. Formato minimo obligatorio:
-    - Ordenar Visual 2 de mayor a menor por xp_acumulado.
-    - Mantener el mismo slicer de anio para los 3 visuales.
-13. Guardar en DataWarehouse/PowerBI como Dashboard_DM2_Comportamiento.pbix.
+7. Guardar como DataWarehouse/PowerBI/Dashboard_DM2_Comportamiento.pbix.
 
-### 10.5 Dashboard 3 - Calidad de Torneos (Cubo_Torneos)
+#### 10.5.2 Configurar pagina base
 
-1. File -> New en Power BI Desktop.
+1. Renombrar la pagina a PAG_DM2_Comportamiento.
+2. Aplicar el mismo estandar de pagina definido en 10.2.
+3. Insertar titulo: Dashboard DM2 - Comportamiento de Usuario.
+4. Insertar subtitulo recomendado: Cubo_Comportamiento | DW_ESPORTS | Actividad y Engagement.
+
+#### 10.5.3 Crear filtro principal
+
+1. Insertar Slicer.
+2. Campo: DIM_Tiempo.anio.
+3. Configurar seleccion unica.
+4. Ubicarlo en la misma posicion relativa usada en DM1 para mantener consistencia.
+
+#### 10.5.4 Crear Visual 1 (obligatorio)
+
+1. Insertar Clustered column chart.
+2. Eje: DIM_Tipo_Evento.nombre_evento.
+3. Valores: cantidad_eventos.
+4. Titulo: Eventos por tipo.
+5. Formato:
+    - Data labels: On.
+    - Data colors: #2A9D8F.
+    - Ordenar de mayor a menor por cantidad_eventos.
+
+#### 10.5.5 Crear Visual 2 (obligatorio)
+
+1. Insertar Bar chart.
+2. Eje: DIM_Usuario.nickname.
+3. Valores: xp_acumulado.
+4. Titulo: XP acumulado por usuario.
+5. Formato:
+    - Data labels: On.
+    - Data colors: #1F4E79.
+    - Ordenar de mayor a menor por xp_acumulado (obligatorio).
+
+#### 10.5.6 Crear Visual 3 (obligatorio)
+
+1. Insertar Clustered column chart.
+2. Eje: DIM_Pais.nombre_pais.
+3. Valores: tiempo_sesion_seg.
+4. Titulo: Tiempo de sesion por pais.
+5. Formato:
+    - Data labels: On.
+    - Data colors: #4F81BD.
+    - Y-axis separador de miles: On.
+
+#### 10.5.7 Ajuste visual final y guardado
+
+1. Verificar alineacion horizontal y vertical de los 3 visuales.
+2. Verificar que el slicer de anio filtre los 3 visuales.
+3. Revisar que Visual 2 conserve el orden descendente.
+4. Guardar (Ctrl+S).
+
+### 10.6 Dashboard 3 - Calidad de Torneos (Cubo_Torneos)
+
+#### 10.6.1 Crear archivo y conectar cubo
+
+1. File -> New.
 2. Home -> Get Data -> SQL Server Analysis Services database.
 3. Server: localhost.
 4. Connectivity mode: Connect live.
 5. En Navigator seleccionar Cubo_Torneos.
 6. Click Connect.
-7. Renombrar la pagina a PAG_DM3_Torneos.
-8. Insertar Slicer de tiempo:
-    - Campo: DIM_Tiempo.anio.
-9. Crear Visual 1 (Column chart):
-    - Eje: DIM_Juego.nombre_juego.
-    - Valores: total_inscritos.
-    - Titulo: Inscritos por juego.
-10. Crear Visual 2 (Bar chart):
-    - Eje: DIM_Tipo_Torneo.nombre_tipo.
-    - Valores: calificacion_promedio.
-    - Titulo: Calificacion promedio por tipo de torneo.
-11. Crear Visual 3 (Column chart):
-    - Eje: DIM_Plataforma.nombre_plataforma.
-    - Valores: pct_recomendacion.
-    - Titulo: Recomendacion por plataforma.
-12. Formato minimo obligatorio:
-    - En Visual 3 mostrar porcentaje con 2 decimales.
-    - Mantener slicer de anio para toda la pagina.
-13. Guardar en DataWarehouse/PowerBI como Dashboard_DM3_Torneos.pbix.
+7. Guardar como DataWarehouse/PowerBI/Dashboard_DM3_Torneos.pbix.
 
-### 10.6 Dashboard 4 - Seguridad y Auditoria (Cubo_Auditoria)
+#### 10.6.2 Configurar pagina base
 
-1. File -> New en Power BI Desktop.
+1. Renombrar pagina a PAG_DM3_Torneos.
+2. Aplicar el mismo estandar visual de 10.2.
+3. Insertar titulo: Dashboard DM3 - Calidad de Torneos.
+4. Insertar subtitulo recomendado: Cubo_Torneos | DW_ESPORTS | Competencia y Satisfaccion.
+
+#### 10.6.3 Crear filtro principal
+
+1. Insertar Slicer.
+2. Campo: DIM_Tiempo.anio.
+3. Configurar seleccion unica.
+4. Ubicar en la cabecera izquierda.
+
+#### 10.6.4 Crear Visual 1 (obligatorio)
+
+1. Insertar Clustered column chart.
+2. Eje: DIM_Juego.nombre_juego.
+3. Valores: total_inscritos.
+4. Titulo: Inscritos por juego.
+5. Formato:
+    - Data labels: On.
+    - Data colors: #1F4E79.
+    - Ordenar de mayor a menor por total_inscritos.
+
+#### 10.6.5 Crear Visual 2 (obligatorio)
+
+1. Insertar Bar chart.
+2. Eje: DIM_Tipo_Torneo.nombre_tipo.
+3. Valores: calificacion_promedio.
+4. Titulo: Calificacion promedio por tipo de torneo.
+5. Formato:
+    - Data labels: On.
+    - Data colors: #2A9D8F.
+    - Mostrar 2 decimales en etiquetas.
+
+#### 10.6.6 Crear Visual 3 (obligatorio)
+
+1. Insertar Clustered column chart.
+2. Eje: DIM_Plataforma.nombre_plataforma.
+3. Valores: pct_recomendacion.
+4. Titulo: Recomendacion por plataforma.
+5. Formato:
+    - Data labels: On.
+    - Data colors: #E67E22.
+    - Formato de medida: porcentaje con 2 decimales (obligatorio).
+
+#### 10.6.7 Ajuste visual final y guardado
+
+1. Verificar que los 3 visuales queden balanceados en ancho y alto.
+2. Verificar que el slicer de anio filtre toda la pagina.
+3. Revisar que el porcentaje de recomendacion muestre simbolo %.
+4. Guardar (Ctrl+S).
+
+### 10.7 Dashboard 4 - Seguridad y Auditoria (Cubo_Auditoria)
+
+#### 10.7.1 Crear archivo y conectar cubo
+
+1. File -> New.
 2. Home -> Get Data -> SQL Server Analysis Services database.
 3. Server: localhost.
 4. Connectivity mode: Connect live.
 5. En Navigator seleccionar Cubo_Auditoria.
 6. Click Connect.
-7. Renombrar la pagina a PAG_DM4_Auditoria.
-8. Insertar Slicer de tiempo:
-    - Campo: DIM_Tiempo.anio.
-9. Crear Visual 1 (Column chart):
-    - Eje: DIM_Operacion.nombre_operacion.
-    - Valores: total_eventos.
-    - Titulo: Eventos auditados por operacion.
-10. Crear Visual 2 (Bar chart):
-    - Eje: DIM_Pais_Registro.nombre_pais.
-    - Valores: registros_restringidos.
-    - Titulo: Registros restringidos por pais.
-11. Crear Visual 3 (Line and clustered column chart):
-    - Eje compartido: DIM_Tabla_Auditada.nombre_tabla.
-    - Column values: tickets_soporte.
-    - Line values: tickets_resueltos.
-    - Titulo: Tickets creados vs resueltos por tabla.
-12. Formato minimo obligatorio:
-    - Etiquetas de datos activas en los 3 visuales.
-    - Mantener slicer de anio para toda la pagina.
-13. Guardar en DataWarehouse/PowerBI como Dashboard_DM4_Auditoria.pbix.
+7. Guardar como DataWarehouse/PowerBI/Dashboard_DM4_Auditoria.pbix.
 
-### 10.7 Verificacion final de consistencia (obligatoria)
+#### 10.7.2 Configurar pagina base
+
+1. Renombrar pagina a PAG_DM4_Auditoria.
+2. Aplicar el mismo estandar visual de 10.2.
+3. Insertar titulo: Dashboard DM4 - Seguridad y Auditoria.
+4. Insertar subtitulo recomendado: Cubo_Auditoria | DW_ESPORTS | Control y Riesgo Operativo.
+
+#### 10.7.3 Crear filtro principal
+
+1. Insertar Slicer.
+2. Campo: DIM_Tiempo.anio.
+3. Configurar seleccion unica.
+4. Ubicar en zona superior izquierda.
+
+#### 10.7.4 Crear Visual 1 (obligatorio)
+
+1. Insertar Clustered column chart.
+2. Eje: DIM_Operacion.nombre_operacion.
+3. Valores: total_eventos.
+4. Titulo: Eventos auditados por operacion.
+5. Formato:
+    - Data labels: On.
+    - Data colors: #1F4E79.
+    - Ordenar de mayor a menor por total_eventos.
+
+#### 10.7.5 Crear Visual 2 (obligatorio)
+
+1. Insertar Bar chart.
+2. Eje: DIM_Pais_Registro.nombre_pais.
+3. Valores: registros_restringidos.
+4. Titulo: Registros restringidos por pais.
+5. Formato:
+    - Data labels: On.
+    - Data colors: #C0392B.
+    - Ordenar de mayor a menor por registros_restringidos.
+
+#### 10.7.6 Crear Visual 3 (obligatorio)
+
+1. Insertar Line and clustered column chart.
+2. Eje compartido: DIM_Tabla_Auditada.nombre_tabla.
+3. Column values: tickets_soporte.
+4. Line values: tickets_resueltos.
+5. Titulo: Tickets creados vs resueltos por tabla.
+6. Formato:
+    - Column color (tickets_soporte): #4F81BD.
+    - Line color (tickets_resueltos): #2A9D8F.
+    - Data labels: On.
+
+#### 10.7.7 Ajuste visual final y guardado
+
+1. Verificar que los 3 visuales respondan al slicer de anio.
+2. Verificar que no haya categorias con texto cortado sin tooltip.
+3. Confirmar etiquetas de datos activas en los 3 visuales (obligatorio).
+4. Guardar (Ctrl+S).
+
+### 10.8 Verificacion final de consistencia (obligatoria)
 
 Ejecutar en SQL Server (DW_ESPORTS):
 
@@ -2882,25 +3094,29 @@ WHERE es_restringido = 1
 ORDER BY nombre_pais;
 ```
 
-Comparar contra Power BI:
+Comparar contra Power BI (por cada PBIX, en secuencia):
 
-1. En cada dashboard agregar temporalmente tarjetas (Card) con las medidas principales.
-2. Verificar que los totales coincidan con SQL para el mismo filtro de anio.
-3. Si no coincide:
-    - Revisar slicers activos.
+1. Abrir un PBIX.
+2. Agregar temporalmente tarjetas (Card) con las medidas principales de ese cubo.
+3. Verificar que los totales coincidan con SQL para el mismo filtro de anio.
+4. Si no coincide:
+    - Revisar slicer de anio activo.
     - Revisar que el cubo conectado sea el correcto.
     - Revisar que Fase 9 y Fase 8 fueron ejecutadas en orden.
-4. Solo cuando todo coincida, retirar tarjetas temporales si no se desean en la entrega final.
+5. Repetir para el siguiente PBIX.
+6. Retirar tarjetas temporales solo cuando el control cierre sin diferencias.
 
-### 10.8 Cierre final de entrega
+### 10.9 Cierre final de entrega
 
 Checklist obligatorio:
 
 1. Existen 4 archivos PBIX en DataWarehouse/PowerBI.
-2. Cada PBIX tiene su pagina principal con 3 visuales obligatorios.
-3. Los 4 dashboards responden al slicer de anio.
-4. Los totales validan contra SQL.
-5. No hay visuales en blanco ni errores de conexion.
+2. Cada PBIX corresponde a un solo cubo SSAS (sin mezcla).
+3. Cada PBIX tiene 1 pagina principal con 1 slicer de anio y 3 visuales obligatorios.
+4. Los 4 dashboards aplican formato profesional consistente (tipografia, colores, espaciado).
+5. Los 4 dashboards responden al slicer de anio.
+6. Los totales validan contra SQL.
+7. No hay visuales en blanco ni errores de conexion.
 
 Con esta secuencia el flujo completo queda:
 
