@@ -22,6 +22,7 @@
 9. Fase 8 - Ejecucion secuencial de paquetes SSIS
 10. Fase 9 - Cubos SSAS
 11. Fase 10 - Dashboards Power BI y verificacion final
+12. Fase 11 - Proyecto Reporting Services (SSRS)
 
 ## Reglas de ejecucion
 
@@ -3199,6 +3200,273 @@ Checklist obligatorio:
 6. Los totales validan contra SQL.
 7. No hay visuales en blanco ni errores de conexion.
 
+---
+
+## Fase 11 - Proyecto Reporting Services (SSRS)
+
+Objetivo de esta fase:
+
+1. Crear un proyecto SSRS en la misma solucion del DW.
+2. Configurar despliegue al servidor Reporting Services instalado localmente.
+3. Crear un origen de datos compartido contra DW_ESPORTS.
+4. Crear datasets y reportes base para DM1, DM2, DM3 y DM4 usando solo tablas del DW ya definidas en esta guia.
+
+Resultado esperado al terminar:
+
+1. Proyecto SSRS_DW_ESPORTS visible en la solucion.
+2. Shared Data Source DS_DW_ESPORTS creado y validado.
+3. Cuatro Shared Datasets creados (DM1 a DM4).
+4. Cuatro reportes RDL creados y desplegados en el portal SSRS.
+
+### 11.0 Regla de ejecucion lineal (obligatoria)
+
+1. Verificar precondiciones de datos.
+2. Obtener URLs del servidor SSRS desde Configuration Manager.
+3. Crear el proyecto SSRS.
+4. Configurar propiedades de despliegue del proyecto.
+5. Crear Shared Data Source.
+6. Crear Shared Datasets.
+7. Crear reportes RDL base.
+8. Deploy y verificacion final en portal.
+
+### 11.1 Precondicion obligatoria antes de crear el proyecto SSRS
+
+1. Confirmar que la Fase 8 termino en verde (ETL_00 a ETL_05).
+2. Ejecutar en SSMS sobre DW_ESPORTS:
+
+```sql
+SELECT COUNT(*) AS filas_fact_ingresos FROM fact_ingresos;
+SELECT COUNT(*) AS filas_fact_actividad_usuario FROM fact_actividad_usuario;
+SELECT COUNT(*) AS filas_fact_torneos FROM fact_torneos;
+SELECT COUNT(*) AS filas_fact_auditoria FROM fact_auditoria;
+```
+
+3. Criterio para continuar:
+    - filas_fact_ingresos > 0
+    - filas_fact_actividad_usuario > 0
+    - filas_fact_torneos > 0
+    - filas_fact_auditoria > 0
+4. Si cualquier conteo da 0, volver a Fase 8 y no continuar con SSRS.
+
+### 11.2 Obtener URLs de Reporting Services (boton por boton)
+
+1. Abrir menu Start de Windows.
+2. Buscar SQL Server Reporting Services Configuration Manager.
+3. Abrir SQL Server Reporting Services Configuration Manager.
+4. En Connect to a Server:
+    - Server Name: localhost
+    - Report Server Instance: seleccionar la instancia instalada
+5. Click Connect.
+6. En panel izquierdo, click Web Service URL.
+7. Copiar la URL completa de Web Service URL (esta URL se usa en Visual Studio como TargetServerURL).
+8. En panel izquierdo, click Web Portal URL.
+9. Click en la URL de Web Portal para confirmar que abre el portal.
+10. Cerrar Configuration Manager.
+
+### 11.3 Crear proyecto SSRS_DW_ESPORTS en la misma solucion (boton por boton)
+
+1. Abrir Visual Studio.
+2. Abrir la solucion donde ya existen SSIS_DW_ESPORTS y SSAS_DW_ESPORTS.
+3. En Solution Explorer, click derecho sobre la solucion.
+4. Click Add -> New Project.
+5. En la caja de busqueda escribir Reporting Services Project.
+6. Seleccionar la plantilla Reporting Services Project.
+7. Click Next.
+8. Project name: SSRS_DW_ESPORTS.
+9. Location: carpeta DataWarehouse de este repositorio.
+10. Click Create.
+11. Confirmar que el proyecto contiene:
+    - Shared Data Sources
+    - Shared Datasets
+    - Reports
+
+### 11.4 Configurar propiedades de despliegue del proyecto SSRS
+
+1. En Solution Explorer, seleccionar el proyecto SSRS_DW_ESPORTS.
+2. Presionar F4 para abrir la ventana Properties.
+3. Configurar exactamente:
+    - TargetServerURL = URL de Web Service URL copiada en 11.2
+    - TargetReportFolder = DW_ESPORTS
+    - TargetDataSourceFolder = DW_ESPORTS_DataSources
+    - TargetDatasetFolder = DW_ESPORTS_Datasets
+    - OverwriteDataSources = True
+    - OverwriteDatasets = True
+4. Guardar con Ctrl+Shift+S.
+
+### 11.5 Crear Shared Data Source DS_DW_ESPORTS (boton por boton)
+
+1. En proyecto SSRS_DW_ESPORTS, click derecho en Shared Data Sources.
+2. Click Add New Data Source.
+3. Name: DS_DW_ESPORTS.
+4. Select connection type: Microsoft SQL Server.
+5. Connection string:
+
+```text
+Data Source=localhost;Initial Catalog=DW_ESPORTS
+```
+
+6. Click Credentials.
+7. Seleccionar Use Windows Integrated Security.
+8. Click OK para volver a la ventana principal del Data Source.
+9. Click Test Connection y confirmar mensaje de exito.
+10. Click OK para crear DS_DW_ESPORTS.
+
+### 11.6 Crear Shared Datasets base (DM1, DM2, DM3, DM4)
+
+Regla fija para cada dataset:
+
+1. Click derecho en Shared Datasets -> Add New Dataset.
+2. Name: segun corresponda.
+3. Data source: Use a shared data source reference.
+4. Shared data source: DS_DW_ESPORTS.
+5. Query type: Text.
+6. Pegar SQL.
+7. Click Refresh Fields.
+8. Click OK.
+
+#### 11.6.1 Dataset DSD_DM1_INGRESOS
+
+```sql
+SELECT
+    dt.anio,
+    dt.mes_numero,
+    dt.mes_nombre,
+    dr.nombre_region,
+    SUM(fi.monto_real) AS monto_real,
+    SUM(fi.meta_ingresos) AS meta_ingresos,
+    SUM(fi.cantidad) AS total_transacciones
+FROM fact_ingresos fi
+INNER JOIN dim_tiempo dt
+    ON dt.id_tiempo = fi.id_dim_tiempo
+INNER JOIN dim_region dr
+    ON dr.id_region = fi.id_dim_region
+WHERE dr.nombre_region <> 'DESCONOCIDA'
+  AND fi.monto_real > 0
+  AND fi.meta_ingresos > 0
+GROUP BY dt.anio, dt.mes_numero, dt.mes_nombre, dr.nombre_region;
+```
+
+#### 11.6.2 Dataset DSD_DM2_COMPORTAMIENTO
+
+```sql
+SELECT
+    dt.anio,
+    dte.nombre_evento,
+    du.nickname,
+    dp.nombre_pais,
+    SUM(fau.cantidad_eventos) AS cantidad_eventos,
+    SUM(COALESCE(fau.xp_acumulado, 0)) AS xp_acumulado,
+    SUM(COALESCE(fau.tiempo_sesion_seg, 0)) AS tiempo_sesion_seg
+FROM fact_actividad_usuario fau
+INNER JOIN dim_tiempo dt
+    ON dt.id_tiempo = fau.id_dim_tiempo
+INNER JOIN dim_tipo_evento dte
+    ON dte.id_tipo_evento = fau.id_dim_tipo_evento
+INNER JOIN dim_usuario du
+    ON du.id_usuario = fau.id_dim_usuario
+INNER JOIN dim_pais dp
+    ON dp.id_pais = fau.id_dim_pais
+WHERE dte.nombre_evento <> 'DESCONOCIDO'
+  AND du.nickname <> 'USUARIO_DESCONOCIDO'
+  AND dp.nombre_pais <> 'DESCONOCIDO'
+GROUP BY dt.anio, dte.nombre_evento, du.nickname, dp.nombre_pais;
+```
+
+#### 11.6.3 Dataset DSD_DM3_TORNEOS
+
+```sql
+SELECT
+    dt.anio,
+    dj.nombre_juego,
+    dtt.nombre_tipo,
+    dpl.nombre_plataforma,
+    SUM(ft.total_inscritos) AS total_inscritos,
+    AVG(CAST(ft.calificacion_promedio AS DECIMAL(10,2))) AS calificacion_promedio,
+    AVG(CAST(ft.pct_recomendacion AS DECIMAL(10,2))) AS pct_recomendacion
+FROM fact_torneos ft
+INNER JOIN dim_tiempo dt
+    ON dt.id_tiempo = ft.id_dim_tiempo
+INNER JOIN dim_juego dj
+    ON dj.id_juego = ft.id_dim_juego
+INNER JOIN dim_tipo_torneo dtt
+    ON dtt.id_tipo_torneo = ft.id_dim_tipo_torneo
+INNER JOIN dim_plataforma dpl
+    ON dpl.id_plataforma = ft.id_dim_plataforma
+WHERE dj.nombre_juego <> 'NO_APLICA'
+  AND dtt.nombre_tipo <> 'no_aplica'
+  AND dpl.nombre_plataforma <> 'NO_APLICA'
+GROUP BY dt.anio, dj.nombre_juego, dtt.nombre_tipo, dpl.nombre_plataforma;
+```
+
+#### 11.6.4 Dataset DSD_DM4_AUDITORIA
+
+```sql
+SELECT
+    dt.anio,
+    dop.nombre_operacion,
+    dpr.nombre_pais,
+    SUM(fa.total_eventos) AS total_eventos,
+    SUM(fa.tickets_soporte) AS tickets_soporte,
+    SUM(fa.tickets_resueltos) AS tickets_resueltos,
+    SUM(fa.registros_restringidos) AS registros_restringidos
+FROM fact_auditoria fa
+INNER JOIN dim_tiempo dt
+    ON dt.id_tiempo = fa.id_dim_tiempo
+INNER JOIN dim_operacion dop
+    ON dop.id_operacion = fa.id_dim_operacion
+INNER JOIN dim_pais_registro dpr
+    ON dpr.id_pais = fa.id_dim_pais
+WHERE dpr.nombre_pais <> 'DESCONOCIDO'
+GROUP BY dt.anio, dop.nombre_operacion, dpr.nombre_pais;
+```
+
+### 11.7 Crear los 4 reportes base (boton por boton)
+
+1. En proyecto SSRS_DW_ESPORTS, click derecho en Reports -> Add -> New Item.
+2. Seleccionar Report.
+3. Name: RPT_DM1_Ingresos.rdl.
+4. Click Add.
+5. Repetir los pasos 1 a 4 para:
+    - RPT_DM2_Comportamiento.rdl
+    - RPT_DM3_Torneos.rdl
+    - RPT_DM4_Auditoria.rdl
+
+Para vincular cada reporte a su dataset compartido:
+
+1. Abrir un reporte (doble click en el .rdl).
+2. Ir a menu View -> Report Data.
+3. En panel Report Data, click derecho en Datasets -> Add Dataset.
+4. Name: DS_RPT (cualquier nombre interno).
+5. Seleccionar Use a shared dataset.
+6. Elegir el dataset correspondiente:
+    - RPT_DM1_Ingresos.rdl -> DSD_DM1_INGRESOS
+    - RPT_DM2_Comportamiento.rdl -> DSD_DM2_COMPORTAMIENTO
+    - RPT_DM3_Torneos.rdl -> DSD_DM3_TORNEOS
+    - RPT_DM4_Auditoria.rdl -> DSD_DM4_AUDITORIA
+7. Click OK.
+
+### 11.8 Deploy y verificacion en portal SSRS
+
+1. Menu Build -> Build Solution.
+2. Corregir errores si existen.
+3. Click derecho en proyecto SSRS_DW_ESPORTS -> Deploy.
+4. Revisar Output y confirmar mensaje Deploy succeeded.
+5. Abrir navegador y entrar a la URL de Web Portal obtenida en 11.2.
+6. Verificar que existen las carpetas/objetos desplegados:
+    - DW_ESPORTS (reportes)
+    - DW_ESPORTS_DataSources
+    - DW_ESPORTS_Datasets
+7. Abrir cada reporte RPT_DM1, RPT_DM2, RPT_DM3, RPT_DM4 para validar que no hay error de conexion.
+
+### 11.9 Gate final de Fase 11
+
+1. Proyecto SSRS_DW_ESPORTS creado y guardado en la solucion.
+2. DS_DW_ESPORTS prueba conexion en success.
+3. Existen los 4 Shared Datasets DM1-DM4.
+4. Existen los 4 reportes RDL DM1-DM4.
+5. Deploy finaliza en success.
+6. El portal SSRS abre los reportes sin error de datasource.
+
 Con esta secuencia el flujo completo queda:
 
-Oracle + RRHH + Excel + Mongo XLSX -> Staging normalizado -> Dimensiones -> Hechos -> SSAS -> Power BI.
+Oracle + RRHH + Excel + Mongo XLSX -> Staging normalizado -> Dimensiones -> Hechos -> SSAS -> Power BI -> SSRS.
