@@ -1,11 +1,11 @@
 {
-    "$schema":  "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
-    "metadata":  {
-                     "type":  "Report",
-                     "displayName":  "Dashboard_DM3_Torneos"
-                 },
-    "config":  {
-                   "version":  "2.0",
-                   "logicalId":  "560d462f-ee41-4249-87f3-5321c4f53762"
-               }
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "Dashboard_DM3_Torneos"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "b5fdf18d-e5a4-4ce2-8ed7-7f0d755fe0e8"
+  }
 }

@@ -1,11 +1,11 @@
 {
-    "$schema":  "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
-    "metadata":  {
-                     "type":  "SemanticModel",
-                     "displayName":  "Dashboard_DM1_Ingresos"
-                 },
-    "config":  {
-                   "version":  "2.0",
-                   "logicalId":  "44cad4d8-9cf3-4ff4-96bc-06cecb2ce72f"
-               }
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Dashboard_DM1_Ingresos"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "870d2507-b993-41aa-9a19-944e33e31444"
+  }
 }

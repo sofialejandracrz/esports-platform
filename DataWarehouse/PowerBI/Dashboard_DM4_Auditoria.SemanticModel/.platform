@@ -1,11 +1,11 @@
 {
-    "$schema":  "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
-    "metadata":  {
-                     "type":  "SemanticModel",
-                     "displayName":  "Dashboard_DM4_Auditoria"
-                 },
-    "config":  {
-                   "version":  "2.0",
-                   "logicalId":  "f525a1cf-af96-4841-84f3-52875fc4cffd"
-               }
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Dashboard_DM4_Auditoria"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "75eaae15-6d3e-4b5e-921b-b876426ce1b5"
+  }
 }

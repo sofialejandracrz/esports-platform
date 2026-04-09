@@ -5,61 +5,13 @@
       "ordinal": 0,
       "scrollPosition": {
         "x": 0,
-        "y": 81
+        "y": 0
       },
       "nodes": [
         {
           "location": {
-            "x": 337.09142527270939,
-            "y": 275.12004451840994
-          },
-          "nodeIndex": "Fact Ingresos",
-          "size": {
-            "height": 200,
-            "width": 234
-          },
-          "zIndex": 0
-        },
-        {
-          "location": {
-            "x": 283.49122894691152,
-            "y": 600.79360397109554
-          },
-          "nodeIndex": "DIM_Origen_Transaccion",
-          "size": {
-            "height": 152,
-            "width": 234
-          },
-          "zIndex": 0
-        },
-        {
-          "location": {
-            "x": 49.999999999999986,
-            "y": 377.51477808560293
-          },
-          "nodeIndex": "DIM_Region_Ingresos",
-          "size": {
-            "height": 128,
-            "width": 234
-          },
-          "zIndex": 0
-        },
-        {
-          "location": {
-            "x": 60.286101156993936,
-            "y": -49.929886939522135
-          },
-          "nodeIndex": "DIM_Responsable_RRHH",
-          "size": {
-            "height": 272,
-            "width": 234
-          },
-          "zIndex": 0
-        },
-        {
-          "location": {
-            "x": 796.53836603085756,
-            "y": 175.74164165551838
+            "x": 1569.5253895580331,
+            "y": 438.68847841480613
           },
           "nodeIndex": "DIM_Tiempo",
           "size": {
@@ -70,22 +22,22 @@
         },
         {
           "location": {
-            "x": 570.57932122189868,
-            "y": 527.425104134579
+            "x": 1803.5253895580331,
+            "y": 628.34363874483552
           },
-          "nodeIndex": "DIM_Tipo_Item",
+          "nodeIndex": "Measures",
           "size": {
-            "height": 128,
+            "height": 72,
             "width": 234
           },
           "zIndex": 0
         },
         {
           "location": {
-            "x": 428.17563727306168,
-            "y": -50
+            "x": 337.04361405802456,
+            "y": 154.35707254965223
           },
-          "nodeIndex": "DIM_Usuario_Comprador",
+          "nodeIndex": "Fact Actividad Usuario",
           "size": {
             "height": 272,
             "width": 234
@@ -94,12 +46,48 @@
         },
         {
           "location": {
-            "x": 1030.5383660308576,
-            "y": 365.39680198554777
+            "x": 538.98702352717555,
+            "y": 478.46345270641456
           },
-          "nodeIndex": "Measures",
+          "nodeIndex": "DIM_Juego",
           "size": {
-            "height": 72,
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 337.13535548771841,
+            "y": -50
+          },
+          "nodeIndex": "DIM_Pais",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 50.000000000000014,
+            "y": 73.58594417772963
+          },
+          "nodeIndex": "DIM_Tipo_Evento",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 212.59048553367452,
+            "y": 479.8936735185755
+          },
+          "nodeIndex": "DIM_Usuario",
+          "size": {
+            "height": 296,
             "width": 234
           },
           "zIndex": 0
