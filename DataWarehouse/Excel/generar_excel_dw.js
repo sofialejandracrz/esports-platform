@@ -30,7 +30,7 @@ const OUTPUT_FILE = path.join(__dirname, 'DW_Fuentes_Excel.xlsx');
 // Regiones (DEBEN coincidir con CATALOGO_REGION.VALOR en Oracle)
 const regiones = [
   'Norte America', 'Sur America', 'Europa', 'Asia', 'LATAM',
-  'Brasil', 'Mexico', 'Espana', 'Argentina', 'Colombia'
+  'Brasil', 'Mexico', 'Espana', 'Argentina', 'Colombia', 'Honduras'
 ];
 
 // Categorías (DEBEN coincidir con CATALOGO_TIPO_ITEM.VALOR en Oracle)
@@ -41,7 +41,7 @@ const transBase  = { creditos: 250,  membresia: 120,  servicio: 80,   avatar: 15
 const factorRegion = {
   'Norte America': 1.5, 'Sur America': 0.8, 'Europa': 1.3, 'Asia': 1.2,
   'LATAM': 1.0, 'Brasil': 0.9, 'Mexico': 1.1, 'Espana': 1.0,
-  'Argentina': 0.7, 'Colombia': 0.8
+  'Argentina': 0.7, 'Colombia': 0.8, 'Honduras': 0.95
 };
 
 const presupuestos = [];
@@ -98,6 +98,7 @@ const listaNegra = [
   { tipo: 'pais', valor: 'Yemen',            motivo: 'Restricciones de servicio',                        fecha_agregado: '2025-04-01', activo: 1 },
   { tipo: 'pais', valor: 'Rusia',            motivo: 'Sanciones por conflicto geopolitico',               fecha_agregado: '2025-06-15', activo: 1 },
   { tipo: 'pais', valor: 'Bielorrusia',      motivo: 'Sanciones UE y EEUU',                              fecha_agregado: '2025-06-15', activo: 1 },
+  { tipo: 'pais', valor: 'Honduras',         motivo: 'Monitoreo reforzado AML/KYC para auditoria operativa', fecha_agregado: '2025-07-01', activo: 1 },
   { tipo: 'pais', valor: 'Venezuela',        motivo: 'Restricciones parciales de procesamiento de pagos', fecha_agregado: '2025-08-01', activo: 0 },
   { tipo: 'pais', valor: 'Libia',            motivo: 'Alto riesgo de fraude',                             fecha_agregado: '2025-09-20', activo: 1 },
 

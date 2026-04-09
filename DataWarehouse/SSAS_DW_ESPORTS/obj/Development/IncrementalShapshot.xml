@@ -166,9 +166,9 @@
       </ObjectSnapshot>
       <ObjectSnapshot>
         <Type>Microsoft.AnalysisServices.Cube</Type>
-        <TimeStamp>sOdJVS+HHgu6Gm5Eex7t5+K+hzQ=8/4/2026 01:33:258/4/2026 01:32:23D1Hw/ryCK4P0Dro3S0VzaskMUPk=8/4/2026 01:32:238/4/2026 01:32:23</TimeStamp>
+        <TimeStamp>gsmwVsDr6VWKJdlYFognSgtlMXI=8/4/2026 16:39:228/4/2026 01:18:53sA/ylgY0M4chtFsCQPTDdSExlbU=8/4/2026 01:18:538/4/2026 01:18:53</TimeStamp>
         <ID>
-          <String>DSV_DW_ESPORTS 2</String>
+          <String>Cubo_Ingresos</String>
         </ID>
       </ObjectSnapshot>
       <ObjectSnapshot>
@@ -187,9 +187,9 @@
       </ObjectSnapshot>
       <ObjectSnapshot>
         <Type>Microsoft.AnalysisServices.Cube</Type>
-        <TimeStamp>gsmwVsDr6VWKJdlYFognSgtlMXI=8/4/2026 16:39:228/4/2026 01:18:53sA/ylgY0M4chtFsCQPTDdSExlbU=8/4/2026 01:18:538/4/2026 01:18:53</TimeStamp>
+        <TimeStamp>sOdJVS+HHgu6Gm5Eex7t5+K+hzQ=8/4/2026 01:33:258/4/2026 01:32:23D1Hw/ryCK4P0Dro3S0VzaskMUPk=8/4/2026 01:32:238/4/2026 01:32:23</TimeStamp>
         <ID>
-          <String>Cubo_Ingresos</String>
+          <String>DSV_DW_ESPORTS 2</String>
         </ID>
       </ObjectSnapshot>
     </ObjectSnapshots>
@@ -204,5 +204,5 @@
   </Snapshot>
   <AssemblyLocations />
   <ProcessingComplete>true</ProcessingComplete>
-  <LastDeployed>2026-04-08T22:40:00.886667Z</LastDeployed>
+  <LastDeployed>2026-04-09T02:27:32.723333Z</LastDeployed>
 </DeploymentSnapshot>

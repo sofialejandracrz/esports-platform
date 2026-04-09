@@ -71,13 +71,13 @@
     </Dimensions>
     <Cubes>
       <Cube>
-        <ID>DSV_DW_ESPORTS 2</ID>
+        <ID>Cubo_Ingresos</ID>
         <MeasureGroups>
           <MeasureGroup>
-            <ID>Fact Auditoria</ID>
+            <ID>Fact Ingresos</ID>
             <Partitions>
               <Partition>
-                <ID>Fact Auditoria</ID>
+                <ID>Fact Ingresos</ID>
               </Partition>
             </Partitions>
           </MeasureGroup>
@@ -110,13 +110,13 @@
         </MeasureGroups>
       </Cube>
       <Cube>
-        <ID>Cubo_Ingresos</ID>
+        <ID>DSV_DW_ESPORTS 2</ID>
         <MeasureGroups>
           <MeasureGroup>
-            <ID>Fact Ingresos</ID>
+            <ID>Fact Auditoria</ID>
             <Partitions>
               <Partition>
-                <ID>Fact Ingresos</ID>
+                <ID>Fact Auditoria</ID>
               </Partition>
             </Partitions>
           </MeasureGroup>

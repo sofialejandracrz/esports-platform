@@ -907,7 +907,7 @@ $Dashboards = @(
 			Title = 'Recomendacion por plataforma'
 			Color = '#E67E22'
 			SortDescending = $false
-			MeasureFormat = '0.00%'
+			MeasureFormat = '0.00'
 		}
 	},
 	[ordered]@{
@@ -941,12 +941,12 @@ $Dashboards = @(
 		}
 		Visual3 = [ordered]@{
 			VisualType = 'lineClusteredColumnComboChart'
-			CategoryEntity = 'DIM_Tabla_Auditada'
-			CategoryProperty = 'Nombre Tabla'
-			ColumnMeasureProperty = 'Tickets Soporte'
-			LineMeasureProperty = 'Tickets Resueltos'
+			CategoryEntity = 'DIM_Operacion'
+			CategoryProperty = 'Nombre Operacion'
+			ColumnMeasureProperty = 'Total Eventos'
+			LineMeasureProperty = 'Registros Restringidos'
 			LineMeasureFormat = $null
-			Title = 'Tickets creados vs resueltos por tabla'
+			Title = 'Eventos vs registros restringidos por operacion'
 			ColumnColor = '#4F81BD'
 			LineColor = '#2A9D8F'
 		}

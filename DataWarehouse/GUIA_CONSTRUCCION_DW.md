@@ -1514,6 +1514,27 @@ INSERT INTO dim_region (id_region, nombre_region)
 SELECT id_region, nombre_region
 FROM stg_oracle_catalogo_region;
 
+;WITH paises_faltantes AS (
+    SELECT DISTINCT LTRIM(RTRIM(p.pais)) AS pais
+    FROM stg_oracle_persona p
+    WHERE p.pais IS NOT NULL
+      AND LTRIM(RTRIM(p.pais)) <> ''
+      AND NOT EXISTS (
+          SELECT 1
+          FROM dim_region r
+          WHERE UPPER(LTRIM(RTRIM(r.nombre_region))) = UPPER(LTRIM(RTRIM(p.pais)))
+      )
+)
+INSERT INTO dim_region (id_region, nombre_region)
+SELECT
+    base.max_id + ROW_NUMBER() OVER (ORDER BY pf.pais) AS id_region,
+    pf.pais AS nombre_region
+FROM paises_faltantes pf
+CROSS JOIN (
+    SELECT ISNULL(MAX(id_region), 0) AS max_id
+    FROM dim_region
+) base;
+
 INSERT INTO dim_tipo_item (id_tipo_item, nombre_tipo)
 VALUES (0, 'no_aplica');
 
@@ -1819,7 +1840,7 @@ TRUNCATE TABLE fact_ingresos;
         COALESCE(t.usuario_id, 0) AS id_usuario,
         COALESCE(r.id_region, 0) AS id_region,
         t.origen_id AS id_origen,
-        COALESCE(orden_match.tipo_id, 0) AS id_tipo_item,
+        COALESCE(t.tipo_id, 0) AS id_tipo_item,
         COALESCE(orden_match.creditos_otorgados, 0) AS creditos_otorgados,
         t.monto
     FROM stg_oracle_transaccion t
@@ -1831,7 +1852,6 @@ TRUNCATE TABLE fact_ingresos;
         ON UPPER(LTRIM(RTRIM(r.nombre_region))) = UPPER(LTRIM(RTRIM(p.pais)))
     OUTER APPLY (
         SELECT TOP (1)
-            i.tipo_id,
             i.creditos_otorgados
         FROM stg_oracle_tienda_orden o
         INNER JOIN stg_oracle_tienda_item i
@@ -1864,7 +1884,7 @@ SELECT
     rr.id_empleado,
     rr.version,
     te.monto AS monto_real,
-    pv.meta_ingresos_usd AS meta_ingresos,
+    COALESCE(pv.meta_ingresos_usd, 0) AS meta_ingresos,
     te.creditos_otorgados,
     1 AS cantidad
 FROM transacciones_enriquecidas te
@@ -1885,7 +1905,12 @@ LEFT JOIN stg_excel_presupuestos_ventas pv
    AND UPPER(LTRIM(RTRIM(pv.categoria_producto))) = UPPER(LTRIM(RTRIM(dti.nombre_tipo)))
 LEFT JOIN dim_responsable_rrhh rr
     ON rr.id_empleado = pv.responsable_rrhh_id
-   AND rr.version_actual = 1;
+    AND rr.version_actual = 1
+WHERE te.id_region <> 0
+  AND te.id_tipo_item <> 0
+  AND te.id_usuario <> 0
+  AND te.monto > 0
+  AND COALESCE(pv.meta_ingresos_usd, 0) > 0;
 ```
 
 ### 7.2 SQL para ETL_03_Fact_DM2_Comportamiento.dtsx
@@ -1930,11 +1955,14 @@ stats AS (
 logs AS (
     SELECT
         l.*,
-        LOWER(LTRIM(RTRIM(COALESCE(l.tipo_evento, 'DESCONOCIDO')))) AS tipo_evento_key,
-        UPPER(LTRIM(RTRIM(COALESCE(NULLIF(l.pais_origen, ''), 'DESCONOCIDO')))) AS pais_key,
+        LOWER(LTRIM(RTRIM(l.tipo_evento))) AS tipo_evento_key,
+        UPPER(LTRIM(RTRIM(l.pais_origen))) AS pais_key,
         (YEAR(l.timestamp_evento) * 10000) + (MONTH(l.timestamp_evento) * 100) + DAY(l.timestamp_evento) AS id_tiempo
     FROM stg_mongo_logs_actividad_evento l
     WHERE l.timestamp_evento IS NOT NULL
+      AND l.oracle_usuario_id IS NOT NULL
+      AND NULLIF(LTRIM(RTRIM(l.tipo_evento)), '') IS NOT NULL
+      AND NULLIF(LTRIM(RTRIM(l.pais_origen)), '') IS NOT NULL
 )
 INSERT INTO fact_actividad_usuario (
     id_dim_tiempo,
@@ -1952,13 +1980,13 @@ INSERT INTO fact_actividad_usuario (
 )
 SELECT
     logs.id_tiempo,
-    COALESCE(du.id_usuario, 0) AS id_dim_usuario,
+    du.id_usuario AS id_dim_usuario,
     COALESCE(t.juego_id, 0) AS id_dim_juego,
-    COALESCE(dte.id_tipo_evento, dte_unk.id_tipo_evento) AS id_dim_tipo_evento,
-    COALESCE(dp.id_pais, dp_unk.id_pais) AS id_dim_pais,
+    dte.id_tipo_evento AS id_dim_tipo_evento,
+    dp.id_pais AS id_dim_pais,
     COALESCE(sc.total_amigos, 0) AS total_amigos,
     COALESCE(sc.total_seguidores, 0) AS total_seguidores,
-    COALESCE(du.xp, 0) AS xp_acumulado,
+    du.xp AS xp_acumulado,
     1 AS cantidad_eventos,
     CASE
         WHEN logs.tipo_evento = 'logout' THEN COALESCE(logs.detalle_duracion_sesion_min, 0) * 60
@@ -1969,16 +1997,13 @@ SELECT
 FROM logs
 INNER JOIN dim_tiempo dt
     ON dt.id_tiempo = logs.id_tiempo
-LEFT JOIN dim_usuario du
-    ON du.id_usuario = COALESCE(logs.oracle_usuario_id, 0)
-LEFT JOIN dim_tipo_evento dte
+INNER JOIN dim_usuario du
+    ON du.id_usuario = logs.oracle_usuario_id
+INNER JOIN dim_tipo_evento dte
     ON LOWER(LTRIM(RTRIM(dte.nombre_evento))) = logs.tipo_evento_key
-LEFT JOIN dim_tipo_evento dte_unk
-    ON dte_unk.nombre_evento = 'DESCONOCIDO'
-LEFT JOIN dim_pais dp
+   AND dte.nombre_evento <> 'DESCONOCIDO'
+INNER JOIN dim_pais dp
     ON UPPER(LTRIM(RTRIM(dp.nombre_pais))) = logs.pais_key
-LEFT JOIN dim_pais dp_unk
-    ON dp_unk.nombre_pais = 'DESCONOCIDO'
 LEFT JOIN stg_oracle_torneo t
     ON t.torneo_id = logs.detalle_torneo_id
 LEFT JOIN dim_juego dj
@@ -2211,13 +2236,13 @@ LEFT JOIN dim_rol_usuario dru
 
 ;WITH soporte_resuelto AS (
     SELECT
-        CAST(s.resuelto_en AS DATE) AS fecha_evento,
-        s.resuelto_por,
+        CAST(COALESCE(s.resuelto_en, s.creado_en) AS DATE) AS fecha_evento,
+        COALESCE(s.resuelto_por, s.usuario_id) AS resuelto_por,
         COUNT(*) AS tickets_resueltos
     FROM stg_oracle_tienda_solicitud_soporte s
-    WHERE s.resuelto_en IS NOT NULL
-      AND s.resuelto_por IS NOT NULL
-    GROUP BY CAST(s.resuelto_en AS DATE), s.resuelto_por
+    WHERE UPPER(LTRIM(RTRIM(COALESCE(s.estado, '')))) = 'RESUELTO'
+      AND COALESCE(s.resuelto_por, s.usuario_id) IS NOT NULL
+    GROUP BY CAST(COALESCE(s.resuelto_en, s.creado_en) AS DATE), COALESCE(s.resuelto_por, s.usuario_id)
 )
 INSERT INTO fact_auditoria (
     id_dim_tiempo,
@@ -2268,16 +2293,20 @@ LEFT JOIN dim_empleado_soporte des
 
 Ejecutar en este orden exacto:
 
-1. Generar export Mongo en XLSX:
+1. Regenerar Excel de negocio (presupuestos y lista negra):
+    ```powershell
+    node .\DataWarehouse\Excel\generar_excel_dw.js
+    ```
+2. Generar export Mongo en XLSX:
    ```powershell
    node .\DataWarehouse\MongoDB\export_mongo_dw_xlsx.js
    ```
-2. ETL_00_Staging.dtsx
-3. ETL_01_Dimensiones.dtsx
-4. ETL_02_Fact_DM1_Ingresos.dtsx
-5. ETL_03_Fact_DM2_Comportamiento.dtsx
-6. ETL_04_Fact_DM3_Torneos.dtsx
-7. ETL_05_Fact_DM4_Auditoria.dtsx
+3. ETL_00_Staging.dtsx
+4. ETL_01_Dimensiones.dtsx
+5. ETL_02_Fact_DM1_Ingresos.dtsx
+6. ETL_03_Fact_DM2_Comportamiento.dtsx
+7. ETL_04_Fact_DM3_Torneos.dtsx
+8. ETL_05_Fact_DM4_Auditoria.dtsx
 
 Validacion inmediata en SQL Server:
 
@@ -2829,6 +2858,7 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Data colors: #1F4E79.
     - Y-axis separador de miles: On.
     - Ordenar de mayor a menor por monto_real.
+    - Filtro visual obligatorio: nombre_region <> 'DESCONOCIDA' y monto_real > 0.
 
 #### 10.4.5 Crear Visual 2 (obligatorio)
 
@@ -2841,6 +2871,7 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Data labels: On.
     - Markers: On.
     - Y-axis separador de miles: On.
+    - Filtro visual obligatorio: meta_ingresos > 0.
 
 #### 10.4.6 Crear Visual 3 (obligatorio)
 
@@ -2854,6 +2885,7 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Line color (meta_ingresos): #E67E22.
     - Data labels: On.
     - Y-axis separador de miles: On.
+    - Filtro visual obligatorio: monto_real > 0 y meta_ingresos > 0.
 
 #### 10.4.7 Ajuste visual final y guardado
 
@@ -2898,6 +2930,7 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Data labels: On.
     - Data colors: #2A9D8F.
     - Ordenar de mayor a menor por cantidad_eventos.
+    - Filtro visual obligatorio: nombre_evento <> 'DESCONOCIDO' y cantidad_eventos > 0.
 
 #### 10.5.5 Crear Visual 2 (obligatorio)
 
@@ -2909,6 +2942,7 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Data labels: On.
     - Data colors: #1F4E79.
     - Ordenar de mayor a menor por xp_acumulado (obligatorio).
+    - Filtro visual obligatorio: nickname <> 'USUARIO_DESCONOCIDO' y xp_acumulado > 0.
 
 #### 10.5.6 Crear Visual 3 (obligatorio)
 
@@ -2920,6 +2954,7 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Data labels: On.
     - Data colors: #4F81BD.
     - Y-axis separador de miles: On.
+    - Filtro visual obligatorio: nombre_pais <> 'DESCONOCIDO' y tiempo_sesion_seg > 0.
 
 #### 10.5.7 Ajuste visual final y guardado
 
@@ -2964,6 +2999,7 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Data labels: On.
     - Data colors: #1F4E79.
     - Ordenar de mayor a menor por total_inscritos.
+    - Filtro visual obligatorio: nombre_juego <> 'NO_APLICA' y total_inscritos > 0.
 
 #### 10.6.5 Crear Visual 2 (obligatorio)
 
@@ -2975,6 +3011,7 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Data labels: On.
     - Data colors: #2A9D8F.
     - Mostrar 2 decimales en etiquetas.
+    - Filtro visual obligatorio: nombre_tipo <> 'no_aplica' y calificacion_promedio > 0.
 
 #### 10.6.6 Crear Visual 3 (obligatorio)
 
@@ -2985,7 +3022,8 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
 5. Formato:
     - Data labels: On.
     - Data colors: #E67E22.
-    - Formato de medida: porcentaje con 2 decimales (obligatorio).
+    - Formato de medida: decimal con 2 decimales (0.00).
+    - Filtro visual obligatorio: nombre_plataforma <> 'NO_APLICA' y pct_recomendacion > 0.
 
 #### 10.6.7 Ajuste visual final y guardado
 
@@ -3030,6 +3068,7 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Data labels: On.
     - Data colors: #1F4E79.
     - Ordenar de mayor a menor por total_eventos.
+    - Filtro visual obligatorio: total_eventos > 0.
 
 #### 10.7.5 Crear Visual 2 (obligatorio)
 
@@ -3041,18 +3080,20 @@ Aplicar este estandar completo en cada PBIX para asegurar calidad profesional:
     - Data labels: On.
     - Data colors: #C0392B.
     - Ordenar de mayor a menor por registros_restringidos.
+    - Filtro visual obligatorio: nombre_pais <> 'DESCONOCIDO' y registros_restringidos > 0.
 
 #### 10.7.6 Crear Visual 3 (obligatorio)
 
 1. Insertar Line and clustered column chart.
-2. Eje compartido: DIM_Tabla_Auditada.nombre_tabla.
-3. Column values: tickets_soporte.
-4. Line values: tickets_resueltos.
-5. Titulo: Tickets creados vs resueltos por tabla.
+2. Eje compartido: DIM_Operacion.nombre_operacion.
+3. Column values: total_eventos.
+4. Line values: registros_restringidos.
+5. Titulo: Eventos vs registros restringidos por operacion.
 6. Formato:
-    - Column color (tickets_soporte): #4F81BD.
-    - Line color (tickets_resueltos): #2A9D8F.
+    - Column color (total_eventos): #4F81BD.
+    - Line color (registros_restringidos): #2A9D8F.
     - Data labels: On.
+    - Filtro visual obligatorio: total_eventos > 0 y registros_restringidos > 0.
 
 #### 10.7.7 Ajuste visual final y guardado
 
@@ -3105,6 +3146,46 @@ Comparar contra Power BI (por cada PBIX, en secuencia):
     - Revisar que Fase 9 y Fase 8 fueron ejecutadas en orden.
 5. Repetir para el siguiente PBIX.
 6. Retirar tarjetas temporales solo cuando el control cierre sin diferencias.
+
+### 10.8.1 Diagnostico rapido cuando los visuales se ven planos o en cero
+
+Si un dashboard abre pero los visuales parecen vacios o poco interpretables, ejecutar este bloque en DW_ESPORTS:
+
+```sql
+SELECT COUNT(*) AS filas,
+       SUM(CASE WHEN id_dim_region = 0 THEN 1 ELSE 0 END) AS fk_region_desconocida,
+       SUM(CASE WHEN id_dim_tipo_item = 0 THEN 1 ELSE 0 END) AS fk_tipo_item_desconocida,
+       SUM(meta_ingresos) AS suma_meta
+FROM fact_ingresos;
+
+SELECT COUNT(*) AS filas,
+       MIN(pct_recomendacion) AS pct_min,
+       MAX(pct_recomendacion) AS pct_max
+FROM fact_torneos;
+
+SELECT COUNT(*) AS filas,
+       SUM(registros_restringidos) AS suma_registros_restringidos
+FROM fact_auditoria;
+```
+
+Interpretacion directa:
+
+1. Si `fk_region_desconocida` o `fk_tipo_item_desconocida` es alto en `fact_ingresos`, hay problema de mapeo de llaves de negocio en ETL_02_Fact_DM1_Ingresos.dtsx.
+2. Si `suma_meta = 0`, regenerar `DW_Fuentes_Excel.xlsx` y verificar que la region real (por ejemplo Honduras) exista en `Presupuestos_Ventas`.
+3. Si `pct_recomendacion` en `fact_torneos` viene en escala 0-100, en Power BI debe mostrarse con formato decimal (`0.00`) y no porcentaje (`0.00%`) para evitar valores visuales inflados.
+4. Si `suma_registros_restringidos = 0`, regenerar `DW_Fuentes_Excel.xlsx`, confirmar que la hoja `Lista_Negra` tenga el pais operativo activo y re-ejecutar ETL_00 -> ETL_01 -> ETL_05.
+
+### 10.8.2 Regla anti-confusion para correcciones
+
+Para corregir resultados en hechos, NO crear archivos SQL externos.
+
+Usar siempre el SQL ya documentado en la guia dentro de estos tasks:
+
+1. ETL_02_Fact_DM1_Ingresos.dtsx -> reemplazar/pegar el SQL de la seccion 7.1 en su Execute SQL Task.
+2. ETL_03_Fact_DM2_Comportamiento.dtsx -> reemplazar/pegar el SQL de la seccion 7.2.
+3. ETL_04_Fact_DM3_Torneos.dtsx -> reemplazar/pegar el SQL de la seccion 7.3.
+4. ETL_05_Fact_DM4_Auditoria.dtsx -> reemplazar/pegar el SQL de la seccion 7.4.
+5. Re-ejecutar la secuencia completa definida en Fase 8.
 
 ### 10.9 Cierre final de entrega
 

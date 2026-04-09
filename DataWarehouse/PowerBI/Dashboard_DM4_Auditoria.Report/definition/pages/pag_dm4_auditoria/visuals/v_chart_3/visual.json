@@ -20,13 +20,13 @@
                                                                                                            "Column":  {
                                                                                                                           "Expression":  {
                                                                                                                                              "SourceRef":  {
-                                                                                                                                                               "Entity":  "DIM_Tabla_Auditada"
+                                                                                                                                                               "Entity":  "DIM_Operacion"
                                                                                                                                                            }
                                                                                                                                          },
-                                                                                                                          "Property":  "Nombre Tabla"
+                                                                                                                          "Property":  "Nombre Operacion"
                                                                                                                       }
                                                                                                        },
-                                                                                             "queryRef":  "DIM_Tabla_Auditada.Nombre Tabla",
+                                                                                             "queryRef":  "DIM_Operacion.Nombre Operacion",
                                                                                              "active":  true
                                                                                          }
                                                                                      ]
@@ -41,10 +41,10 @@
                                                                                                                                                          "Entity":  "Fact Auditoria"
                                                                                                                                                      }
                                                                                                                                    },
-                                                                                                                    "Property":  "Tickets Soporte"
+                                                                                                                    "Property":  "Total Eventos"
                                                                                                                 }
                                                                                                 },
-                                                                                      "queryRef":  "Fact Auditoria.Tickets Soporte"
+                                                                                      "queryRef":  "Fact Auditoria.Total Eventos"
                                                                                   }
                                                                               ]
                                                           },
@@ -58,10 +58,10 @@
                                                                                                                                                           "Entity":  "Fact Auditoria"
                                                                                                                                                       }
                                                                                                                                     },
-                                                                                                                     "Property":  "Tickets Resueltos"
+                                                                                                                     "Property":  "Registros Restringidos"
                                                                                                                  }
                                                                                                  },
-                                                                                       "queryRef":  "Fact Auditoria.Tickets Resueltos"
+                                                                                       "queryRef":  "Fact Auditoria.Registros Restringidos"
                                                                                    }
                                                                                ]
                                                            }
@@ -110,7 +110,7 @@
                                                                                      }
                                                                         },
                                                          "selector":  {
-                                                                          "metadata":  "Fact Auditoria.Tickets Soporte"
+                                                                          "metadata":  "Fact Auditoria.Total Eventos"
                                                                       }
                                                      },
                                                      {
@@ -128,7 +128,7 @@
                                                                                      }
                                                                         },
                                                          "selector":  {
-                                                                          "metadata":  "Fact Auditoria.Tickets Resueltos"
+                                                                          "metadata":  "Fact Auditoria.Registros Restringidos"
                                                                       }
                                                      }
                                                  ]
@@ -191,7 +191,7 @@
                                                                                        "text":  {
                                                                                                     "expr":  {
                                                                                                                  "Literal":  {
-                                                                                                                                 "Value":  "\u0027Tickets creados vs resueltos por tabla\u0027"
+                                                                                                                                 "Value":  "\u0027Eventos vs registros restringidos por operacion\u0027"
                                                                                                                              }
                                                                                                              }
                                                                                                 },
