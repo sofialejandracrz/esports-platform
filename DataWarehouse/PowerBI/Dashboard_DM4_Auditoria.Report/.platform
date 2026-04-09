@@ -1,0 +1,11 @@
+{
+    "$schema":  "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+    "metadata":  {
+                     "type":  "Report",
+                     "displayName":  "Dashboard_DM4_Auditoria"
+                 },
+    "config":  {
+                   "version":  "2.0",
+                   "logicalId":  "5ff65a85-512b-409b-9b64-326c24478da9"
+               }
+}

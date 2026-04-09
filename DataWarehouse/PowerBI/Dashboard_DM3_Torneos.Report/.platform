@@ -1,0 +1,11 @@
+{
+    "$schema":  "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+    "metadata":  {
+                     "type":  "Report",
+                     "displayName":  "Dashboard_DM3_Torneos"
+                 },
+    "config":  {
+                   "version":  "2.0",
+                   "logicalId":  "aee979a8-fad7-4c7d-abb1-a023d3814883"
+               }
+}

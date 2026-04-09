@@ -123,6 +123,8 @@ DataWarehouse/SSIS_DW_ESPORTS/obj/
 DataWarehouse/SSIS_DW_ESPORTS/*.dtproj.user
 DataWarehouse/MongoDB/exports/*.csv
 
+temp/
+
 # ===================================
 # Temporales y Cache
 # ===================================

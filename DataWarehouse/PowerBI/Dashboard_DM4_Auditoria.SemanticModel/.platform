@@ -1,0 +1,11 @@
+{
+    "$schema":  "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+    "metadata":  {
+                     "type":  "SemanticModel",
+                     "displayName":  "Dashboard_DM4_Auditoria"
+                 },
+    "config":  {
+                   "version":  "2.0",
+                   "logicalId":  "77b229e4-5af1-4b63-a32e-68c3e32f0985"
+               }
+}

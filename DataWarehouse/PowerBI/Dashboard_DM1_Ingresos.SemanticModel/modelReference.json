@@ -1,0 +1,6 @@
+{
+    "$schema":  "https://developer.microsoft.com/json-schemas/fabric/item/semanticModel/modelReference/2.0.0/schema.json",
+    "connectionString":  "Data Source=localhost;Initial Catalog=SSAS_DW_ESPORTS;Cube=Cubo_Ingresos",
+    "isMultiDimentional":  true,
+    "connectionType":  "analysisServicesDatabaseLive"
+}

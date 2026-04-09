@@ -1,0 +1,11 @@
+{
+    "$schema":  "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+    "metadata":  {
+                     "type":  "SemanticModel",
+                     "displayName":  "Dashboard_DM3_Torneos"
+                 },
+    "config":  {
+                   "version":  "2.0",
+                   "logicalId":  "60e676f7-7f2d-49c6-8f7c-d0f42b39c4a8"
+               }
+}
